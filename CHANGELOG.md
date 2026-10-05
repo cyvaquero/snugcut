@@ -2,6 +2,12 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.10
+
+- Cut order in exported plates (#25): parts are listed row by row (top → bottom, left → right), and within each part
+  inner cuts (holes, slots, engraving) come before the outline that contains them, deepest first. Layout, ids and
+  rendering are unchanged; parts kept as original markup (text, gradients, …) keep their source order.
+
 ## 0.1.9
 
 - `plate-nester.html`: both reference apps merged into one self-contained page with inline JavaScript.
