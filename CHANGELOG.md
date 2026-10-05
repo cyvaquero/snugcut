@@ -2,6 +2,11 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.11
+
+- Exported plate SVGs carry the app version as a comment (`<!-- Plate Nester v0.1.11 -->`) just inside the
+  `<svg>` element, so an export can be traced back to the version that made it.
+
 ## 0.1.10
 
 - Cut order in exported plates (#25): parts are listed row by row (top → bottom, left → right), and within each part
