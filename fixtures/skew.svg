@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="40mm" viewBox="0 0 60 40">
+  <g transform="skewX(25)">
+    <polygon points="0,0 30,0 30,15 0,15" fill="#cc3333" stroke="#000" stroke-width="0.3"/>
+  </g>
+  <g transform="translate(5 20) skewY(-10) scale(2 1)">
+    <path d="M0 0h10a5 5 0 0 1 5 5v5h-15z" fill="none" stroke="#000" stroke-width="0.25"/>
+  </g>
+</svg>
