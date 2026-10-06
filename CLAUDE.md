@@ -2,7 +2,7 @@
 
 Client-side SVG/DXF nesting for laser, vinyl, CNC and plasma cutting (true shape + bounding box) as **one self-contained HTML file with inline
 JavaScript**, like the original reference apps it replaced.
-The export format is verified in WeCreat MakeIT and must stay exactly as is.
+The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 
 ## Rules
 
