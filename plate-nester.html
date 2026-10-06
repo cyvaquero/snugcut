@@ -195,7 +195,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.21</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.22</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -441,7 +441,8 @@ function parseSVG(text, name){
   const rootAttrs = KEEP_ATTRS.filter(a => root.hasAttribute(a)).map(a => `${a}="${esc(root.getAttribute(a))}"`).join(" ");
   const ser = new XMLSerializer();
   const inner = [...root.childNodes].filter(n => n.nodeType === 1).map(n => ser.serializeToString(n)).join("");
-  if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "position:absolute;left:0;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none"; document.body.appendChild(host); }
+  if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none"; document.body.appendChild(host); }
+  // all:initial + black: parts must not inherit the page's theme colour or fonts (currentColor would export as the UI text colour, #44)
   const g = document.createElementNS(SVGNS, "g");
   if (root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));

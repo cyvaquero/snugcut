@@ -2,6 +2,14 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.22
+
+- `currentColor` in imported SVGs exports as black again, as in a standalone SVG, instead of the app's theme text
+  colour (#44; `#e4e9ef` in dark mode, `#16202b` in light). The hidden element that parts are measured in now
+  starts from `all:initial` with black text and a light colour scheme, so imported parts no longer inherit the
+  page's colour or fonts. A `color` set in the file still applies. Files without `currentColor` export unchanged.
+  New fixture `fixtures/current-color.svg`.
+
 ## 0.1.21
 
 - Parts kept as original markup no longer carry their `<style>` block into the plate (#38, #42). MakeIT 3.06
