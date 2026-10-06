@@ -2,6 +2,17 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.21
+
+- Parts kept as original markup no longer carry their `<style>` block into the plate (#38, #42). MakeIT 3.06
+  ignores class, universal and descendant selectors but applies element-type rules (`rect {…}`) to the whole plate,
+  so a part styled by `.cls-1` rules imported with the wrong colours and layers, and one file's `rect {…}` could
+  recolour another file's parts. On import (`inlineSheets`), the computed value of every property the rules declare
+  is written onto the elements they match, as presentation attributes where possible (colours as hex, lengths
+  without `px`). Then the rules are removed; only `@font-face`/`@keyframes` are kept. Rules on the root reach its
+  children. Rendering is unchanged, checked element by element against 0.1.20. Flattened parts and files without
+  `<style>` export unchanged. New fixtures `fixtures/selector-leak-a.svg` and `fixtures/selector-leak-b.svg`.
+
 ## 0.1.20
 
 - New MakeIT CSS support test files for #38: `fixtures/makeit-css-support.svg` (class, element-type, descendant,
