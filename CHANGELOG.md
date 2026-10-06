@@ -2,6 +2,15 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.15
+
+- Imported SVGs no longer make the browser fetch anything from outside the file (#10). Before a file is measured,
+  links to other files are removed: external `href`s on `<image>`, `<use>`, `<feImage>` and the like, `@import`,
+  and `url()` / `image-set()` in `<style>`, `style` attributes and presentation attributes (CSS escapes included).
+  HTML and MathML elements and SMIL animation elements inside the SVG are dropped. Only `#fragment` and `data:`
+  references remain. A notice names the files that had external links. Files without external links are untouched,
+  so their export is unchanged. New fixture `fixtures/external-refs.svg`.
+
 ## 0.1.14
 
 - Page description covers other cutters (laser, vinyl, CNC, plasma) and materials; the two modes are listed as
