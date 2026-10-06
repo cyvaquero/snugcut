@@ -2,6 +2,19 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.33
+
+- Renamed **Plate Nester → SnugCut**.
+  - The app file is now `snugcut.html` (was `plate-nester.html`).
+  - Page title, header, docs, `.gitignore`, the export comment (`<!-- SnugCut v… -->`) and the DXF `999` marker all
+    use the new name.
+  - The footer changelog link points to `github.com/cyvaquero/snugcut`; the GitHub repo is renamed to match, and
+    GitHub redirects the old URLs.
+  - Settings move from the `platenester.settings` key to `snugcut.settings`. Saved settings (kerf, prefix, format, …)
+    carry over on first load, and the old key is removed.
+  - Files compensated by Plate Nester are still recognised, because the marker check doesn't depend on the name.
+  - Entries below keep the old name, as historical record.
+
 ## 0.1.32
 
 - Shapes a browser wouldn't show are no longer measured, nested or cut (#17). Before, only `display:none` counted as

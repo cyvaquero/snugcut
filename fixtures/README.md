@@ -1,6 +1,6 @@
 # Fixtures
 
-Files for manual testing: open `plate-nester.html`, add them, and check the preview and exports (see each issue or
+Files for manual testing: open `snugcut.html`, add them, and check the preview and exports (see each issue or
 CHANGELOG entry for what to expect). Red `#ff0000` = cut, blue `#0000ff` = score/engrave unless a file says otherwise.
 
 | Folder | Contents |

@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plate Nester</title>
+<title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -114,7 +114,7 @@ footer a{color:var(--accent)}
 
 <div class="wrap">
   <header>
-    <h1>Plate Nester</h1>
+    <h1>SnugCut</h1>
     <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; nothing is uploaded.</p>
     <ul>
       <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
@@ -212,7 +212,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.32</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.33</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -231,8 +231,8 @@ if (!CL) { $("plates").innerHTML = `<div class="fatal">The geometry library didn
 /* ---------- settings (lengths in mm) ---------- */
 const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg", comp:false};
 let S = {...DEFAULTS};
-try { Object.assign(S, JSON.parse(localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}
-const save = () => { try { localStorage.setItem("platenester.settings", JSON.stringify(S)); } catch(e) {} };
+try { Object.assign(S, JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
+const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
 let parts = [], uid = 0, geoVer = 0;
 let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea}
@@ -1617,7 +1617,7 @@ async function addFiles(list){
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
-    if (pre) { p.precomp = true; errs.push(`${f.name} was downloaded from Plate Nester with kerf compensation built in, so it won't be compensated again.`); }
+    if (pre) { p.precomp = true; errs.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
   } catch(e) { errs.push(e.message); } }
   if (hiddenIn.length) errs.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
   if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
@@ -1643,7 +1643,7 @@ function cutSequence(items){
 function plateSVG(plate, opts = {}){
   const W = S.plateW, H = S.plateH;
   let s = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${n4(W)}mm" height="${n4(H)}mm" viewBox="0 0 ${n4(W)} ${n4(H)}">`;
-  if (!opts.preview) s += `<!-- Plate Nester ${document.getElementById("appver").textContent} -->` + (kerfC() ? `<!-- ${compMark()} -->` : "");
+  if (!opts.preview) s += `<!-- SnugCut ${document.getElementById("appver").textContent} -->` + (kerfC() ? `<!-- ${compMark()} -->` : "");
   if (S.outline && !opts.preview) s += `<rect x="0" y="0" width="${n4(W)}" height="${n4(H)}" fill="none" stroke="#ff0000" stroke-width="0.1"/>`;
   const ids = new Map();
   for (const it of cutSequence(plate.items)) {
@@ -1735,7 +1735,7 @@ function plateDXF(plate){
     "0", "TABLE", "2", "LAYER", "70", String(layers.size + 1), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
   for (const [n, ci] of layers) hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
   hdr.push("0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "BLOCKS", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES");
-  const all = (kerfC() ? ["999", `Plate Nester ${document.getElementById("appver").textContent} ${compMark()}`] : []).concat(hdr, out, ["0", "ENDSEC", "0", "EOF"]);
+  const all = (kerfC() ? ["999", `SnugCut ${document.getElementById("appver").textContent} ${compMark()}`] : []).concat(hdr, out, ["0", "ENDSEC", "0", "EOF"]);
   let dxf = ""; for (let i = 0; i < all.length; i += 2) dxf += all[i].padStart(3) + "\r\n" + all[i + 1] + "\r\n";
   return {dxf, notes:[...notes]};
 }

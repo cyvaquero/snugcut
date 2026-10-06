@@ -1,7 +1,7 @@
-# Plate Nester
+# SnugCut
 
 Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
-[`plate-nester.html`](plate-nester.html) in a browser (double-click is fine): no install, no build, no server.
+[`snugcut.html`](snugcut.html) in a browser (double-click is fine): no install, no build, no server.
 Everything runs in the page; nothing is uploaded.
 
 Two modes:
@@ -30,7 +30,7 @@ stay as drawn, and nesting spacing and margins grow to match. Read this before u
   every part the wrong size.
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
-- **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to Plate Nester again, it
+- **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
   is recognised and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
   narrower than the kerf are exported as drawn, with a notice.
 
@@ -102,7 +102,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
-| `plate-nester.html`  | the app: HTML, CSS and inline JavaScript in one file                          |
+| `snugcut.html`       | the app: HTML, CSS and inline JavaScript in one file                          |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
