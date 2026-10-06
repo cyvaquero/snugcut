@@ -33,6 +33,7 @@ body{font:15px/1.5 var(--f-body);padding-inline:16px;padding-block:20px 40px}
 .wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 header h1{font:700 30px/1.1 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:balance}
 header p{margin:4px 0 0;color:var(--muted);max-width:72ch}
+header ul{margin:4px 0 0;padding-left:20px;color:var(--muted);max-width:72ch}
 .layout{display:grid;grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:880px){.layout{grid-template-columns:minmax(0,1fr)}}
 .rail{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -110,7 +111,11 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
 <div class="wrap">
   <header>
     <h1>Plate Nester</h1>
-    <p>Pack SVG parts onto laser plates. <b>True shape</b> interlocks parts by their actual outlines and rotates them so stars, brackets and crescents tuck into each other's gaps; <b>Bounding box</b> packs rectangles fast. Everything runs in your browser; nothing is uploaded.</p>
+    <p>Save material on any cutter: pack SVG parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; nothing is uploaded.</p>
+    <ul>
+      <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
+      <li><b>Bounding box</b> packs rectangles fast.</li>
+    </ul>
     <div class="modesw" role="group" aria-label="Nesting mode">
       <button type="button" id="m-shape" aria-pressed="true">True shape</button><button type="button" id="m-bbox" aria-pressed="false">Bounding box</button>
     </div>
@@ -126,9 +131,9 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
           <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
         </div>
         <div class="kerf">
-          <label for="kerf">Laser kerf (<span class="u">mm</span>)</label>
+          <label for="kerf">Kerf (<span class="u">mm</span>)</label>
           <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10">
-          <p class="hint">Width of material the beam removes. Added to the spacing between parts so neighboring cuts never overlap.</p>
+          <p class="hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
           <details>
             <summary>Measure it from a test cut</summary>
             <p class="hint" style="margin-top:6px">Cut a square, then measure the piece that drops out.</p>
@@ -189,7 +194,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.13</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.14</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
