@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="root cut" width="40mm" height="30mm" viewBox="0 0 40 30">
+  <style>.cut { fill: none; stroke: #0000ff; stroke-width: 0.2 } .x.cut > .cut {stroke:#0f0}</style>
+  <circle class=" cut  extra" cx="20" cy="15" r="12"/>
+  <text x="15" y="16" font-size="5">B</text>
+</svg>

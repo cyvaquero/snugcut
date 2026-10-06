@@ -2,6 +2,14 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.18
+
+- CSS class rules from one SVG no longer restyle other files' parts on an exported plate (#12). For files with a
+  `<style>` block, class names get the file's prefix, like ids already did: in `class` attributes and in `.class`
+  selectors (`.cut` becomes `.p3_cut`). Flattened parts and files without `<style>` export unchanged.
+  Element and universal selectors (`rect {…}`, `* {…}`) can still leak between files: tracked in #38.
+  New fixtures `fixtures/class-clash-a.svg` and `fixtures/class-clash-b.svg`.
+
 ## 0.1.17
 
 - Ids that read as hex colours (`fff`, `cafe`, `bad`, …) no longer corrupt colours in `<style>` (#13). Id prefixing
