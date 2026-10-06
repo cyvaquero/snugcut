@@ -189,7 +189,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span>v0.1.9</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.12</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -537,24 +537,129 @@ function uniquifyIds(markup, prefix){
   }
   return markup;
 }
+function cutPlan(p){
+  // the part's subpaths with their nesting depth (how many closed contours contain them), computed once per part;
+  // inner cuts (holes, slots, engraving) must come before the outline that contains them
+  const ck = p.kx + "," + p.ky;
+  if (p.cutPlan && p.cutPlanKey === ck) return p.cutPlan;
+  let subs = [];
+  p.flat.forEach((it, item) => {
+    let cur = null;
+    for (const sg of it.segs) { if (sg[0] === "M" || !cur) { cur = {item, segs:[]}; subs.push(cur); } cur.segs.push(sg); }
+  });
+  subs = joinSubpaths(p, subs, 0.01 / Math.min(p.kx, p.ky));
+  for (const sub of subs) {
+    const pts = []; let x = 0, y = 0;
+    for (const sg of sub.segs) {
+      if (sg[0] === "M" || sg[0] === "L") { x = sg[1]; y = sg[2]; pts.push([x, y]); }
+      else if (sg[0] === "C") {
+        for (let i = 1; i <= 4; i++) { const t = i / 4, u = 1 - t;
+          pts.push([u*u*u*x + 3*u*u*t*sg[1] + 3*u*t*t*sg[3] + t*t*t*sg[5], u*u*u*y + 3*u*u*t*sg[2] + 3*u*t*t*sg[4] + t*t*t*sg[6]]); }
+        x = sg[5]; y = sg[6];
+      }
+    }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [px, py] of pts) { x0 = Math.min(x0, px); y0 = Math.min(y0, py); x1 = Math.max(x1, px); y1 = Math.max(y1, py); }
+    const a = pts[0], z = pts[pts.length - 1];
+    sub.pts = pts; sub.bb = [x0, y0, x1, y1];
+    sub.closed = pts.length > 2 && (sub.segs[sub.segs.length - 1][0] === "Z" || Math.hypot(a[0] - z[0], a[1] - z[1]) <= 1e-6 * Math.max(x1 - x0, y1 - y0, 1));
+  }
+  const inside = (q, poly) => { let c = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > q[1]) !== (yj > q[1]) && q[0] < (xj - xi) * (q[1] - yi) / (yj - yi) + xi) c = !c; }
+    return c; };
+  for (const sub of subs) {
+    sub.depth = 0;
+    for (const o of subs) {
+      if (o === sub || !o.closed || !sub.pts.length) continue;
+      const [a0, b0, a1, b1] = sub.bb, [c0, d0, c1, d1] = o.bb;
+      if (a0 >= c0 && b0 >= d0 && a1 <= c1 && b1 <= d1 && (a1 - a0) * (b1 - b0) < (c1 - c0) * (d1 - d0) && inside(sub.pts[0], o.pts)) sub.depth++;
+    }
+  }
+  p.cutPlanKey = ck;
+  return (p.cutPlan = subs);
+}
+function joinSubpaths(p, subs, tol){
+  // chain open subpaths of the same line style whose ends meet (within tol, part units) into continuous paths,
+  // reversing pieces where needed; a chain that returns to its start is closed with Z. CAD/DXF exports often
+  // store every segment of an outline as its own subpath, which the laser would otherwise cut one at a time.
+  const end = segs => { const s = segs[segs.length - 1]; return [s[s.length - 2], s[s.length - 1]]; };
+  const start = segs => [segs[0][1], segs[0][2]];
+  const near = (a, b) => Math.abs(a[0] - b[0]) <= tol && Math.abs(a[1] - b[1]) <= tol;
+  const reverse = segs => {
+    const pts = segs.map(sg => [sg[sg.length - 2], sg[sg.length - 1]]), out = [["M", ...pts[pts.length - 1]]];
+    for (let i = segs.length - 1; i >= 1; i--) {
+      const sg = segs[i], q = pts[i - 1];
+      out.push(sg[0] === "C" ? ["C", sg[3], sg[4], sg[1], sg[2], q[0], q[1]] : ["L", q[0], q[1]]);
+    }
+    return out;
+  };
+  const styleKey = sub => { const it = p.flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so : null; };
+  const isOpen = sub => sub.segs.length > 1 && sub.segs[sub.segs.length - 1][0] !== "Z" && sub.segs.every((sg, i) => i === 0 ? sg[0] === "M" : sg[0] === "L" || sg[0] === "C");
+  const out = [], pool = new Map();
+  for (const sub of subs) {
+    const k = isOpen(sub) ? styleKey(sub) : null;
+    if (k == null) { out.push(sub); continue; }
+    if (!pool.has(k)) pool.set(k, []);
+    pool.get(k).push(sub);
+    out.push({pending:k});
+  }
+  const chains = new Map();
+  for (const [k, list] of pool) {
+    const left = list.slice(), res = [];
+    while (left.length) {
+      const first = left.shift();
+      let segs = first.segs.slice();
+      for (let grew = true; grew && !near(start(segs), end(segs)); ) {
+        grew = false;
+        for (let i = 0; i < left.length; i++) {
+          const o = left[i].segs;
+          if (near(end(segs), start(o))) segs = segs.concat(o.slice(1));
+          else if (near(end(segs), end(o))) segs = segs.concat(reverse(o).slice(1));
+          else if (near(start(segs), end(o))) segs = o.concat(segs.slice(1));
+          else if (near(start(segs), start(o))) segs = reverse(o).concat(segs.slice(1));
+          else continue;
+          left.splice(i, 1); grew = true; break;
+        }
+      }
+      if (segs.length > 2 && near(start(segs), end(segs))) {
+        const last = segs[segs.length - 1].slice(), [sx, sy] = start(segs);
+        last[last.length - 2] = sx; last[last.length - 1] = sy;
+        segs = segs.slice(0, -1).concat([last, ["Z"]]);
+      }
+      res.push({item:first.item, segs});
+    }
+    chains.set(k, res);
+  }
+  // chains take the place of the first piece of each style, keeping the source order of everything else
+  const done = new Set();
+  return out.flatMap(sub => sub.pending == null ? [sub] : done.has(sub.pending) ? [] : (done.add(sub.pending), chains.get(sub.pending)));
+}
 function partMarkup(p, M, id, fallbackTransform){
-  // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms
+  // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
+  // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
   if (!p.flat) return `<g id="${id}" transform="${fallbackTransform}"><g ${p.rootAttrs}>${uniquifyIds(p.inner, id + "_")}</g></g>`;
   const [a, b, c, d, e, f] = M, sc = Math.sqrt(Math.abs(a*d - b*c));
   const toD = segs => segs.map(s => s[0] === "Z" ? "Z" : s[0] + (() => { const o = []; for (let j = 1; j < s.length; j += 2) o.push(n3(a*s[j] + c*s[j+1] + e) + " " + n3(b*s[j] + d*s[j+1] + f)); return o.join(" "); })()).join("");
   const strokeAttr = (st, sw, so) => st === "none" ? `stroke="none"` : `stroke="${st}" stroke-width="${n3(Math.max(sw * sc, 0.01))}"${so < 1 ? ` stroke-opacity="${n3(so)}"` : ""}`;
-  const lines = new Map(), els = [];
-  for (const it of p.flat) {
-    if (it.fill === "none") {
-      const k = it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so);
-      if (!lines.has(k)) lines.set(k, {stroke:it.stroke, sw:it.sw, so:it.so, d:[]});
-      lines.get(k).d.push(toD(it.segs));
-    } else els.push(`<path d="${toD(it.segs)}" fill="${it.fill}"${it.fo < 1 ? ` fill-opacity="${n3(it.fo)}"` : ""}${it.evenodd ? ` fill-rule="evenodd"` : ""} ${strokeAttr(it.stroke, it.sw, it.so)}/>`);
+  const groups = new Map();
+  for (const sub of cutPlan(p)) {
+    const it = p.flat[sub.item];
+    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) : "F|" + sub.item;
+    if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
+    groups.get(key).subs.push(sub);
   }
-  const lineEls = [...lines.values()].map(L => `<path d="${L.d.join("")}" fill="none" ${strokeAttr(L.stroke, L.sw, L.so)}/>`);
-  const all = lineEls.concat(els);
-  if (all.length === 1) return all[0].replace("<path ", `<path id="${id}" `);
-  return `<g id="${id}">${all.join("")}</g>`;
+  const deepFirst = (x, y) => y.depth - x.depth;
+  const els = [...groups.values()].map(g => {
+    const subs = g.subs.slice().sort(deepFirst), it = g.it;   // stable sort keeps source order within a depth
+    const dd = subs.map(s => toD(s.segs)).join("");
+    const markup = g.fill
+      ? `<path d="${dd}" fill="${it.fill}"${it.fo < 1 ? ` fill-opacity="${n3(it.fo)}"` : ""}${it.evenodd ? ` fill-rule="evenodd"` : ""} ${strokeAttr(it.stroke, it.sw, it.so)}/>`
+      : `<path d="${dd}" fill="none" ${strokeAttr(it.stroke, it.sw, it.so)}/>`;
+    return {markup, depth:Math.min(...subs.map(s => s.depth)), fill:g.fill, order:g.order};
+  }).sort((x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order);
+  if (els.length === 1) return els[0].markup.replace("<path ", `<path id="${id}" `);
+  return `<g id="${id}">${els.map(x => x.markup).join("")}</g>`;
 }
 
 /* ---------- polygon helpers ---------- */
@@ -1009,12 +1114,26 @@ async function addFiles(list){
 $("clear").onclick = () => { removeParts(() => true); restart(); };
 
 /* ---------- output ---------- */
+function cutSequence(items){
+  // laser order across a plate: rows top → bottom, left → right within a row (by each part's envelope)
+  const boxes = items.map(it => { let x0 = Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const q of it.env) for (const [x, y] of q) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    return {it, x0, y0, y1}; }).sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+  const rows = [];
+  for (const bx of boxes) {
+    const row = rows[rows.length - 1];
+    if (row && bx.y0 < row.mid) row.items.push(bx);      // starts above the middle of the row's first part: same row
+    else rows.push({mid:(bx.y0 + bx.y1) / 2, items:[bx]});
+  }
+  return rows.flatMap(r => r.items.sort((a, b) => a.x0 - b.x0).map(bx => bx.it));
+}
 function plateSVG(plate, opts = {}){
   const W = S.plateW, H = S.plateH;
   let s = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${n4(W)}mm" height="${n4(H)}mm" viewBox="0 0 ${n4(W)} ${n4(H)}">`;
+  if (!opts.preview) s += `<!-- Plate Nester ${document.getElementById("appver").textContent} -->`;
   if (S.outline && !opts.preview) s += `<rect x="0" y="0" width="${n4(W)}" height="${n4(H)}" fill="none" stroke="#ff0000" stroke-width="0.1"/>`;
   const ids = new Map();
-  for (const it of plate.items) {
+  for (const it of cutSequence(plate.items)) {
     const p = it.part;
     const t = `translate(${n4(it.x)} ${n4(it.y)})${it.ang ? ` rotate(${it.ang})` : ""} scale(${n4(p.kx)} ${n4(p.ky)}) translate(${n4(-it.rx)} ${n4(-it.ry)})`;
     const base = slug(p.name), k = (ids.get(base) || 0) + 1; ids.set(base, k);
