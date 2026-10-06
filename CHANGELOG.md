@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.24
+
+- New MakeIT test file for #13, `fixtures/makeit-id-colours.svg`: ids that read as hex colours (`f00`, `ff0000`)
+  used in both selectors and colour values, a rule elsewhere using `#f00`, a red control and a black reference.
+  Every square is drawn black, and red means the colour survived id prefixing. Checked in headless Chrome: 0.1.16
+  turns cases 1–3 black, the current build turns them red. No app changes.
+
 ## 0.1.23
 
 - `<line>` elements export with `fill="none"` instead of the default `fill="#000000"` (#46). MakeIT took that fill
