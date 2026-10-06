@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.16
+
+- Content-Security-Policy (#11), as a `<meta>` tag so it also applies when the page is opened from disk: scripts
+  only inline and the two pinned library URLs (clipper-lib 6.4.2, jszip 3.10.1), styles inline and Google Fonts,
+  fonts from Google Fonts or `data:`, images only `blob:`/`data:`, nothing else (no fetch/XHR, objects, `<base>`,
+  form posts). A second layer behind the import sanitizer (#10): even a link it missed can't be loaded.
+
 ## 0.1.15
 
 - Imported SVGs no longer make the browser fetch anything from outside the file (#10). Before a file is measured,

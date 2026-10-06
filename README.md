@@ -22,7 +22,9 @@ was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and m
 | `fixtures/`          | SVGs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
-`jszip` (zip download), plus Google Fonts. It needs network access for those on first load.
+`jszip` (zip download), plus Google Fonts. It needs network access for those on first load. A
+Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
+else.
 
 ## Workflow
 
