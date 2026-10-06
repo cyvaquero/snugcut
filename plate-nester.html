@@ -203,7 +203,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.28</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.29</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -319,9 +319,38 @@ function extractRings(g){
     } else if (tag === "line") {
       rings.push({closed:false, pts:[T(+el.getAttribute("x1")||0, +el.getAttribute("y1")||0), T(+el.getAttribute("x2")||0, +el.getAttribute("y2")||0)]});
     } else {
-      let L = 0; try { L = el.getTotalLength(); } catch(e) {}
-      if (!(L > 0)) continue;
       const scale = Math.sqrt(Math.abs(m.a*m.d - m.b*m.c)) || 1;
+      // path, circle, ellipse: points straight from the path data, lines at their ends and curves every ~0.1 mm.
+      // Much faster than getPointAtLength, which walks the whole path on every call (long CAD/DXF paths took minutes).
+      let segs = null;
+      try {
+        const v = k => el[k].baseVal.value;
+        if (tag === "path") segs = parsePathD(el.getAttribute("d") || "");
+        else { const cx = v("cx"), cy = v("cy"), rx = tag === "circle" ? v("r") : v("rx"), ry = tag === "circle" ? v("r") : v("ry");
+          segs = rx > 0 && ry > 0 ? parsePathD(`M${cx-rx} ${cy}A${rx} ${ry} 0 1 0 ${cx+rx} ${cy}A${rx} ${ry} 0 1 0 ${cx-rx} ${cy}Z`) : []; }
+      } catch(e) { segs = null; }
+      if (segs) {
+        const tol = extractStepU * 2.5;
+        let cur = null, x = 0, y = 0, sx = 0, sy = 0;
+        const end = z => { if (cur && cur.length > 1) { const a = cur[0], b = cur[cur.length - 1];
+          rings.push({closed: z || tag !== "path" || Math.hypot(a[0]-b[0], a[1]-b[1]) < tol, pts:cur}); } cur = null; };
+        for (const sg of segs) {
+          if (sg[0] === "M") { end(false); x = sx = sg[1]; y = sy = sg[2]; cur = [T(x, y)]; continue; }
+          if (sg[0] === "Z") { end(true); x = sx; y = sy; continue; }
+          if (!cur) cur = [T(x, y)];
+          if (sg[0] === "L") { x = sg[1]; y = sg[2]; cur.push(T(x, y)); continue; }
+          const [, x1, y1, x2, y2, x3, y3] = sg;                                // cubic
+          const len = (Math.hypot(x1 - x, y1 - y) + Math.hypot(x2 - x1, y2 - y1) + Math.hypot(x3 - x2, y3 - y2)) * scale;
+          const n = Math.min(400, Math.max(2, Math.ceil(len / extractStepU)));
+          for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t;
+            cur.push(T(u*u*u*x + 3*u*u*t*x1 + 3*u*t*t*x2 + t*t*t*x3, u*u*u*y + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y3)); }
+          x = x3; y = y3;
+        }
+        end(false);
+        continue;
+      }
+      let L = 0; try { L = el.getTotalLength(); } catch(e) {}                // unreadable path data: let the browser sample it
+      if (!(L > 0)) continue;
       const n = Math.min(6000, Math.max(24, Math.ceil(L * scale / extractStepU)));
       const step = L / n;
       let cur = [], prev = null;
@@ -601,7 +630,7 @@ function dxfToSVG(text, name){
     } else { if (t !== "VIEWPORT") skipped[t] = (skipped[t] || 0) + 1; return; }
     if (!d.length) return;
     if (!out.has(layer)) out.set(layer, new Map());
-    const byC = out.get(layer); byC.set(color, (byC.get(color) || "") + d.join(""));
+    const byC = out.get(layer); if (!byC.has(color)) byC.set(color, []); byC.get(color).push(d.join(""));   // one path per entity: measured separately, fast
     count++;
   }
   for (const r of group(model)) draw(r, [1, 0, 0, 1, 0, 0], {layer:null, color:null}, 0);
@@ -612,7 +641,7 @@ function dxfToSVG(text, name){
   let body = "";
   for (const [ln, byC] of out) {
     let id = "layer-" + (ln.replace(/[^A-Za-z0-9_.-]+/g, "_") || "0"); while (used.has(id)) id += "_"; used.add(id);
-    body += `<g id="${esc(id)}">` + [...byC].map(([c, dd]) => `<path d="${dd}" stroke="${c}"/>`).join("") + `</g>`;
+    body += `<g id="${esc(id)}">` + [...byC].map(([c, ds]) => `<g stroke="${c}">` + ds.map(dd => `<path d="${dd}"/>`).join("") + `</g>`).join("") + `</g>`;
   }
   const svg = `<svg xmlns="${SVGNS}" width="${fmtN(w)}mm" height="${fmtN(h)}mm" viewBox="${fmtN(x0)} ${fmtN(y0)} ${fmtN(w)} ${fmtN(h)}">`
     + `<g fill="none" stroke-width="0.1">${body}</g></svg>`;
