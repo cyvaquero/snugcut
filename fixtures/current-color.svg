@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="30mm" viewBox="0 0 40 30">
+  <!-- currentColor with no color set must export black in both light and dark app themes (#44); the circle's group sets blue -->
+  <rect x="1" y="1" width="38" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="0.2"/>
+  <g color="#0000ff"><circle cx="20" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="0.2"/></g>
+</svg>
