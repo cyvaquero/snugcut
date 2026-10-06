@@ -2,6 +2,20 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.29
+
+- Much faster import of large DXF files and long SVG paths. A 300 × 200 mm DXF panel with 400 holes and 60 slots
+  took 46 s to add; it now takes 0.14 s. The fixtures load in 1–5 ms instead of 36–1,600 ms.
+  - Outline points for nesting (`extractRings`) are now computed straight from the path data: lines at their ends,
+    curves every ~0.1 mm. Before, they came from the browser's `getPointAtLength`, which walks the whole path on
+    every call. The old sampling is kept only as a fallback for path data that can't be parsed.
+  - Subpaths are now read exactly. Before, they were guessed from jumps between samples, and each path was capped
+    at 6,000 samples in total, which also blurred small holes in long paths.
+  - The DXF reader writes one `<path>` per entity instead of one per layer and colour.
+  - Nesting outlines are unchanged within 0.03 % for all fixtures (circles slightly more accurate), and the sample
+    layout is the same. Outlines drawn as separate DXF LINEs now get the 0.05 mm allowance that separate SVG
+    `<line>`s always had. SVG and DXF-part exports are byte-for-byte unchanged.
+
 ## 0.1.28
 
 - DXF export (#32): new **Export format** setting (SVG / DXF (R12, mm)) next to the file prefix, used by the per-plate
