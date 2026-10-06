@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:html="http://www.w3.org/1999/xhtml" width="50mm" height="50mm" viewBox="0 0 50 50">
+<style>@import url("http://beacon.invalid/import.css"); @import "http://beacon.invalid/import2.css";
+rect.a{fill:url(http://beacon.invalid/paint.svg#p)}
+circle{fill:\75 rl(http://beacon.invalid/escaped.svg#e)}
+@font-face{font-family:X;src:url(http://beacon.invalid/font.woff)} text{font-family:X}
+.b{background-image:image-set("http://beacon.invalid/imageset.png" 1x)}
+.ok{stroke:#00f}</style>
+<defs><filter id="f"><feImage href="http://beacon.invalid/feimage.png"/></filter><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs>
+<rect class="a ok" x="0" y="0" width="50" height="50" fill="none" stroke="#000" stroke-width="0.2"/>
+<rect x="5" y="5" width="10" height="10" fill="url(http://beacon.invalid/presattr.svg#p)" stroke="#000" filter="url(#f)"/>
+<rect x="20" y="5" width="10" height="10" style="stroke:#000;fill:url('http://beacon.invalid/styleattr.svg#x');cursor:url(http://beacon.invalid/cursor.png),auto;mask:url(http://beacon.invalid/mask.svg#m)"/>
+<rect x="35" y="5" width="10" height="10" fill="url(#g)" stroke="#000"/>
+<image href="http://beacon.invalid/img.png" x="5" y="20" width="10" height="10"/>
+<image xlink:href="http://beacon.invalid/ximg.png" x="20" y="20" width="10" height="10"/>
+<image href="data:image/png;base64,iVBORw0KGgo=" x="35" y="20" width="10" height="10"><set attributeName="href" to="http://beacon.invalid/set.png"/></image>
+<use href="http://beacon.invalid/use.svg#a"/>
+<circle cx="25" cy="40" r="4" stroke="#000" style="fill:url('http://beacon.invalid/semi;colon.svg');stroke-width:0.3"/>
+<text class="b" x="5" y="45">hi</text>
+<html:img src="http://beacon.invalid/htmlimg.png"/>
+<a href="http://beacon.invalid/link"><rect x="40" y="40" width="5" height="5" stroke="#000"/></a>
+</svg>

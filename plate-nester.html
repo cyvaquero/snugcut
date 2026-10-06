@@ -194,7 +194,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.14</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.15</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -324,11 +324,74 @@ function isHidden(el, root){
   for (let a = el; a && a !== root; a = a.parentElement) if (getComputedStyle(a).display === "none") return true;
   return false;
 }
+/* ---------- external references ----------
+   The file's nodes are put into this page to be measured, so anything that points off the file (images, <use> of
+   other files, @import, url() fonts and paints) would be fetched by the browser. Only #fragment and data: survive. */
+const decodeCSS = s => s.replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?/gi, (m, h) => { const c = parseInt(h, 16); return String.fromCodePoint(c > 0 && c <= 0x10FFFF ? c : 0xFFFD); })
+  .replace(/\\([^\n])/g, "$1");
+function cssExternal(v){
+  v = decodeCSS(v).toLowerCase();
+  if (v.includes("@import")) return true;
+  for (const m of v.matchAll(/(?:url|src)\(\s*(['"]?)\s*([^'")\s]*)/g)) if (!(m[2][0] === "#" || m[2].startsWith("data:"))) return true;
+  if (/(?:image-set|image|cross-fade)\(/.test(v)) for (const m of v.matchAll(/(['"])\s*([^'"]*)\1/g)) if (!(m[2][0] === "#" || m[2].startsWith("data:"))) return true;
+  return false;
+}
+function splitDecls(t){
+  // split a declaration block on ";" outside quotes and parentheses (keeps shorthands such as mask: whole)
+  const out = []; let depth = 0, q = "", cur = "";
+  for (const ch of t) {
+    if (q) { if (ch === q) q = ""; } else if (ch === '"' || ch === "'") q = ch; else if (ch === "(") depth++; else if (ch === ")") depth--;
+    else if (ch === ";" && !depth) { if (cur.trim()) out.push(cur.trim()); cur = ""; continue; }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+function cleanSheet(text){
+  // returns sanitized CSS text, or null when nothing needed removing (the original text is kept byte for byte)
+  if (!cssExternal(text)) return null;
+  const sheet = new CSSStyleSheet();
+  try { sheet.replaceSync(decodeCSS(text)); } catch(e) { return ""; }   // @import is dropped by replaceSync
+  const walk = rules => { for (const r of [...rules]) {
+    if (r.style && cssExternal(r.style.cssText)) r.style.cssText = splitDecls(r.style.cssText).filter(d => !cssExternal(d)).join("; ");
+    if (r.cssRules) walk(r.cssRules);
+  } };
+  walk(sheet.cssRules);
+  return [...sheet.cssRules].map(r => r.cssText).filter(t => !cssExternal(t)).join("\n");
+}
+const ANIM = new Set(["animate", "animateMotion", "animateTransform", "set", "discard"]);
+function stripExternal(root){
+  let n = 0;
+  for (const el of [...root.querySelectorAll("*")]) {
+    // HTML/MathML elements (img, link, iframe, …) fetch even when not rendered; SMIL can set href/fill to a URL
+    if (el.namespaceURI === "http://www.w3.org/1999/xhtml" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML" || (el.namespaceURI === SVGNS && ANIM.has(el.localName))) { el.remove(); n++; }
+  }
+  for (const el of [root, ...root.querySelectorAll("*")]) {
+    for (const a of [...el.attributes]) {
+      const v = a.value.trim();
+      if (a.localName === "href" || a.localName === "src") {
+        if (v[0] === "#" || (v.toLowerCase().startsWith("data:") && (el.localName === "image" || el.localName === "feImage"))) continue;
+        el.removeAttributeNS(a.namespaceURI, a.localName); n++;
+      } else if (a.localName === "base" && a.namespaceURI === "http://www.w3.org/XML/1998/namespace") {
+        el.removeAttributeNS(a.namespaceURI, a.localName);
+      } else if (a.localName === "style" && !a.namespaceURI) {
+        if (!cssExternal(a.value)) continue;
+        const keep = splitDecls(decodeCSS(a.value)).filter(d => !cssExternal(d)).join("; ");
+        if (keep) el.setAttribute("style", keep); else el.removeAttribute("style");
+        n++;
+      } else if (cssExternal(a.value)) { el.removeAttributeNS(a.namespaceURI, a.localName); n++; }
+    }
+    if (el.localName === "style") { const c = cleanSheet(el.textContent); if (c !== null) { el.textContent = c; n++; } }
+  }
+  return n;
+}
 function parseSVG(text, name){
   const doc = new DOMParser().parseFromString(text, "image/svg+xml");
   const root = doc.documentElement;
   if (doc.getElementsByTagName("parsererror").length || root.localName !== "svg") throw new Error(`${name} isn't a readable SVG file.`);
   root.querySelectorAll("script,foreignObject").forEach(n => n.remove());
+  const stripped = stripExternal(root);
   const all = [root, ...root.querySelectorAll("*")];
   for (const el of all) for (const a of [...el.attributes]) if (/^on/i.test(a.name)) el.removeAttribute(a.name);
   const pfx = `p${++uid}_`, ids = new Map();
@@ -355,7 +418,7 @@ function parseSVG(text, name){
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
   host.appendChild(g);
   let bb, rings;
-  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false};
+  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false, stripped};
   try {
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
@@ -1112,7 +1175,9 @@ async function addFiles(list){
   if (!files.length) { toast("Only .svg files can be added."); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
   const errs = [];
-  for (const f of files) { try { parts.push(parseSVG(await f.text(), f.name)); } catch(e) { errs.push(e.message); } }
+  const stripped = [];
+  for (const f of files) { try { const p = parseSVG(await f.text(), f.name); parts.push(p); if (p.stripped) stripped.push(p.name); } catch(e) { errs.push(e.message); } }
+  if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
   if (errs.length) toast(errs.join(" "));
   restart();
 }
