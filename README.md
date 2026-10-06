@@ -45,7 +45,7 @@ shapes become outlines, and a notice names anything that was left out.
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
 | `plate-nester.html`  | the app: HTML, CSS and inline JavaScript in one file                          |
-| `fixtures/`          | SVGs and DXFs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links, ids that look like colours, clashing class names, element/universal selector leaks, stroke caps/joins/dashes, MakeIT CSS support and id-colour tests, currentColor, kerf compensation, CAD-style <line> outlines; DXF in mm, inches and without units, bulge polylines, splines, blocks, layers |
+| `fixtures/`          | SVGs and DXFs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links, ids that look like colours, clashing class names, element/universal selector leaks, stroke caps/joins/dashes, MakeIT CSS support and id-colour tests, currentColor, kerf compensation, finger joints and a slot gauge for test cuts, CAD-style <line> outlines; DXF in mm, inches and without units, bulge polylines, splines, blocks, layers |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
 `jszip` (zip download), plus Google Fonts. It needs network access for those on first load. A
