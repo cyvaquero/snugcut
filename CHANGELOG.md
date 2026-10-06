@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.19
+
+- The flattened export keeps `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `stroke-dasharray` and
+  `stroke-dashoffset` (#14), with dash lengths scaled like the stroke width. They are written only when a shape
+  uses a non-default value, and paths that differ in them are no longer merged or chained together. Files that
+  don't use them export unchanged. New fixture `fixtures/stroke-styles.svg`.
+
 ## 0.1.18
 
 - CSS class rules from one SVG no longer restyle other files' parts on an exported plate (#12). For files with a
