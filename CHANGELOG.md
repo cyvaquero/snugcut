@@ -15,6 +15,8 @@ Format `major.minor.iterative`. Major/minor change only on request; the iterativ
 - `fixtures/` is organised into subfolders: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/` and `test-cuts/`,
   described in `fixtures/README.md`. File names are unchanged, so paths in older entries and issues refer to
   `fixtures/<folder>/<name>`.
+- README: a new **Test cuts** section. For each piece in `fixtures/test-cuts/`: how to cut it, what to measure, and
+  how to adjust the kerf from the result.
 
 ## 0.1.30
 
