@@ -195,7 +195,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.18</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.19</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -606,9 +606,14 @@ function extractFlat(g){
     const m = hostInv.multiply(scr);
     const T = (x, y) => [m.a*x + m.c*y + m.e, m.b*x + m.d*y + m.f];
     for (const s of segs) for (let j = 1; j < s.length; j += 2) { const [X, Y] = T(s[j], s[j+1]); s[j] = X; s[j+1] = Y; }
-    const sw = (parseFloat(cs.strokeWidth) || 0) * Math.sqrt(Math.abs(m.a*m.d - m.b*m.c));
+    const k = Math.sqrt(Math.abs(m.a*m.d - m.b*m.c)), sw = (parseFloat(cs.strokeWidth) || 0) * k;
+    // caps, joins and dashes (lengths scaled like the stroke width); null/defaults are not written on export
+    const ml = parseFloat(cs.strokeMiterlimit), da = cs.strokeDasharray || "none";
+    let dash = da === "none" || da.includes("%") ? null : da.split(/[\s,]+/).map(parseFloat).filter(isFinite).map(v => v * k);
+    if (dash && !dash.some(v => v > 0)) dash = null;
     const op = parseFloat(cs.opacity); const o = isNaN(op) ? 1 : op;
-    out.push({segs, fill, stroke, sw, evenodd: cs.fillRule === "evenodd", fo: o * (parseFloat(cs.fillOpacity) || (cs.fillOpacity === "0" ? 0 : 1)), so: o * (parseFloat(cs.strokeOpacity) || (cs.strokeOpacity === "0" ? 0 : 1))});
+    out.push({segs, fill, stroke, sw, evenodd: cs.fillRule === "evenodd", fo: o * (parseFloat(cs.fillOpacity) || (cs.fillOpacity === "0" ? 0 : 1)), so: o * (parseFloat(cs.strokeOpacity) || (cs.strokeOpacity === "0" ? 0 : 1)),
+      cap: cs.strokeLinecap || "butt", join: cs.strokeLinejoin || "miter", ml: isFinite(ml) ? ml : 4, dash, doff: dash ? (parseFloat(cs.strokeDashoffset) || 0) * k : 0});
   }
   return out.length ? out : null;
 }
@@ -678,6 +683,7 @@ function cutPlan(p){
   p.cutPlanKey = ck;
   return (p.cutPlan = subs);
 }
+const lineKey = it => [it.cap, it.join, it.ml, it.dash ? it.dash.join(",") : "", it.doff].join("|");
 function joinSubpaths(p, subs, tol){
   // chain open subpaths of the same line style whose ends meet (within tol, part units) into continuous paths,
   // reversing pieces where needed; a chain that returns to its start is closed with Z. CAD/DXF exports often
@@ -693,7 +699,7 @@ function joinSubpaths(p, subs, tol){
     }
     return out;
   };
-  const styleKey = sub => { const it = p.flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so : null; };
+  const styleKey = sub => { const it = p.flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) : null; };
   const isOpen = sub => sub.segs.length > 1 && sub.segs[sub.segs.length - 1][0] !== "Z" && sub.segs.every((sg, i) => i === 0 ? sg[0] === "M" : sg[0] === "L" || sg[0] === "C");
   const out = [], pool = new Map();
   for (const sub of subs) {
@@ -740,11 +746,14 @@ function partMarkup(p, M, id, fallbackTransform){
   if (!p.flat) return `<g id="${id}" transform="${fallbackTransform}"><g ${p.rootAttrs}>${uniquifyIds(p.inner, id + "_")}</g></g>`;
   const [a, b, c, d, e, f] = M, sc = Math.sqrt(Math.abs(a*d - b*c));
   const toD = segs => segs.map(s => s[0] === "Z" ? "Z" : s[0] + (() => { const o = []; for (let j = 1; j < s.length; j += 2) o.push(n3(a*s[j] + c*s[j+1] + e) + " " + n3(b*s[j] + d*s[j+1] + f)); return o.join(" "); })()).join("");
-  const strokeAttr = (st, sw, so) => st === "none" ? `stroke="none"` : `stroke="${st}" stroke-width="${n3(Math.max(sw * sc, 0.01))}"${so < 1 ? ` stroke-opacity="${n3(so)}"` : ""}`;
+  const strokeAttr = it => it.stroke === "none" ? `stroke="none"` : `stroke="${it.stroke}" stroke-width="${n3(Math.max(it.sw * sc, 0.01))}"${it.so < 1 ? ` stroke-opacity="${n3(it.so)}"` : ""}`
+    + (it.cap !== "butt" ? ` stroke-linecap="${it.cap}"` : "") + (it.join !== "miter" ? ` stroke-linejoin="${it.join}"` : "")
+    + (/^miter/.test(it.join) && it.ml !== 4 ? ` stroke-miterlimit="${n3(it.ml)}"` : "")
+    + (it.dash ? ` stroke-dasharray="${it.dash.map(v => n3(v * sc)).join(" ")}"${it.doff ? ` stroke-dashoffset="${n3(it.doff * sc)}"` : ""}` : "");
   const groups = new Map();
   for (const sub of cutPlan(p)) {
     const it = p.flat[sub.item];
-    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) : "F|" + sub.item;
+    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) : "F|" + sub.item;
     if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
     groups.get(key).subs.push(sub);
   }
@@ -753,8 +762,8 @@ function partMarkup(p, M, id, fallbackTransform){
     const subs = g.subs.slice().sort(deepFirst), it = g.it;   // stable sort keeps source order within a depth
     const dd = subs.map(s => toD(s.segs)).join("");
     const markup = g.fill
-      ? `<path d="${dd}" fill="${it.fill}"${it.fo < 1 ? ` fill-opacity="${n3(it.fo)}"` : ""}${it.evenodd ? ` fill-rule="evenodd"` : ""} ${strokeAttr(it.stroke, it.sw, it.so)}/>`
-      : `<path d="${dd}" fill="none" ${strokeAttr(it.stroke, it.sw, it.so)}/>`;
+      ? `<path d="${dd}" fill="${it.fill}"${it.fo < 1 ? ` fill-opacity="${n3(it.fo)}"` : ""}${it.evenodd ? ` fill-rule="evenodd"` : ""} ${strokeAttr(it)}/>`
+      : `<path d="${dd}" fill="none" ${strokeAttr(it)}/>`;
     return {markup, depth:Math.min(...subs.map(s => s.depth)), fill:g.fill, order:g.order};
   }).sort((x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order);
   if (els.length === 1) return els[0].markup.replace("<path ", `<path id="${id}" `);

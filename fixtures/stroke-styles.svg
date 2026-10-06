@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="40mm" viewBox="0 0 60 40">
+  <rect x="0.5" y="0.5" width="59" height="39" rx="3" fill="none" stroke="#000" stroke-width="0.2"/>
+  <g transform="scale(2)">
+    <path d="M3 3 L12 3 L12 9" fill="none" stroke="#f00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="2" y1="15" x2="27" y2="15" stroke="#00f" stroke-width="0.4" stroke-dasharray="2 1" stroke-dashoffset="0.5"/>
+  </g>
+  <polyline points="30,6 40,18 50,6" fill="none" stroke="#0a0" stroke-width="1.5" style="stroke-linejoin:bevel"/>
+  <polyline points="30,22 45,26 30,30" fill="none" stroke="#a0a" stroke-width="1.5" stroke-linecap="square" stroke-miterlimit="1.5"/>
+</svg>
