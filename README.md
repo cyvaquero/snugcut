@@ -19,6 +19,21 @@ with a notice, and so are frozen, off and non-plotting layers.
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
 format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
 
+**Compensate kerf on objects** (off by default) builds the kerf into the downloaded files. Closed cut paths move by
+half the kerf, outlines outward and holes inward, so parts come out at their drawn size. Filled areas and open lines
+stay as drawn, and nesting spacing and margins grow to match. Read this before using it:
+
+- **Don't compensate twice.** Turn off kerf offset (kerf compensation) in your cutter's software (LightBurn, xTool
+  Studio, MakeIT, Silhouette Studio, …), and don't offset the downloaded files yourself. If the kerf is applied twice,
+  before or after export, parts come out a full kerf too big and holes a full kerf too small.
+- **Measure the kerf** for the material and settings you cut with ("Measure it from a test cut"). A wrong kerf makes
+  every part the wrong size.
+- **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
+- **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
+- **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to Plate Nester again, it
+  is recognised and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
+  narrower than the kerf are exported as drawn, with a notice.
+
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
 (polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per colour (named by its hex
@@ -30,7 +45,7 @@ shapes become outlines, and a notice names anything that was left out.
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
 | `plate-nester.html`  | the app: HTML, CSS and inline JavaScript in one file                          |
-| `fixtures/`          | SVGs and DXFs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links, ids that look like colours, clashing class names, element/universal selector leaks, stroke caps/joins/dashes, MakeIT CSS support and id-colour tests, currentColor, CAD-style <line> outlines; DXF in mm, inches and without units, bulge polylines, splines, blocks, layers |
+| `fixtures/`          | SVGs and DXFs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links, ids that look like colours, clashing class names, element/universal selector leaks, stroke caps/joins/dashes, MakeIT CSS support and id-colour tests, currentColor, kerf compensation, CAD-style <line> outlines; DXF in mm, inches and without units, bulge polylines, splines, blocks, layers |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
 `jszip` (zip download), plus Google Fonts. It needs network access for those on first load. A

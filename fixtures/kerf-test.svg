@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20mm" height="20mm" viewBox="0 0 20 20">
+  <!-- Kerf compensation test (#36). With "Compensate kerf on objects" and kerf k: the outline cuts 20+k square, the
+       square hole 10-k, the round hole 6-k across; the score line, the filled mark and the 0.06 mm pin hole stay as drawn. -->
+  <path d="M0 0H20V20H0Z" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+  <path d="M2 4H12V14H2Z" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+  <circle cx="16" cy="9" r="3" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+  <circle cx="5" cy="2" r="0.03" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+  <line x1="3" y1="17.5" x2="17" y2="17.5" stroke="#0000ff" stroke-width="0.1"/>
+  <rect x="14" y="14" width="4" height="2" fill="#000000"/>
+</svg>

@@ -90,6 +90,8 @@ button.btn:disabled{opacity:.5;cursor:default}
 @keyframes pulse{50%{opacity:.3}}
 .msgs{display:flex;flex-direction:column;gap:6px}
 .msg{font-size:14px;padding:8px 12px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
+.msg ul{margin:6px 0 0;padding-left:18px}
+.msg li{margin-top:4px}
 .plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .plate .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -136,6 +138,13 @@ footer a{color:var(--accent)}
           <label for="kerf">Kerf (<span class="u">mm</span>)</label>
           <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10">
           <p class="hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
+          <label class="check"><input type="checkbox" id="kerfComp"> Compensate kerf on objects</label>
+          <p class="hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
+          <div class="msg" id="compWarn" hidden><b>The kerf is now built into your downloads.</b><ul>
+            <li>Turn off kerf offset in your cutter's software (LightBurn, xTool Studio, MakeIT, Silhouette Studio, …). Otherwise the kerf is applied twice: parts come out a full kerf too big and holes a full kerf too small. Don't offset the downloaded files yourself either.</li>
+            <li>Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
+            <li>Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
+            <li>Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
           <details>
             <summary>Measure it from a test cut</summary>
             <p class="hint" style="margin-top:6px">Cut a square, then measure the piece that drops out.</p>
@@ -203,7 +212,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.29</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.30</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -220,7 +229,7 @@ const CL = window.ClipperLib;
 if (!CL) { $("plates").innerHTML = `<div class="fatal">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
 
 /* ---------- settings (lengths in mm) ---------- */
-const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg"};
+const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg", comp:false};
 let S = {...DEFAULTS};
 try { Object.assign(S, JSON.parse(localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}
 const save = () => { try { localStorage.setItem("platenester.settings", JSON.stringify(S)); } catch(e) {} };
@@ -238,7 +247,7 @@ function fillInputs(){
     $(k).value = +toDisp(S[k]).toFixed(dec);
     $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; $("compWarn").hidden = !S.comp; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
@@ -259,6 +268,7 @@ for (const k of LEN) $(k).addEventListener("input", () => {
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); geoVer++; restart(); };
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
+$("kerfComp").onchange = e => { S.comp = e.target.checked; $("compWarn").hidden = !S.comp; save(); geoVer++; restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
 $("rotate").onchange = e => { S.rotate = e.target.checked; save(); restart(); };
@@ -1069,10 +1079,51 @@ function cutGroups(p, flat, sc){
     return g;
   }).sort((x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order);
 }
-function partMarkup(p, M, id, fallbackTransform){
+function flattenCubic(p0, p1, p2, p3, tol, pts, depth = 0){
+  // adaptive subdivision until the control points are within tol of the chord; pushes the end points of the pieces
+  const dx = p3[0] - p0[0], dy = p3[1] - p0[1], L = Math.hypot(dx, dy) || 1e-12;
+  const d1 = Math.abs((p1[0] - p0[0]) * dy - (p1[1] - p0[1]) * dx) / L, d2 = Math.abs((p2[0] - p0[0]) * dy - (p2[1] - p0[1]) * dx) / L;
+  if (depth > 12 || Math.max(d1, d2) * 0.75 <= tol) { pts.push(p3); return; }
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const a = mid(p0, p1), b = mid(p1, p2), c = mid(p2, p3), e = mid(a, b), g = mid(b, c), m = mid(e, g);
+  flattenCubic(p0, a, e, m, tol, pts, depth + 1); flattenCubic(m, g, c, p3, tol, pts, depth + 1);
+}
+function kerfPaths(p, gr, M, notes){
+  // kerf compensation for one cut group: each closed, unfilled subpath moved by half the kerf, outward for outlines
+  // (even nesting depth) and inward for holes (odd), as plate-mm polylines within 0.002 mm. Returns one entry per
+  // subpath: null = unchanged (open, filled, or a hole too small to compensate), else the offset contour(s).
+  const c = kerfC(p);
+  if (!c || gr.fill) return null;
+  const [a, b, cc, d, e, f] = M, T = (x, y) => [a*x + cc*y + e, b*x + d*y + f];
+  return gr.subs.map(sub => {
+    if (!sub.closed) return null;
+    const pts = []; let cur = null;
+    for (const sg of sub.segs) {
+      if (sg[0] === "M" || sg[0] === "L") { cur = T(sg[1], sg[2]); pts.push(cur); }
+      else if (sg[0] === "C") { const p3 = T(sg[5], sg[6]); flattenCubic(cur, T(sg[1], sg[2]), T(sg[3], sg[4]), p3, 0.002, pts); cur = p3; }
+    }
+    const ring = pts.map(([x, y]) => ({X:Math.round(x * SC), Y:Math.round(y * SC)}));
+    if (ring.length < 3 || Math.abs(area(ring)) < 1) return null;
+    const ccw = CL.Clipper.Orientation(ring); if (!ccw) ring.reverse();
+    const off = new CL.ClipperOffset(2, 2); off.AddPath(ring, CL.JoinType.jtRound, CL.EndType.etClosedPolygon);
+    const res = new CL.Paths(); off.Execute(res, (sub.depth % 2 ? -c : c) * SC);
+    if (!res.length) { notes && notes.add(`A hole in ${p.name} is narrower than the kerf, so it was left as drawn.`); return null; }
+    const [sx, sy] = pts[0];
+    return res.map(q => {
+      if (CL.Clipper.Orientation(q) !== ccw) q.reverse();               // keep the drawn direction
+      let k = 0, best = Infinity;                                       // and start next to the drawn start point
+      q.forEach((v, i) => { const dd = (v.X / SC - sx) ** 2 + (v.Y / SC - sy) ** 2; if (dd < best) { best = dd; k = i; } });
+      return q.slice(k).concat(q.slice(0, k)).map(v => [v.X / SC, v.Y / SC]);
+    });
+  });
+}
+function partMarkup(p, M, id, fallbackTransform, notes){
   // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
   // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
-  if (!p.flat) return `<g id="${id}" transform="${fallbackTransform}"><g ${p.rootAttrs}>${uniquifyIds(p.inner, id + "_")}</g></g>`;
+  if (!p.flat) {
+    if (kerfC(p) && notes) notes.add(`${p.name} has text, images or effects, so its kerf can't be compensated; it is exported as drawn.`);
+    return `<g id="${id}" transform="${fallbackTransform}"><g ${p.rootAttrs}>${uniquifyIds(p.inner, id + "_")}</g></g>`;
+  }
   const [a, b, c, d, e, f] = M, sc = Math.sqrt(Math.abs(a*d - b*c));
   const toD = segs => segs.map(s => s[0] === "Z" ? "Z" : s[0] + (() => { const o = []; for (let j = 1; j < s.length; j += 2) o.push(n3(a*s[j] + c*s[j+1] + e) + " " + n3(b*s[j] + d*s[j+1] + f)); return o.join(" "); })()).join("");
   const strokeAttr = it => it.stroke === "none" ? `stroke="none"` : `stroke="${it.stroke}" stroke-width="${n3(Math.max(it.sw * sc, 0.01))}"${it.so < 1 ? ` stroke-opacity="${n3(it.so)}"` : ""}`
@@ -1080,7 +1131,8 @@ function partMarkup(p, M, id, fallbackTransform){
     + (/^miter/.test(it.join) && it.ml !== 4 ? ` stroke-miterlimit="${n3(it.ml)}"` : "")
     + (it.dash ? ` stroke-dasharray="${it.dash.map(v => n3(v * sc)).join(" ")}"${it.doff ? ` stroke-dashoffset="${n3(it.doff * sc)}"` : ""}` : "");
   const els = cutGroups(p, p.flat, sc).map(g => {
-    const it = g.it, dd = g.subs.map(s => toD(s.segs)).join("");
+    const it = g.it, kc = kerfPaths(p, g, M, notes);
+    const dd = g.subs.map((s, i) => kc && kc[i] ? kc[i].map(q => "M" + q.map(([x, y]) => n3(x) + " " + n3(y)).join("L") + "Z").join("") : toD(s.segs)).join("");
     return g.fill
       ? `<path d="${dd}" fill="${it.fill}"${it.fo < 1 ? ` fill-opacity="${n3(it.fo)}"` : ""}${it.evenodd ? ` fill-rule="evenodd"` : ""} ${strokeAttr(it)}/>`
       : `<path d="${dd}" fill="none" ${strokeAttr(it)}/>`;
@@ -1162,7 +1214,7 @@ function envelope(p){
   simp.forEach(q => { if (!CL.Clipper.Orientation(q)) q.reverse(); });
   const off = new CL.ClipperOffset(2, tol * 0.5);
   off.AddPaths(simp, CL.JoinType.jtMiter, CL.EndType.etClosedPolygon);
-  let res = new CL.Paths(); off.Execute(res, (S.kerf + S.gap) / 2 * SC + tol);
+  let res = new CL.Paths(); off.Execute(res, ((S.kerf + S.gap) / 2 + kerfC(p)) * SC + tol);
   res = res.filter(q => CL.Clipper.Orientation(q)).map(q => rdp(q, tol * 0.15));
   let convex = false;
   if (res.length === 1) { const h = hull(res[0]); if (area(h) - area(res[0]) <= area(h) * 0.01) { res = [h]; convex = true; } }
@@ -1249,8 +1301,9 @@ function nfp(A, B){
 }
 
 /* ---------- placement ---------- */
+const kerfC = p => S.comp && !(p && p.precomp) ? S.kerf / 2 : 0;   // how far compensated cuts move out from the drawn outline
 function binFrame(){
-  const half = (S.kerf + S.gap) / 2, tol = S.prec;
+  const half = (S.kerf + S.gap) / 2, tol = S.prec;   // compensated parts: the envelope's extra half kerf keeps the cut inside the margin
   // envelopes extend half-spacing + tol beyond the part; let that overhang the margin line
   return {L:(S.margin - half - tol) * SC, T:(S.margin - half - tol) * SC, R:(S.plateW - S.margin + half + tol) * SC, B:(S.plateH - S.margin + half + tol) * SC};
 }
@@ -1374,7 +1427,7 @@ function computeRectLayout(){
   for (const p of parts) {
     if (!p.qty) continue;
     if (!rectFits(p)) { oversize.push(p); continue; }
-    for (let k = 0; k < p.qty; k++) items.push({part:p, w:p.wMM + s, h:p.hMM + s, area:p.wMM*p.hMM, rot:S.rotate && !p.lock});
+    for (let k = 0; k < p.qty; k++) items.push({part:p, w:p.wMM + s + 2*kerfC(p), h:p.hMM + s + 2*kerfC(p), area:p.wMM*p.hMM, rot:S.rotate && !p.lock});
   }
   const noArea = S.plateW - 2*S.margin <= 0 || S.plateH - 2*S.margin <= 0;
   if (!items.length || W <= 0 || H <= 0) return {plates:[], oversize, minPlates:0, noArea};
@@ -1401,14 +1454,14 @@ function computeRectLayout(){
   }
   const padA = items.reduce((a, it) => a + it.w*it.h, 0);
   const plates = best.map(b => ({area:b.area, items:b.used.map(u => {
-    const p = u.item.part, x = S.margin + u.x, y = S.margin + u.y, w = u.rot ? p.hMM : p.wMM, h = u.rot ? p.wMM : p.hMM;
+    const p = u.item.part, x = S.margin + kerfC(p) + u.x, y = S.margin + kerfC(p) + u.y, w = u.rot ? p.hMM : p.wMM, h = u.rot ? p.wMM : p.hMM;
     return {part:p, x:u.rot ? x + p.hMM : x, y, ang:u.rot ? 90 : 0, rx:p.bbox.x, ry:p.bbox.y, env:[[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]]};
   })}));
   return {plates, oversize, minPlates:Math.ceil(padA / (W*H) - 1e-9), noArea};
 }
 
 function rectFits(p){
-  const s = S.kerf + S.gap, bw = S.plateW - 2*S.margin, bh = S.plateH - 2*S.margin;
+  const bw = S.plateW - 2*S.margin - 2*kerfC(p), bh = S.plateH - 2*S.margin - 2*kerfC(p);
   const a = p.wMM <= bw + 1e-9 && p.hMM <= bh + 1e-9;
   const b = !p.lock && S.rotate && p.hMM <= bw + 1e-9 && p.wMM <= bh + 1e-9;
   return a || b;
@@ -1538,8 +1591,10 @@ async function addFiles(list){
   const stripped = [];
   for (const f of files) { try {
     let text = await f.text();
+    const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
+    if (pre) { p.precomp = true; errs.push(`${f.name} was downloaded from Plate Nester with kerf compensation built in, so it won't be compensated again.`); }
   } catch(e) { errs.push(e.message); } }
   if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
   if (errs.length) toast(errs.join(" "));
@@ -1564,14 +1619,14 @@ function cutSequence(items){
 function plateSVG(plate, opts = {}){
   const W = S.plateW, H = S.plateH;
   let s = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${n4(W)}mm" height="${n4(H)}mm" viewBox="0 0 ${n4(W)} ${n4(H)}">`;
-  if (!opts.preview) s += `<!-- Plate Nester ${document.getElementById("appver").textContent} -->`;
+  if (!opts.preview) s += `<!-- Plate Nester ${document.getElementById("appver").textContent} -->` + (kerfC() ? `<!-- ${compMark()} -->` : "");
   if (S.outline && !opts.preview) s += `<rect x="0" y="0" width="${n4(W)}" height="${n4(H)}" fill="none" stroke="#ff0000" stroke-width="0.1"/>`;
   const ids = new Map();
   for (const it of cutSequence(plate.items)) {
     const p = it.part;
     const t = `translate(${n4(it.x)} ${n4(it.y)})${it.ang ? ` rotate(${it.ang})` : ""} scale(${n4(p.kx)} ${n4(p.ky)}) translate(${n4(-it.rx)} ${n4(-it.ry)})`;
     const base = slug(p.name), k = (ids.get(base) || 0) + 1; ids.set(base, k);
-    s += partMarkup(p, placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), `${base}-${k}`, t);
+    s += partMarkup(p, placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), `${base}-${k}`, t, opts.notes);
   }
   return s + `</svg>`;
 }
@@ -1621,14 +1676,6 @@ function plateDXF(plate){
     const th = wrap(ang(bx, by) - ang(ax, ay)) + wrap(ang(cx, cy) - ang(bx, by));
     return Math.tan(th / 4);
   };
-  const flatten = (p0, p1, p2, p3, pts, depth) => {
-    const dx = p3[0] - p0[0], dy = p3[1] - p0[1], L = Math.hypot(dx, dy) || 1e-12;
-    const d1 = Math.abs((p1[0] - p0[0]) * dy - (p1[1] - p0[1]) * dx) / L, d2 = Math.abs((p2[0] - p0[0]) * dy - (p2[1] - p0[1]) * dx) / L;
-    if (depth > 12 || Math.max(d1, d2) * 0.75 <= 0.01) { pts.push(p3); return; }
-    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    const a = mid(p0, p1), b = mid(p1, p2), c = mid(p2, p3), e = mid(a, b), g = mid(b, c), m = mid(e, g);
-    flatten(p0, a, e, m, pts, depth + 1); flatten(m, g, c, p3, pts, depth + 1);
-  };
   if (S.outline) emit([[0, 0, 0], [W, 0, 0], [W, H, 0], [0, H, 0]], true, layer("PLATE", "#ff0000"), 1);
   for (const it of cutSequence(plate.items)) {
     const p = it.part, flat = p.flat || p.loose;
@@ -1640,7 +1687,9 @@ function plateDXF(plate){
       const col = gr.it.stroke !== "none" ? gr.it.stroke : gr.it.fill;
       if (gr.fill) notes.add("Filled areas are written as their outlines.");
       const L = p.fromDXF && gr.it.lay ? layer(gr.it.lay, col) : layer(col.replace("#", ""), col), aci = aciNear(col);
-      for (const sub of gr.subs) {
+      const kc = kerfPaths(p, gr, [a, b, c, d, e, g], notes);
+      gr.subs.forEach((sub, si) => {
+        if (kc && kc[si]) { for (const q of kc[si]) emit(q.map(([x, y]) => [x, H - y, 0]), true, L, aci); return; }
         let vs = [], closed = false, cur = null;
         for (const sg of sub.segs) {
           if (sg[0] === "M") { cur = T(sg[1], sg[2]); vs.push([cur[0], cur[1], 0]); }
@@ -1648,12 +1697,12 @@ function plateDXF(plate){
           else if (sg[0] === "C") {
             const p1 = T(sg[1], sg[2]), p2 = T(sg[3], sg[4]), p3 = T(sg[5], sg[6]), bu = arcOf(cur, p1, p2, p3);
             if (bu != null) { vs[vs.length - 1][2] = bu; vs.push([p3[0], p3[1], 0]); }
-            else { const pts = []; flatten(cur, p1, p2, p3, pts, 0); for (const q of pts) vs.push([q[0], q[1], 0]); }
+            else { const pts = []; flattenCubic(cur, p1, p2, p3, 0.01, pts); for (const q of pts) vs.push([q[0], q[1], 0]); }
             cur = p3;
           } else if (sg[0] === "Z") closed = true;
         }
         emit(vs, closed, L, aci);
-      }
+      });
     }
   }
   const hdr = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "9", "$INSUNITS", "70", "4", "9", "$MEASUREMENT", "70", "1",
@@ -1662,8 +1711,8 @@ function plateDXF(plate){
     "0", "TABLE", "2", "LAYER", "70", String(layers.size + 1), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
   for (const [n, ci] of layers) hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
   hdr.push("0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "BLOCKS", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES");
-  const all = hdr.concat(out, ["0", "ENDSEC", "0", "EOF"]);
-  let dxf = ""; for (let i = 0; i < all.length; i += 2) dxf += (all[i].length < 3 ? all[i].padStart(3) : all[i]) + "\r\n" + all[i + 1] + "\r\n";
+  const all = (kerfC() ? ["999", `Plate Nester ${document.getElementById("appver").textContent} ${compMark()}`] : []).concat(hdr, out, ["0", "ENDSEC", "0", "EOF"]);
+  let dxf = ""; for (let i = 0; i < all.length; i += 2) dxf += all[i].padStart(3) + "\r\n" + all[i + 1] + "\r\n";
   return {dxf, notes:[...notes]};
 }
 let plateURLs = [];
@@ -1704,8 +1753,10 @@ function download(data, filename, type){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+const compMark = () => `kerf-compensated: ${+(S.kerf / 2).toFixed(4)} mm per side, already built in; do not offset again`;
 function plateFile(pl, notes){
-  if (ext() === "svg") return plateSVG(pl);
+  if (kerfC()) notes.add(`Kerf compensation is built in (${fmt(S.kerf / 2, S.unit === "in" ? 4 : 3)} ${S.unit} per side): don't add a kerf offset in your cutter's software.`);
+  if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
 function exportPlate(i){

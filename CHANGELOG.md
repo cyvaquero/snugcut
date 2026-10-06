@@ -2,6 +2,27 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.30
+
+- Optional kerf compensation (#36): **Compensate kerf on objects** under Kerf, off by default. With it off, SVG and
+  DXF exports are byte-for-byte unchanged.
+  - Every closed, unfilled cut path moves by half the kerf (`kerfPaths`): outward for outlines (even nesting depth)
+    and inward for holes (odd), with round outer corners (clipper offset, within 0.002 mm). Drawn direction and
+    start point are kept. Applies to the preview, the SVG export and the DXF export.
+  - Filled areas, open lines, parts kept as original markup, and holes narrower than the kerf stay as drawn; the
+    last two get a notice.
+  - Nesting: the true-shape envelope and the bounding-box sizes grow by the half kerf. Compensated parts keep the
+    full kerf + gap apart and stay inside the edge margin (checked: 60 parts, kerf 0.5 + gap 0.5 → ≥ 1.0 mm apart,
+    exactly 3.0 mm from the edge, in both modes).
+  - Double-compensation safeguards:
+    - While the option is on, a warning in the panel says to turn off kerf offset in the cutter's software and
+      explains the consequences (a full kerf too big or too small).
+    - Every download repeats the reminder.
+    - Compensated files carry a marker (SVG comment, DXF `999` comment). Such a file added again is recognised
+      and not compensated a second time.
+  - Acceptance check with kerf 0.1: 20 mm square → 20.1, 10 mm square hole → 9.9, Ø6 hole → Ø5.9 (radius within
+    0.002 mm). The score line and the filled mark are unchanged. New fixture `fixtures/kerf-test.svg`.
+
 ## 0.1.29
 
 - Much faster import of large DXF files and long SVG paths. A 300 × 200 mm DXF panel with 400 holes and 60 slots
