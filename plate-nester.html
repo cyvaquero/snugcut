@@ -195,7 +195,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.20</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.21</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -443,11 +443,13 @@ function parseSVG(text, name){
   const inner = [...root.childNodes].filter(n => n.nodeType === 1).map(n => ser.serializeToString(n)).join("");
   if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "position:absolute;left:0;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none"; document.body.appendChild(host); }
   const g = document.createElementNS(SVGNS, "g");
+  if (root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
   host.appendChild(g);
   let bb, rings;
   const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false, stripped};
   try {
+    if (inlineSheets(g)) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
@@ -462,9 +464,64 @@ function parseSVG(text, name){
   p.cx = p.bbox.x + p.bbox.width/2; p.cy = p.bbox.y + p.bbox.height/2;
   measureScale(p);
   if (!p.outers.length) throw new Error(`${name} has no closed outline to nest.`);
-  const thumbSVG = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${rootAttrs}>${inner}</g></svg>`;
+  const thumbSVG = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${rootAttrs}>${p.inner}</g></svg>`;
   p.thumb = URL.createObjectURL(new Blob([thumbSVG], {type:"image/svg+xml"}));
   return p;
+}
+const PRES = new Set(["fill","fill-opacity","fill-rule","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin",
+  "stroke-miterlimit","stroke-dasharray","stroke-dashoffset","opacity","display","visibility","color","font-family","font-size",
+  "font-weight","font-style","font-variant","font-stretch","text-anchor","dominant-baseline","alignment-baseline","baseline-shift",
+  "letter-spacing","word-spacing","text-decoration","writing-mode","direction","unicode-bidi","clip-path","clip-rule","mask","filter",
+  "stop-color","stop-opacity","flood-color","flood-opacity","lighting-color","marker-start","marker-mid","marker-end","paint-order",
+  "vector-effect","shape-rendering","text-rendering","image-rendering","color-interpolation","color-interpolation-filters","overflow",
+  "pointer-events","transform-origin","mix-blend-mode","isolation"]);
+function inlineSheets(g){
+  // MakeIT ignores class, universal and descendant selectors but applies element-type rules to the whole plate, so a
+  // part's <style> can't be exported as is (#38, #42). Write the computed value of every property the rules declare
+  // onto the elements they match (as presentation attributes where possible), then drop the rules. Only @font-face
+  // and similar at-rules are kept. Returns true when the part had a <style> block.
+  const sheets = [...g.querySelectorAll("style")];
+  if (!sheets.length) return false;
+  const want = new Map(), add = (el, props) => { if (!want.has(el)) want.set(el, new Set()); for (const q of props) want.get(el).add(q); };
+  const ancestors = []; for (let a = g.parentElement; a; a = a.parentElement) ancestors.push(a);
+  const walk = rules => { for (const r of rules) {
+    if (r instanceof CSSStyleRule) {
+      const props = [...r.style];
+      if (!props.length) continue;
+      let els = [];
+      try { els = [...g.querySelectorAll(r.selectorText)]; if ([g, ...ancestors].some(a => a.matches(r.selectorText))) els.push(...g.children); } catch(e) { continue; }
+      for (const el of els) add(el, props);
+      if (r.cssRules && r.cssRules.length) walk(r.cssRules);       // nested rules
+    } else if (r.cssRules && !(r instanceof CSSKeyframesRule)) walk(r.cssRules);   // @media, @supports, @layer, …
+  } };
+  for (const s of sheets) { try { if (s.sheet) walk(s.sheet.cssRules); } catch(e) {} }
+  const px = v => v.replace(/(-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)px\b/gi, "$1");
+  const val = (prop, v) => {
+    v = v.replace(/url\("(#[^"\\]*)"\)/g, "url($1)");                // url("#id") → url(#id), as uniquifyIds expects
+    const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?\s*\)$/.exec(v);
+    if (m) {
+      const a = m[4] == null ? 1 : parseFloat(m[4]) / (m[4].endsWith("%") ? 100 : 1);
+      if (a === 0 && (prop === "fill" || prop === "stroke")) return "none";
+      if (a === 1) return "#" + [m[1], m[2], m[3]].map(c => Math.round(+c).toString(16).padStart(2, "0")).join("");
+      return v;
+    }
+    return PRES.has(prop) && !/url\(|["']/.test(v) ? px(v).replace(/,\s*/g, prop === "stroke-dasharray" ? " " : ", ") : v;
+  };
+  const writes = [...want].map(([el, props]) => { const cs = getComputedStyle(el); return [el, [...props].map(q => [q, cs.getPropertyValue(q)]).filter(([, v]) => v !== "")]; });
+  for (const s of sheets) {
+    const keep = s.sheet ? [...s.sheet.cssRules].filter(r => r instanceof CSSFontFaceRule || r instanceof CSSKeyframesRule).map(r => r.cssText).join("\n") : "";
+    if (keep) s.textContent = keep; else s.remove();
+  }
+  for (const [el, kv] of writes) {
+    if (!el.isConnected) continue;
+    let extra = "";
+    for (const [q, v] of kv) {
+      if (el.style.getPropertyValue(q) !== "") continue;             // the element's own style attribute already says it
+      if (PRES.has(q)) el.setAttribute(q, val(q, v)); else extra += `${q}:${val(q, v)};`;
+    }
+    if (extra) { const s0 = (el.getAttribute("style") || "").trim(); el.setAttribute("style", s0 + (s0 && !s0.endsWith(";") ? ";" : "") + extra); }
+  }
+  return true;
 }
 function measureScaleOnly(p){
   let kx, ky;
