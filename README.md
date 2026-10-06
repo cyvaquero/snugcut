@@ -19,10 +19,9 @@ was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and m
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
 | `plate-nester.html`  | the app: HTML, CSS and inline JavaScript in one file                          |
-| `reference/`         | the original single-file apps (true shape, bounding box), source of truth     |
 | `fixtures/`          | SVGs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient |
 
-Like the reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
+Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
 `jszip` (zip download), plus Google Fonts. It needs network access for those on first load.
 
 ## Workflow

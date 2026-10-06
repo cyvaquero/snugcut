@@ -2,6 +2,11 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.13
+
+- Removed `reference/` (the original true-shape and bounding-box apps). `plate-nester.html` is now the only
+  source of truth; the originals stay in git history.
+
 ## 0.1.12
 
 - Fragmented outlines are joined on export (#27): open subpaths of the same line style whose ends meet (within
