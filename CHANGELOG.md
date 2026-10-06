@@ -2,6 +2,25 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.32
+
+- Shapes a browser wouldn't show are no longer measured, nested or cut (#17). Before, only `display:none` counted as
+  hidden. Shapes with `visibility:hidden`, `opacity:0` (on the shape or a parent group), or no fill and no stroke
+  made the part bigger, and in the flattened SVG and the DXF the `visibility:hidden` ones became **visible cuts**.
+  - `dropHidden` removes them once, at import, before measuring. They are drawable elements outside
+    `defs`/`clipPath`/`mask`/`marker`/`pattern`/`symbol` with: `display:none` on the shape or a parent; visibility
+    other than `visible` (a `visibility="visible"` child of a hidden group still counts); opacity 0 on the shape or
+    a parent; or no visible fill and no visible stroke.
+  - The part's size, nesting outline, preview, thumbnail, SVG and DXF export, and parts kept as original markup all
+    agree.
+  - A notice names the files that had hidden shapes and how many were left out.
+  - The measuring element is now hidden with `opacity:0` instead of `visibility:hidden`. Every part inherited that
+    `visibility:hidden`, so a shape's own visibility couldn't be read.
+  - New fixture `fixtures/geometry/hidden-shapes.svg`. It used to measure 190 × 140 mm with 7 outer contours; it now
+    measures 40 × 30 mm with 1, and exports only the frame and the small square.
+  - Other fixtures: SVG and DXF exports, nesting outlines and the sample layout are unchanged. `hidden-group.svg`
+    only loses its `display:none` shapes from its internal markup.
+
 ## 0.1.31
 
 - Test-cut fixtures for kerf and fit (red = cut, blue = score):
