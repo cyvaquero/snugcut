@@ -2,6 +2,11 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.27
+
+- The version in the page footer is followed by a "(changelog)" link to this file on GitHub (`develop`), opening at
+  the section for that version.
+
 ## 0.1.26
 
 - DXF import (#31), with our own reader in the page (no new library, CSP unchanged). Each ASCII DXF is converted to

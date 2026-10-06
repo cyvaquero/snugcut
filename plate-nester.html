@@ -107,6 +107,7 @@ button.btn:disabled{opacity:.5;cursor:default}
 .modesw button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
 body[data-mode="bbox"] [data-only="shape"],body[data-mode="shape"] [data-only="bbox"]{display:none!important}
 footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer a{color:var(--accent)}
 </style>
 
 <div class="wrap">
@@ -198,7 +199,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.26</span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.27</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -206,6 +207,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
 (() => {
 const SVGNS = "http://www.w3.org/2000/svg";
 const $ = id => document.getElementById(id);
+$("changelog").href += "#" + $("appver").textContent.replace(/^v|\./g, "");   // GitHub's anchor for "## 0.1.27" is #0127
 const IN = 25.4, SC = 1000;               // clipper integer units per mm
 const KEEP_ATTRS = ["fill","stroke","stroke-width","stroke-linecap","stroke-linejoin","stroke-miterlimit","stroke-dasharray","fill-rule","clip-rule","opacity","style","class","font-family","font-size","color"];
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
