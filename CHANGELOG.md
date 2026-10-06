@@ -2,6 +2,24 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.26
+
+- DXF import (#31), with our own reader in the page (no new library, CSP unchanged). Each ASCII DXF is converted to
+  an SVG part in mm and then handled like any SVG file, so nesting, cut order, outline joining and the export format
+  are unchanged.
+  - Entities: LINE, ARC, CIRCLE, ELLIPSE, LWPOLYLINE and POLYLINE (bulges → arcs), SPLINE (control points and knots,
+    rational too; fit-point-only splines as a smooth cubic through the points), and INSERT (base point, scale,
+    rotation, mirroring, MINSERT arrays, nested blocks, BYBLOCK colour and layer 0 inheritance).
+  - 2D entities with extrusion (0,0,−1) are mirrored as in CAD.
+  - Units from `$INSUNITS`; files without units are read as mm, with a notice. Model space only; paper space,
+    invisible entities, and frozen, off, non-plotting and Defpoints layers are skipped.
+  - Colours: AutoCAD Color Index (7 → black) or true colour, BYLAYER/BYBLOCK resolved, one `<g>` per DXF layer.
+  - Text, hatches, dimensions, points, meshes and other non-outline entities are skipped, with a notice listing
+    them. Binary DXF and unreadable files get a clear message.
+  - Checked against ezdxf's extents and renderer: identical sizes and matching shapes for all fixtures; a rational
+    quarter circle is within 0.0001 mm. SVG imports are byte-for-byte unchanged.
+  - New fixtures `fixtures/dxf-mm-bracket.dxf`, `dxf-inch-plate.dxf`, `dxf-blocks.dxf`, `dxf-r12-unitless.dxf`.
+
 ## 0.1.25
 
 - Output file prefix (#28): a new setting under Plate & cutting. With a prefix such as `bracket-3mm`, downloads are

@@ -1,6 +1,6 @@
 # Plate Nester
 
-Nest SVG parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
+Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`plate-nester.html`](plate-nester.html) in a browser (double-click is fine): no install, no build, no server.
 Everything runs in the page; nothing is uploaded.
 
@@ -11,6 +11,11 @@ Two modes:
   ("Search 30 s more", Stop).
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
+DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
+splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`;
+unitless files are read as mm). Each DXF colour becomes a stroke colour. Text, hatches and dimensions are skipped
+with a notice, and so are frozen, off and non-plotting layers.
+
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The export format
 was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
 
@@ -19,7 +24,7 @@ was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and m
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
 | `plate-nester.html`  | the app: HTML, CSS and inline JavaScript in one file                          |
-| `fixtures/`          | SVGs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links, ids that look like colours, clashing class names, element/universal selector leaks, stroke caps/joins/dashes, MakeIT CSS support and id-colour tests, currentColor, CAD-style <line> outlines |
+| `fixtures/`          | SVGs and DXFs for manual testing: transforms, skew, CSS classes, hidden groups, text, arcs, gradient, external links, ids that look like colours, clashing class names, element/universal selector leaks, stroke caps/joins/dashes, MakeIT CSS support and id-colour tests, currentColor, CAD-style <line> outlines; DXF in mm, inches and without units, bulge polylines, splines, blocks, layers |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
 `jszip` (zip download), plus Google Fonts. It needs network access for those on first load. A

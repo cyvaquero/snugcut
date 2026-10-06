@@ -112,7 +112,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
 <div class="wrap">
   <header>
     <h1>Plate Nester</h1>
-    <p>Save material on any cutter: pack SVG parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; nothing is uploaded.</p>
+    <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; nothing is uploaded.</p>
     <ul>
       <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
       <li><b>Bounding box</b> packs rectangles fast.</li>
@@ -170,8 +170,8 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
 
       <section class="panel" aria-labelledby="h-parts">
         <h2 id="h-parts">Parts <span id="sampleBadge" class="badge">Sample parts</span></h2>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add SVG files">Drop SVG files here or <b>browse</b></div>
-        <input type="file" id="file" accept=".svg,image/svg+xml" multiple hidden>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add SVG or DXF files">Drop SVG or DXF files here or <b>browse</b></div>
+        <input type="file" id="file" accept=".svg,image/svg+xml,.dxf,image/vnd.dxf,application/dxf" multiple hidden>
         <div class="parts" id="parts"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <span class="note" id="partCount"></span>
@@ -198,7 +198,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.25</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.26</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -418,6 +418,197 @@ function renameSelectors(css, f){
     seg += ch;
   }
   return out + seg;
+}
+/* ---------- DXF import ----------
+   An ASCII DXF is turned into an SVG part (mm, Y down, plain paths with one stroke colour per DXF colour), which then
+   goes through parseSVG like any other file. Model space only; frozen, off and non-plotting layers are skipped. */
+const DXF_MM = {1:25.4, 2:304.8, 3:1609344, 4:1, 5:10, 6:1000, 7:1e6, 8:2.54e-5, 9:0.0254, 10:914.4, 11:1e-7, 12:1e-6, 13:1e-3, 14:100, 15:1e4, 16:1e5,
+  21:304.8006096, 22:25.4000508, 23:914.4018288, 24:1609347.218694};
+function aciColor(i){
+  // AutoCAD Color Index → RGB. 7 (white on a black CAD screen) is black here, as on a sheet.
+  if (!(i >= 1 && i <= 255) || i === 7) return "#000000";
+  if (i < 10) return ["", "#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "", "#808080", "#c0c0c0"][i];
+  if (i >= 250) return ["#333333", "#505050", "#696969", "#828282", "#bebebe", "#ffffff"][i - 250];
+  const h = Math.floor((i - 10) / 10) * 15, k = (i - 10) % 10, v = [255, 204, 153, 127, 76][k >> 1], s = k & 1 ? 0.5 : 1;
+  const f = n => { const q = (n + h / 60) % 6; return Math.floor(v * (1 - s * Math.max(0, Math.min(q, 4 - q, 1)))); };
+  return "#" + [f(5), f(3), f(1)].map(c => c.toString(16).padStart(2, "0")).join("");
+}
+function dxfToSVG(text, name){
+  if (/^AutoCAD Binary DXF/.test(text)) throw new Error(`${name} is a binary DXF. Save it as an ASCII DXF and try again.`);
+  const lines = text.split(/\r\n|\r|\n/), recs = [];
+  for (let i = 0; i + 1 < lines.length; i += 2) {
+    const c = parseInt(lines[i], 10), v = lines[i + 1].trim();
+    if (isNaN(c)) { if (!lines[i].trim() && i >= lines.length - 2) break; throw new Error(`${name} isn't a readable DXF file.`); }
+    if (c === 0) recs.push({type:v.toUpperCase(), g:[]}); else if (recs.length) recs[recs.length - 1].g.push([c, v]);
+  }
+  if (!recs.some(r => r.type === "SECTION")) throw new Error(`${name} isn't a readable DXF file.`);
+  const str = (r, c, d) => { const p = r.g.find(q => q[0] === c); return p ? p[1] : d; };
+  const num = (r, c, d = 0) => { const v = parseFloat(str(r, c)); return isFinite(v) ? v : d; };
+  const nums = (r, c) => r.g.filter(q => q[0] === c).map(q => parseFloat(q[1]) || 0);
+  const header = {}, layers = new Map(), blocks = new Map(), model = [];
+  let sec = null, block = null;
+  for (let i = 0; i < recs.length; i++) {
+    const r = recs[i];
+    if (r.type === "SECTION") {
+      sec = str(r, 2, "").toUpperCase();
+      if (sec === "HEADER") for (let j = 0; j < r.g.length; j++) if (r.g[j][0] === 9 && r.g[j + 1]) header[r.g[j][1].toUpperCase()] = r.g[j + 1][1];
+      continue;
+    }
+    if (r.type === "ENDSEC") { sec = null; continue; }
+    if (sec === "TABLES" && r.type === "LAYER") {
+      const c = num(r, 62, 7), fl = num(r, 70);
+      layers.set(str(r, 2, "0"), {color:str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0") : aciColor(Math.abs(c)),
+        hidden:c < 0 || (fl & 1) === 1 || str(r, 290) === "0"});
+    } else if (sec === "BLOCKS") {
+      if (r.type === "BLOCK") { block = {name:str(r, 2, ""), bx:num(r, 10), by:num(r, 20), ents:[]}; blocks.set(block.name.toUpperCase(), block); }
+      else if (r.type === "ENDBLK") block = null;
+      else if (block) block.ents.push(r);
+    } else if (sec === "ENTITIES") model.push(r);
+  }
+  // POLYLINE + VERTEX… + SEQEND become one record; ATTRIBs after an INSERT are dropped
+  const group = list => { const out = []; let poly = null;
+    for (const r of list) {
+      if (r.type === "VERTEX") { if (poly) poly.verts.push(r); continue; }
+      if (r.type === "SEQEND") { poly = null; continue; }
+      if (r.type === "ATTRIB") continue;
+      if (r.type === "POLYLINE") { poly = r; r.verts = []; }
+      out.push(r);
+    }
+    return out; };
+  for (const b of blocks.values()) b.ents = group(b.ents);
+  const unit = DXF_MM[+header.$INSUNITS];
+  const k = unit || 1, notes = [];
+  if (!unit) notes.push(`${name} doesn't say what units it's drawn in, so it was read as millimetres.`);
+
+  const out = new Map(), skipped = {};                          // layer → colour → path data
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0;
+  const mul = (A, B) => [A[0]*B[0] + A[2]*B[1], A[1]*B[0] + A[3]*B[1], A[0]*B[2] + A[2]*B[3], A[1]*B[2] + A[3]*B[3], A[0]*B[4] + A[2]*B[5] + A[4], A[1]*B[4] + A[3]*B[5] + A[5]];
+  const fmtN = v => { const r = +v.toFixed(4); return Object.is(r, -0) ? "0" : String(r); };
+  function draw(r, M, ctx, depth){
+    const t = r.type;
+    if (num(r, 67) === 1 || num(r, 60) === 1) return;                         // paper space, invisible
+    let layer = str(r, 8, "0"); if (layer === "0" && ctx.layer) layer = ctx.layer;
+    const L = layers.get(layer) || {color:"#000000", hidden:false};
+    if (L.hidden || layer.toUpperCase() === "DEFPOINTS") return;
+    const ci = num(r, 62, 256);
+    const color = str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0")
+      : ci === 256 ? L.color : ci === 0 ? ctx.color || "#000000" : aciColor(Math.abs(ci));
+    const wcs = t === "LINE" || t === "ELLIPSE" || t === "SPLINE" || (t === "POLYLINE" && num(r, 70) & 8);
+    if (num(r, 230, 1) < 0 && !wcs) M = mul(M, [-1, 0, 0, 1, 0, 0]);         // 2D entity in an OCS with extrusion (0,0,-1)
+    if (t === "INSERT") {
+      const b = blocks.get(str(r, 2, "").toUpperCase());
+      if (!b || depth > 16) return;
+      const sx = num(r, 41, 1), sy = num(r, 42, 1), a = num(r, 50) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+      const cols = Math.max(1, num(r, 70, 1)), rows = Math.max(1, num(r, 71, 1));
+      for (let c = 0; c < cols; c++) for (let w = 0; w < rows; w++) {
+        const ox = c * num(r, 44), oy = w * num(r, 45);
+        const R = [co, si, -si, co, num(r, 10) + co*ox - si*oy, num(r, 20) + si*ox + co*oy];
+        const N = mul(M, mul(R, [sx, 0, 0, sy, -sx*b.bx, -sy*b.by]));
+        for (const e of b.ents) draw(e, N, {layer, color}, depth + 1);
+      }
+      return;
+    }
+    const d = [];
+    const P = (x, y) => { const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
+      x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return fmtN(X) + " " + fmtN(Y); };
+    const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
+      // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 90° each)
+      const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 2) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
+      const pt = t => [cx + ax*Math.cos(t) + bx*Math.sin(t), cy + ay*Math.cos(t) + by*Math.sin(t)];
+      const dv = t => [-ax*Math.sin(t) + bx*Math.cos(t), -ay*Math.sin(t) + by*Math.cos(t)];
+      if (move) d.push("M" + P(...pt(ta)));
+      for (let j = 0; j < n; j++) {
+        const s = ta + j*dt, e = s + dt, [px, py] = pt(s), [qx, qy] = pt(e), [ux, uy] = dv(s), [vx, vy] = dv(e);
+        d.push("C" + P(px + h*ux, py + h*uy) + " " + P(qx - h*vx, qy - h*vy) + " " + P(qx, qy));
+      }
+    };
+    const bulgeTo = (ax, ay, bx, by, bu) => {
+      if (!bu || (ax === bx && ay === by)) { d.push("L" + P(bx, by)); return; }
+      const th = 4 * Math.atan(bu), ch = Math.hypot(bx - ax, by - ay), off = ch / 2 / Math.tan(th / 2), r0 = ch / 2 / Math.sin(th / 2);
+      const cx = (ax + bx) / 2 - (by - ay) / ch * off, cy = (ay + by) / 2 + (bx - ax) / ch * off, s = Math.atan2(ay - cy, ax - cx), rr = Math.abs(r0);
+      ell(cx, cy, rr, 0, 0, rr, s, s + th, false);
+    };
+    const poly = (vs, closed) => {                                             // vs: [[x, y, bulge]]
+      if (vs.length < 2) return;
+      d.push("M" + P(vs[0][0], vs[0][1]));
+      for (let j = 1; j < vs.length; j++) bulgeTo(vs[j-1][0], vs[j-1][1], vs[j][0], vs[j][1], vs[j-1][2]);
+      if (closed) { const a = vs[vs.length - 1], b = vs[0]; if (a[2] || a[0] !== b[0] || a[1] !== b[1]) bulgeTo(a[0], a[1], b[0], b[1], a[2]); d.push("Z"); }
+    };
+    if (t === "LINE") d.push("M" + P(num(r, 10), num(r, 20)) + "L" + P(num(r, 11), num(r, 21)));
+    else if (t === "CIRCLE") { const rr = num(r, 40); if (rr > 0) { ell(num(r, 10), num(r, 20), rr, 0, 0, rr, 0, 2 * Math.PI, true); d.push("Z"); } }
+    else if (t === "ARC") {
+      const rr = num(r, 40), a = num(r, 50) * Math.PI / 180; let b = num(r, 51) * Math.PI / 180;
+      while (b <= a) b += 2 * Math.PI;
+      if (rr > 0) ell(num(r, 10), num(r, 20), rr, 0, 0, rr, a, b, true);
+    } else if (t === "ELLIPSE") {
+      const ax = num(r, 11), ay = num(r, 21), q = num(r, 40, 1), sg = num(r, 230, 1) < 0 ? -1 : 1;
+      let a = num(r, 41), b = num(r, 42, 2 * Math.PI); while (b <= a) b += 2 * Math.PI;
+      ell(num(r, 10), num(r, 20), ax, ay, -ay * q * sg, ax * q * sg, a, b, true);
+      if (Math.abs(b - a - 2 * Math.PI) < 1e-6) d.push("Z");
+    } else if (t === "LWPOLYLINE") {
+      const vs = [];
+      for (const [c, v] of r.g) { if (c === 10) vs.push([+v || 0, 0, 0]); else if (vs.length && c === 20) vs[vs.length - 1][1] = +v || 0; else if (vs.length && c === 42) vs[vs.length - 1][2] = +v || 0; }
+      poly(vs, (num(r, 70) & 1) === 1);
+    } else if (t === "POLYLINE") {
+      const fl = num(r, 70);
+      if (fl & 80) { skipped["polygon mesh"] = (skipped["polygon mesh"] || 0) + 1; return; }
+      poly(r.verts.filter(v => !(num(v, 70) & 16)).map(v => [num(v, 10), num(v, 20), num(v, 42)]), (fl & 1) === 1);
+    } else if (t === "SPLINE") {
+      const p = num(r, 71, 3), K = nums(r, 40), W = nums(r, 41), xs = nums(r, 10), ys = nums(r, 20), C = xs.map((x, j) => [x, ys[j] || 0]);
+      const fx = nums(r, 11), fy = nums(r, 21);
+      if (C.length > p && K.length === C.length + p + 1) {
+        const ev = u => {                                                        // de Boor, rational when weights are given
+          let s = p; while (s < C.length - 1 && u >= K[s + 1]) s++;
+          const q = []; for (let j = 0; j <= p; j++) { const w = W.length === C.length ? W[s - p + j] : 1; q.push([C[s - p + j][0]*w, C[s - p + j][1]*w, w]); }
+          for (let lv = 1; lv <= p; lv++) for (let j = p; j >= lv; j--) { const i = s - p + j, den = K[i + p - lv + 1] - K[i], al = den ? (u - K[i]) / den : 0;
+            q[j] = q[j].map((v, z) => (1 - al) * q[j - 1][z] + al * v); }
+          return [q[p][0] / q[p][2], q[p][1] / q[p][2]];
+        };
+        const pts = [], lo = K[p], hi = K[C.length];
+        for (let s = p; s < C.length; s++) { if (K[s + 1] <= K[s]) continue; for (let j = 0; j < 16; j++) pts.push(ev(K[s] + (K[s + 1] - K[s]) * j / 16)); }
+        pts.push(ev(hi - (hi - lo) * 1e-9));
+        poly(pts.map(([x, y]) => [x, y, 0]), (num(r, 70) & 1) === 1);
+      } else if (fx.length > 1) {
+        // fit points only: cubic spline through them (chord-length parameters, natural ends) as Béziers
+        const Q = fx.map((x, j) => [x, fy[j] || 0]); if ((num(r, 70) & 1) === 1) Q.push(Q[0]);
+        const n = Q.length - 1, hs = []; for (let j = 0; j < n; j++) hs.push(Math.hypot(Q[j+1][0] - Q[j][0], Q[j+1][1] - Q[j][1]) || 1e-9);
+        const Mx = [0], My = [0];
+        if (n > 1) {                                                             // tridiagonal solve for the second derivatives
+          const a = [], b = [], c = [], rx = [], ry = [];
+          for (let j = 1; j < n; j++) { a.push(hs[j-1]); b.push(2 * (hs[j-1] + hs[j])); c.push(hs[j]);
+            rx.push(6 * ((Q[j+1][0] - Q[j][0]) / hs[j] - (Q[j][0] - Q[j-1][0]) / hs[j-1])); ry.push(6 * ((Q[j+1][1] - Q[j][1]) / hs[j] - (Q[j][1] - Q[j-1][1]) / hs[j-1])); }
+          for (let j = 1; j < b.length; j++) { const m = a[j] / b[j-1]; b[j] -= m * c[j-1]; rx[j] -= m * rx[j-1]; ry[j] -= m * ry[j-1]; }
+          const sx = [], sy = []; for (let j = b.length - 1; j >= 0; j--) { sx[j] = (rx[j] - (j + 1 < b.length ? c[j] * sx[j+1] : 0)) / b[j]; sy[j] = (ry[j] - (j + 1 < b.length ? c[j] * sy[j+1] : 0)) / b[j]; }
+          Mx.push(...sx); My.push(...sy);
+        }
+        Mx.push(0); My.push(0);
+        d.push("M" + P(Q[0][0], Q[0][1]));
+        for (let j = 0; j < n; j++) {
+          const h = hs[j], ux = (Q[j+1][0] - Q[j][0]) / h, uy = (Q[j+1][1] - Q[j][1]) / h;
+          const d0x = ux - h * (2*Mx[j] + Mx[j+1]) / 6, d0y = uy - h * (2*My[j] + My[j+1]) / 6, d1x = ux + h * (Mx[j] + 2*Mx[j+1]) / 6, d1y = uy + h * (My[j] + 2*My[j+1]) / 6;
+          d.push("C" + P(Q[j][0] + d0x*h/3, Q[j][1] + d0y*h/3) + " " + P(Q[j+1][0] - d1x*h/3, Q[j+1][1] - d1y*h/3) + " " + P(Q[j+1][0], Q[j+1][1]));
+        }
+        if ((num(r, 70) & 1) === 1) d.push("Z");
+      }
+    } else { if (t !== "VIEWPORT") skipped[t] = (skipped[t] || 0) + 1; return; }
+    if (!d.length) return;
+    if (!out.has(layer)) out.set(layer, new Map());
+    const byC = out.get(layer); byC.set(color, (byC.get(color) || "") + d.join(""));
+    count++;
+  }
+  for (const r of group(model)) draw(r, [1, 0, 0, 1, 0, 0], {layer:null, color:null}, 0);
+  const sk = Object.entries(skipped);
+  if (sk.length) notes.push(`${name}: skipped ${sk.map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")} (only lines, arcs, circles, ellipses, polylines and splines are cut).`);
+  if (!count) throw new Error(`${name} has no lines, arcs, circles, polylines or splines in model space.`);
+  const w = Math.max(x1 - x0, 1e-3), h = Math.max(y1 - y0, 1e-3), used = new Set();
+  let body = "";
+  for (const [ln, byC] of out) {
+    let id = "layer-" + (ln.replace(/[^A-Za-z0-9_.-]+/g, "_") || "0"); while (used.has(id)) id += "_"; used.add(id);
+    body += `<g id="${esc(id)}">` + [...byC].map(([c, dd]) => `<path d="${dd}" stroke="${c}"/>`).join("") + `</g>`;
+  }
+  const svg = `<svg xmlns="${SVGNS}" width="${fmtN(w)}mm" height="${fmtN(h)}mm" viewBox="${fmtN(x0)} ${fmtN(y0)} ${fmtN(w)} ${fmtN(h)}">`
+    + `<g fill="none" stroke-width="0.1">${body}</g></svg>`;
+  return {svg, notes};
 }
 function parseSVG(text, name){
   const doc = new DOMParser().parseFromString(text, "image/svg+xml");
@@ -693,7 +884,7 @@ function placeMatrix(tx, ty, deg, kx, ky, cx, cy){
   return [a, b, c, d, tx - (a*cx + c*cy), ty - (b*cx + d*cy)];
 }
 const n3 = v => { const r = Math.round(v * 1000) / 1000; return Object.is(r, -0) ? "0" : String(r); };
-const slug = s => (s.replace(/\.svg$/i, "").replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "part").replace(/^(\d)/, "p$1");
+const slug = s => (s.replace(/\.(svg|dxf)$/i, "").replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "part").replace(/^(\d)/, "p$1");
 function uniquifyIds(markup, prefix){
   // give every id in original markup a per-instance prefix and rewrite url(#id), href="#id" and #id in <style>
   const ids = [...new Set([...markup.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]))];
@@ -1261,7 +1452,7 @@ function renderParts(){
     rm.onclick = () => { removeParts(x => x === p); restart(); };
     box.appendChild(row);
   }
-  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">No parts yet. Add SVG files above.</p>`;
+  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">No parts yet. Add SVG or DXF files above.</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
   updateCount();
 }
@@ -1280,12 +1471,17 @@ drop.ondragleave = () => drop.classList.remove("over");
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
 file.onchange = () => { addFiles(file.files); file.value = ""; };
 async function addFiles(list){
-  const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml");
-  if (!files.length) { toast("Only .svg files can be added."); return; }
+  const isDXF = f => /\.dxf$/i.test(f.name);
+  const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
+  if (!files.length) { toast("Only .svg and .dxf files can be added."); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
   const errs = [];
   const stripped = [];
-  for (const f of files) { try { const p = parseSVG(await f.text(), f.name); parts.push(p); if (p.stripped) stripped.push(p.name); } catch(e) { errs.push(e.message); } }
+  for (const f of files) { try {
+    let text = await f.text();
+    if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
+    const p = parseSVG(text, f.name); parts.push(p); if (p.stripped) stripped.push(p.name);
+  } catch(e) { errs.push(e.message); } }
   if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
   if (errs.length) toast(errs.join(" "));
   restart();
@@ -1335,7 +1531,7 @@ function renderLayout(){
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
   for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
   if (L.noArea) msg("The edge margin leaves no usable area on the plate.");
-  if (!L.plates.length) box.innerHTML = `<p class="note">${parts.length ? "Set a quantity above zero to place parts." : "Add SVG files to see them nested on plates."}</p>`;
+  if (!L.plates.length) box.innerHTML = `<p class="note">${parts.length ? "Set a quantity above zero to place parts." : "Add SVG or DXF files to see them nested on plates."}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const fill = Math.round(100 * pl.area / plateA);
