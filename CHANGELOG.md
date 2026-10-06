@@ -2,6 +2,24 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.28
+
+- DXF export (#32): new **Export format** setting (SVG / DXF (R12, mm)) next to the file prefix, used by the per-plate
+  download buttons ("Download DXF") and the zip. SVG stays the default and is byte-for-byte unchanged.
+  - Hand-written DXF R12 writer (`plateDXF`): ASCII, `$INSUNITS` mm, origin bottom-left, a LAYER table, and LINE
+    or POLYLINE/VERTEX entities.
+  - The same cut paths as the SVG export, in the same order: rows of parts, inner cuts first, joined outlines. The
+    grouping and ordering moved into `cutGroups`, which both exports share.
+  - Circular arcs become polyline bulges, so circles and rounded corners stay true arcs; ellipses, splines and other
+    curves are flattened to within 0.01 mm.
+  - One layer per colour, named by its hex value, with the nearest ACI colour. Parts imported from DXF keep their
+    source layer names. "Plate outline in export" adds a `PLATE` layer.
+  - Parts kept as original markup in SVG (text, images, `<use>`, clipping, gradients) are written from the shapes
+    that can be: a second, loose `extractFlat` pass at import. A notice names what was left out (text, images, …),
+    and filled shapes are written as outlines.
+  - Checked with ezdxf on all 23 fixtures: every file loads and audits clean. Geometry matches the SVG export within
+    0.05 mm (sampling resolution), and the cut order is the same.
+
 ## 0.1.27
 
 - The version in the page footer is followed by a "(changelog)" link to this file on GitHub (`develop`), opening at

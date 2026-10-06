@@ -16,8 +16,14 @@ splines and block inserts (scaled, rotated, mirrored, arrays) from model space, 
 unitless files are read as mm). Each DXF colour becomes a stroke colour. Text, hatches and dimensions are skipped
 with a notice, and so are frozen, off and non-plotting layers.
 
-Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The export format
-was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
+Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
+format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
+
+**Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
+DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
+(polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per colour (named by its hex
+value), or per source layer for parts imported from DXF. Text, images and fills can't be written to DXF: filled
+shapes become outlines, and a notice names anything that was left out.
 
 ## Files
 

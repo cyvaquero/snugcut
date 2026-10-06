@@ -164,9 +164,13 @@ footer a{color:var(--accent)}
             <label class="check"><input type="checkbox" id="outline"> Plate outline in export</label>
           </div>
         </div>
-        <div class="field"><label for="prefix">Output file prefix</label>
-          <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" spellcheck="false" autocomplete="off">
-          <p class="hint">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p></div>
+        <div class="row">
+          <div class="field"><label for="prefix">Output file prefix</label>
+            <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label for="format">Export format</label>
+            <select id="format"><option value="svg">SVG</option><option value="dxf">DXF (R12, mm)</option></select></div>
+        </div>
+        <p class="hint">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
@@ -199,7 +203,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.27</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.28</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -216,7 +220,7 @@ const CL = window.ClipperLib;
 if (!CL) { $("plates").innerHTML = `<div class="fatal">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
 
 /* ---------- settings (lengths in mm) ---------- */
-const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:""};
+const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg"};
 let S = {...DEFAULTS};
 try { Object.assign(S, JSON.parse(localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}
 const save = () => { try { localStorage.setItem("platenester.settings", JSON.stringify(S)); } catch(e) {} };
@@ -234,7 +238,7 @@ function fillInputs(){
     $(k).value = +toDisp(S[k]).toFixed(dec);
     $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("prefix").value = S.prefix; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
@@ -256,6 +260,7 @@ $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); }
 $("prec").onchange = e => { S.prec = +e.target.value; save(); geoVer++; restart(); };
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
+$("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
 $("rotate").onchange = e => { S.rotate = e.target.checked; save(); restart(); };
 const setMode = m => { if (S.mode === m) return; S.mode = m; save(); fillInputs(); restart(); };
 $("m-shape").onclick = () => setMode("shape");
@@ -268,7 +273,8 @@ function filePrefix(){
     .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, 60).trim();
   return p ? p + "-" : "";
 }
-function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.svg`; }
+function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
+const ext = () => S.format === "dxf" ? "dxf" : "svg";
 function kerfCalc(){
   const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
   if (isNaN(d) || isNaN(m) || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
@@ -663,6 +669,7 @@ function parseSVG(text, name){
     extractStepU = 0.1 / Math.min(p.kx, p.ky);
     rings = extractRings(g);
     p.flat = extractFlat(g);
+    if (!p.flat) { const r = extractFlat(g, true); p.loose = r.items.length ? r.items : null; p.looseSkipped = r.skipped; }   // for DXF export
   } finally { g.remove(); }
   if (!rings.length) throw new Error(`${name} has no cuttable shapes.`);
   p.rings = rings;
@@ -822,22 +829,35 @@ function cssColor(v){
   if (m[4] != null && parseFloat(m[4]) === 0) return "none";
   return "#" + [m[1], m[2], m[3]].map(c => Math.round(+c).toString(16).padStart(2, "0")).join("");
 }
-function extractFlat(g){
-  // every drawable shape → absolute path segments in the part's user units; null when the part needs its original markup
+function extractFlat(g, loose){
+  // every drawable shape → absolute path segments in the part's user units; null when the part needs its original markup.
+  // loose (for DXF export of such parts): keep every shape that can be drawn as a path and list what was left out.
   const hostInv = host.getScreenCTM().inverse();
-  const out = [];
+  const out = [], skipped = new Set();
   for (const el of g.querySelectorAll("*")) {
     if (el.namespaceURI !== SVGNS) continue;
     if (el.closest("defs,clipPath,mask,symbol,pattern,marker")) continue;
     const tag = el.localName, cs = getComputedStyle(el);
-    if ((cs.clipPath && cs.clipPath !== "none") || (cs.mask && cs.mask !== "none") || (cs.filter && cs.filter !== "none")) return null;
+    if ((cs.clipPath && cs.clipPath !== "none") || (cs.mask && cs.mask !== "none") || (cs.filter && cs.filter !== "none")) {
+      if (!loose) return null;
+      skipped.add("clipping, masks and filters (shapes exported whole)");
+    }
     if (FLAT_SKIP.has(tag)) continue;
-    if (!FLAT_SHAPES.has(tag)) return null;             // text, images, <use>: keep original markup
+    if (!FLAT_SHAPES.has(tag)) {                        // text, images, <use>: keep original markup
+      if (!loose) return null;
+      if (["text","tspan","textPath"].includes(tag)) skipped.add("text"); else if (tag === "image") skipped.add("images");
+      else if (tag === "use") skipped.add("linked copies (<use>)"); else skipped.add(`<${tag}> elements`);
+      continue;
+    }
     let hidden = false;
     for (let a = el; a && a !== g; a = a.parentElement) if (getComputedStyle(a).display === "none") { hidden = true; break; }
     if (hidden) continue;
-    const fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);   // a line is never filled
-    if (fill === undefined || stroke === undefined) return null;
+    let fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);     // a line is never filled
+    if (fill === undefined || stroke === undefined) {
+      if (!loose) return null;
+      skipped.add("gradient and pattern colours (exported black)");
+      if (fill === undefined) fill = "#000000"; if (stroke === undefined) stroke = "#000000";
+    }
     if (fill === "none" && stroke === "none") continue;
     let d;
     const v = k => el[k].baseVal.value;
@@ -862,7 +882,7 @@ function extractFlat(g){
       d = "M" + pts.join("L") + (tag === "polygon" ? "Z" : "");
     }
     let segs;
-    try { segs = parsePathD(d); } catch(e) { return null; }
+    try { segs = parsePathD(d); } catch(e) { if (!loose) return null; skipped.add("unreadable paths"); continue; }
     if (!segs.length) continue;
     const scr = el.getScreenCTM(); if (!scr) continue;
     const m = hostInv.multiply(scr);
@@ -875,8 +895,10 @@ function extractFlat(g){
     if (dash && !dash.some(v => v > 0)) dash = null;
     const op = parseFloat(cs.opacity); const o = isNaN(op) ? 1 : op;
     out.push({segs, fill, stroke, sw, evenodd: cs.fillRule === "evenodd", fo: o * (parseFloat(cs.fillOpacity) || (cs.fillOpacity === "0" ? 0 : 1)), so: o * (parseFloat(cs.strokeOpacity) || (cs.strokeOpacity === "0" ? 0 : 1)),
-      cap: cs.strokeLinecap || "butt", join: cs.strokeLinejoin || "miter", ml: isFinite(ml) ? ml : 4, dash, doff: dash ? (parseFloat(cs.strokeDashoffset) || 0) * k : 0});
+      cap: cs.strokeLinecap || "butt", join: cs.strokeLinejoin || "miter", ml: isFinite(ml) ? ml : 4, dash, doff: dash ? (parseFloat(cs.strokeDashoffset) || 0) * k : 0,
+      lay: (/_layer-(.+)$/.exec(el.closest("g[id*='_layer-']")?.id || "") || [])[1]});   // DXF layer, for parts imported from DXF
   }
+  if (loose) return {items:out, skipped:[...skipped]};
   return out.length ? out : null;
 }
 function placeMatrix(tx, ty, deg, kx, ky, cx, cy){
@@ -903,17 +925,17 @@ function uniquifyIds(markup, prefix){
   }
   return markup;
 }
-function cutPlan(p){
+function cutPlan(p, flat = p.flat){
   // the part's subpaths with their nesting depth (how many closed contours contain them), computed once per part;
   // inner cuts (holes, slots, engraving) must come before the outline that contains them
-  const ck = p.kx + "," + p.ky;
-  if (p.cutPlan && p.cutPlanKey === ck) return p.cutPlan;
+  const ck = p.kx + "," + p.ky, slot = flat === p.flat ? "cutPlan" : "loosePlan";
+  if (p[slot] && p[slot + "Key"] === ck) return p[slot];
   let subs = [];
-  p.flat.forEach((it, item) => {
+  flat.forEach((it, item) => {
     let cur = null;
     for (const sg of it.segs) { if (sg[0] === "M" || !cur) { cur = {item, segs:[]}; subs.push(cur); } cur.segs.push(sg); }
   });
-  subs = joinSubpaths(p, subs, 0.01 / Math.min(p.kx, p.ky));
+  subs = joinSubpaths(flat, subs, 0.01 / Math.min(p.kx, p.ky));
   for (const sub of subs) {
     const pts = []; let x = 0, y = 0;
     for (const sg of sub.segs) {
@@ -942,11 +964,11 @@ function cutPlan(p){
       if (a0 >= c0 && b0 >= d0 && a1 <= c1 && b1 <= d1 && (a1 - a0) * (b1 - b0) < (c1 - c0) * (d1 - d0) && inside(sub.pts[0], o.pts)) sub.depth++;
     }
   }
-  p.cutPlanKey = ck;
-  return (p.cutPlan = subs);
+  p[slot + "Key"] = ck;
+  return (p[slot] = subs);
 }
 const lineKey = it => [it.cap, it.join, it.ml, it.dash ? it.dash.join(",") : "", it.doff].join("|");
-function joinSubpaths(p, subs, tol){
+function joinSubpaths(flat, subs, tol){
   // chain open subpaths of the same line style whose ends meet (within tol, part units) into continuous paths,
   // reversing pieces where needed; a chain that returns to its start is closed with Z. CAD/DXF exports often
   // store every segment of an outline as its own subpath, which the laser would otherwise cut one at a time.
@@ -961,7 +983,7 @@ function joinSubpaths(p, subs, tol){
     }
     return out;
   };
-  const styleKey = sub => { const it = p.flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) : null; };
+  const styleKey = sub => { const it = flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) : null; };
   const isOpen = sub => sub.segs.length > 1 && sub.segs[sub.segs.length - 1][0] !== "Z" && sub.segs.every((sg, i) => i === 0 ? sg[0] === "M" : sg[0] === "L" || sg[0] === "C");
   const out = [], pool = new Map();
   for (const sub of subs) {
@@ -1002,6 +1024,22 @@ function joinSubpaths(p, subs, tol){
   const done = new Set();
   return out.flatMap(sub => sub.pending == null ? [sub] : done.has(sub.pending) ? [] : (done.add(sub.pending), chains.get(sub.pending)));
 }
+function cutGroups(p, flat, sc){
+  // the part's subpaths in cut order, grouped by line style (one SVG <path> each): same-style lines share a group,
+  // every filled shape is its own; groups with the deepest (innermost) cuts first, the outline that contains them last
+  const groups = new Map();
+  for (const sub of cutPlan(p, flat)) {
+    const it = flat[sub.item];
+    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) : "F|" + sub.item;
+    if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
+    groups.get(key).subs.push(sub);
+  }
+  return [...groups.values()].map(g => {
+    g.subs = g.subs.slice().sort((x, y) => y.depth - x.depth);   // stable sort keeps source order within a depth
+    g.depth = Math.min(...g.subs.map(s => s.depth));
+    return g;
+  }).sort((x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order);
+}
 function partMarkup(p, M, id, fallbackTransform){
   // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
   // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
@@ -1012,22 +1050,12 @@ function partMarkup(p, M, id, fallbackTransform){
     + (it.cap !== "butt" ? ` stroke-linecap="${it.cap}"` : "") + (it.join !== "miter" ? ` stroke-linejoin="${it.join}"` : "")
     + (/^miter/.test(it.join) && it.ml !== 4 ? ` stroke-miterlimit="${n3(it.ml)}"` : "")
     + (it.dash ? ` stroke-dasharray="${it.dash.map(v => n3(v * sc)).join(" ")}"${it.doff ? ` stroke-dashoffset="${n3(it.doff * sc)}"` : ""}` : "");
-  const groups = new Map();
-  for (const sub of cutPlan(p)) {
-    const it = p.flat[sub.item];
-    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) : "F|" + sub.item;
-    if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
-    groups.get(key).subs.push(sub);
-  }
-  const deepFirst = (x, y) => y.depth - x.depth;
-  const els = [...groups.values()].map(g => {
-    const subs = g.subs.slice().sort(deepFirst), it = g.it;   // stable sort keeps source order within a depth
-    const dd = subs.map(s => toD(s.segs)).join("");
-    const markup = g.fill
+  const els = cutGroups(p, p.flat, sc).map(g => {
+    const it = g.it, dd = g.subs.map(s => toD(s.segs)).join("");
+    return g.fill
       ? `<path d="${dd}" fill="${it.fill}"${it.fo < 1 ? ` fill-opacity="${n3(it.fo)}"` : ""}${it.evenodd ? ` fill-rule="evenodd"` : ""} ${strokeAttr(it)}/>`
       : `<path d="${dd}" fill="none" ${strokeAttr(it)}/>`;
-    return {markup, depth:Math.min(...subs.map(s => s.depth)), fill:g.fill, order:g.order};
-  }).sort((x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order);
+  }).map(markup => ({markup}));
   if (els.length === 1) return els[0].markup.replace("<path ", `<path id="${id}" `);
   return `<g id="${id}">${els.map(x => x.markup).join("")}</g>`;
 }
@@ -1482,7 +1510,7 @@ async function addFiles(list){
   for (const f of files) { try {
     let text = await f.text();
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
-    const p = parseSVG(text, f.name); parts.push(p); if (p.stripped) stripped.push(p.name);
+    const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
   } catch(e) { errs.push(e.message); } }
   if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
   if (errs.length) toast(errs.join(" "));
@@ -1518,6 +1546,97 @@ function plateSVG(plate, opts = {}){
   }
   return s + `</svg>`;
 }
+/* ---------- DXF export (R12 ASCII, mm, origin bottom-left) ----------
+   The same cut paths, order and joined outlines as the SVG export. Circular arcs (as written by arcToCubics and the
+   DXF reader) become polyline bulges, so circles and rounded corners stay true arcs; other curves are flattened to
+   within 0.01 mm. One layer per colour, or per source layer for parts imported from DXF. */
+const aciCache = new Map();
+function aciNear(hex){
+  if (!aciCache.has(hex)) {
+    const v = parseInt(hex.slice(1), 16), r = v >> 16, g = v >> 8 & 255, b = v & 255;
+    let best = 7, bd = Infinity;
+    for (let i = 1; i < 256; i++) { const w = parseInt(aciColor(i).slice(1), 16), d = (r - (w >> 16)) ** 2 + (g - (w >> 8 & 255)) ** 2 + (b - (w & 255)) ** 2; if (d < bd) { bd = d; best = i; } }
+    aciCache.set(hex, best);
+  }
+  return aciCache.get(hex);
+}
+function plateDXF(plate){
+  const W = S.plateW, H = S.plateH, out = [], layers = new Map(), notes = new Set();
+  const f = v => { const r = +v.toFixed(6); return Object.is(r, -0) ? "0" : String(r); };
+  const layer = (name, color) => {
+    name = String(name).toUpperCase().replace(/[^A-Z0-9_$-]+/g, "_").slice(0, 31) || "0";
+    if (!layers.has(name)) layers.set(name, aciNear(color));
+    return name;
+  };
+  const emit = (vs, closed, L, aci) => {                                   // vs: [[x, y, bulge to the next vertex]]
+    if (closed && vs.length > 2 && Math.hypot(vs[0][0] - vs[vs.length-1][0], vs[0][1] - vs[vs.length-1][1]) < 1e-7) vs.pop();
+    if (vs.length < 2) return;
+    if (!closed && vs.length === 2 && !vs[0][2]) { out.push("0", "LINE", "8", L, "62", aci, "10", f(vs[0][0]), "20", f(vs[0][1]), "30", "0", "11", f(vs[1][0]), "21", f(vs[1][1]), "31", "0"); return; }
+    out.push("0", "POLYLINE", "8", L, "62", aci, "66", "1", "10", "0", "20", "0", "30", "0", "70", closed ? "1" : "0");
+    for (const [x, y, bu] of vs) { out.push("0", "VERTEX", "8", L, "10", f(x), "20", f(y), "30", "0"); if (bu) out.push("42", f(bu)); }
+    out.push("0", "SEQEND", "8", L);
+  };
+  const arcOf = (p0, p1, p2, p3) => {
+    // bulge when the cubic is a circular arc, else null
+    const B = t => { const u = 1 - t; return [u*u*u*p0[0] + 3*u*u*t*p1[0] + 3*u*t*t*p2[0] + t*t*t*p3[0], u*u*u*p0[1] + 3*u*u*t*p1[1] + 3*u*t*t*p2[1] + t*t*t*p3[1]]; };
+    const m = B(0.5), ax = p0[0], ay = p0[1], bx = m[0], by = m[1], cx = p3[0], cy = p3[1];
+    const dd = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    if (Math.abs(dd) < 1e-12) return null;
+    const a2 = ax*ax + ay*ay, b2 = bx*bx + by*by, c2 = cx*cx + cy*cy;
+    const ox = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / dd, oy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / dd, r = Math.hypot(ax - ox, ay - oy);
+    const tol = 0.0005 + 3.5e-4 * r;                                      // a cubic quarter circle is within 2.7e-4 × r of the true arc
+    for (const t of [0.15, 0.3, 0.7, 0.85]) { const q = B(t); if (Math.abs(Math.hypot(q[0] - ox, q[1] - oy) - r) > tol) return null; }
+    const tx = p1[0] - p0[0], ty = p1[1] - p0[1];
+    if (Math.abs(tx * (ax - ox) + ty * (ay - oy)) > 0.01 * Math.hypot(tx, ty) * r) return null;   // tangent must be perpendicular to the radius
+    const ang = (x, y) => Math.atan2(y - oy, x - ox), wrap = v => v - 2 * Math.PI * Math.round(v / (2 * Math.PI));
+    const th = wrap(ang(bx, by) - ang(ax, ay)) + wrap(ang(cx, cy) - ang(bx, by));
+    return Math.tan(th / 4);
+  };
+  const flatten = (p0, p1, p2, p3, pts, depth) => {
+    const dx = p3[0] - p0[0], dy = p3[1] - p0[1], L = Math.hypot(dx, dy) || 1e-12;
+    const d1 = Math.abs((p1[0] - p0[0]) * dy - (p1[1] - p0[1]) * dx) / L, d2 = Math.abs((p2[0] - p0[0]) * dy - (p2[1] - p0[1]) * dx) / L;
+    if (depth > 12 || Math.max(d1, d2) * 0.75 <= 0.01) { pts.push(p3); return; }
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const a = mid(p0, p1), b = mid(p1, p2), c = mid(p2, p3), e = mid(a, b), g = mid(b, c), m = mid(e, g);
+    flatten(p0, a, e, m, pts, depth + 1); flatten(m, g, c, p3, pts, depth + 1);
+  };
+  if (S.outline) emit([[0, 0, 0], [W, 0, 0], [W, H, 0], [0, H, 0]], true, layer("PLATE", "#ff0000"), 1);
+  for (const it of cutSequence(plate.items)) {
+    const p = it.part, flat = p.flat || p.loose;
+    if (!flat) { notes.add(`${p.name} has nothing that can be written to DXF.`); continue; }
+    if (!p.flat) for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`);
+    const [a, b, c, d, e, g] = placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), sc = Math.sqrt(Math.abs(a*d - b*c));
+    const T = (x, y) => [a*x + c*y + e, H - (b*x + d*y + g)];
+    for (const gr of cutGroups(p, flat, sc)) {
+      const col = gr.it.stroke !== "none" ? gr.it.stroke : gr.it.fill;
+      if (gr.fill) notes.add("Filled areas are written as their outlines.");
+      const L = p.fromDXF && gr.it.lay ? layer(gr.it.lay, col) : layer(col.replace("#", ""), col), aci = aciNear(col);
+      for (const sub of gr.subs) {
+        let vs = [], closed = false, cur = null;
+        for (const sg of sub.segs) {
+          if (sg[0] === "M") { cur = T(sg[1], sg[2]); vs.push([cur[0], cur[1], 0]); }
+          else if (sg[0] === "L") { cur = T(sg[1], sg[2]); vs.push([cur[0], cur[1], 0]); }
+          else if (sg[0] === "C") {
+            const p1 = T(sg[1], sg[2]), p2 = T(sg[3], sg[4]), p3 = T(sg[5], sg[6]), bu = arcOf(cur, p1, p2, p3);
+            if (bu != null) { vs[vs.length - 1][2] = bu; vs.push([p3[0], p3[1], 0]); }
+            else { const pts = []; flatten(cur, p1, p2, p3, pts, 0); for (const q of pts) vs.push([q[0], q[1], 0]); }
+            cur = p3;
+          } else if (sg[0] === "Z") closed = true;
+        }
+        emit(vs, closed, L, aci);
+      }
+    }
+  }
+  const hdr = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "9", "$INSUNITS", "70", "4", "9", "$MEASUREMENT", "70", "1",
+    "9", "$EXTMIN", "10", "0", "20", "0", "30", "0", "9", "$EXTMAX", "10", f(W), "20", f(H), "30", "0", "0", "ENDSEC",
+    "0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LTYPE", "70", "1", "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0", "0", "ENDTAB",
+    "0", "TABLE", "2", "LAYER", "70", String(layers.size + 1), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
+  for (const [n, ci] of layers) hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
+  hdr.push("0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "BLOCKS", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES");
+  const all = hdr.concat(out, ["0", "ENDSEC", "0", "EOF"]);
+  let dxf = ""; for (let i = 0; i < all.length; i += 2) dxf += (all[i].length < 3 ? all[i].padStart(3) : all[i]) + "\r\n" + all[i + 1] + "\r\n";
+  return {dxf, notes:[...notes]};
+}
 let plateURLs = [];
 function renderLayout(){
   plateURLs.forEach(u => URL.revokeObjectURL(u)); plateURLs = [];
@@ -1540,7 +1659,7 @@ function renderLayout(){
     const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" opacity=".65"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--plate-edge)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     const card = document.createElement("article"); card.className = "plate";
-    card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" class="btn small">Download SVG</button></div>
+    card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" class="btn small">Download ${ext().toUpperCase()}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="Plate ${i+1} layout" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>`;
     card.querySelector("button").onclick = () => exportPlate(i);
@@ -1548,7 +1667,7 @@ function renderLayout(){
   });
   $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx();
 }
-const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.svg`;
+const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
 const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";
 function download(data, filename, type){
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], {type}));
@@ -1556,16 +1675,22 @@ function download(data, filename, type){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+function plateFile(pl, notes){
+  if (ext() === "svg") return plateSVG(pl);
+  const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
+}
 function exportPlate(i){
-  download(plateSVG(layout.plates[i]), fname(i), "image/svg+xml");
-  toast(`Saved ${fname(i)}`);
+  const notes = new Set();
+  download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
+  toast(`Saved ${fname(i)}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
 }
 $("dlAll").onclick = async () => {
   if (!layout || !window.JSZip) return;
   const zip = new JSZip();
-  layout.plates.forEach((pl, i) => zip.file(fname(i), plateSVG(pl)));
+  const notes = new Set();
+  layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
   download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(`Saved ${zipName()}`);
+  toast(`Saved ${zipName()}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
 };
 
 let toastT;
