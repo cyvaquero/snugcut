@@ -2,6 +2,12 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.0-beta
+
+- First release candidate. Major version bumped to 1 on request; minor and iterative reset to 0.
+- Same features as 0.1.33. The footer, the export comment (`<!-- SnugCut v1.0.0-beta -->`) and the DXF `999` marker
+  carry the new version.
+
 ## 0.1.33
 
 - Renamed **Plate Nester → SnugCut**.
