@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.23
+
+- `<line>` elements export with `fill="none"` instead of the default `fill="#000000"` (#46). MakeIT took that fill
+  colour, so lines landed on the black layer whatever their stroke colour. Lines can now also be chained with the
+  other open segments of the same style, so CAD outlines drawn as separate `<line>`s become one closed path. Files
+  without `<line>` export unchanged. New fixture `fixtures/cad-lines.svg`.
+
 ## 0.1.22
 
 - `currentColor` in imported SVGs exports as black again, as in a standalone SVG, instead of the app's theme text
