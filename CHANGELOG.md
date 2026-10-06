@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.17
+
+- Ids that read as hex colours (`fff`, `cafe`, `bad`, …) no longer corrupt colours in `<style>` (#13). Id prefixing
+  (on import and per instance on export) now rewrites `#id` only in selectors, not in declaration values, strings,
+  comments or attribute selectors, so `stroke:#fff` stays `#fff`. Files without such clashes export unchanged.
+  New fixture `fixtures/style-ids.svg`.
+
 ## 0.1.16
 
 - Content-Security-Policy (#11), as a `<meta>` tag so it also applies when the page is opened from disk: scripts

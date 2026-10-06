@@ -195,7 +195,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.16</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.17</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -387,6 +387,27 @@ function stripExternal(root){
   }
   return n;
 }
+function renameSelectors(css, f){
+  // rewrite #id and .class names in selectors only (the text before each "{" that isn't an at-rule); declarations,
+  // strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are left as they are.
+  // f(kind, name) returns the new name, or null to keep it.
+  const sel = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)/gi,
+    (m, keep, k, name) => { if (keep) return keep; const r = f(k, name); return r == null ? m : k + r; });
+  let out = "", seg = "", q = "", depth = 0;
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (q) { seg += ch; if (ch === "\\") seg += css[++i] ?? ""; else if (ch === q) q = ""; continue; }
+    if (ch === "/" && css[i+1] === "*") { const j = css.indexOf("*/", i + 2), e = j < 0 ? css.length : j + 2; seg += css.slice(i, e); i = e - 1; continue; }
+    if (ch === "&") { const m = /^&(?:[a-z]+|#\d+|#x[0-9a-f]+);/i.exec(css.slice(i, i + 12)); if (m) { seg += m[0]; i += m[0].length - 1; continue; } }
+    if (ch === '"' || ch === "'") q = ch;
+    else if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(depth - 1, 0);
+    else if (!depth && ch === "{") { out += (/^\s*@/.test(seg) ? seg : sel(seg)) + ch; seg = ""; continue; }
+    else if (!depth && (ch === "}" || ch === ";")) { out += seg + ch; seg = ""; continue; }
+    seg += ch;
+  }
+  return out + seg;
+}
 function parseSVG(text, name){
   const doc = new DOMParser().parseFromString(text, "image/svg+xml");
   const root = doc.documentElement;
@@ -406,7 +427,7 @@ function parseSVG(text, name){
         if (a.localName === "href" && nv[0] === "#" && ids.has(nv.slice(1))) nv = "#" + ids.get(nv.slice(1));
         if (nv !== a.value) el.setAttributeNS(a.namespaceURI, a.name, nv);
       }
-      if (el.localName === "style") el.textContent = fix(el.textContent).replace(/#([A-Za-z_][\w-]*)/g, (m, id) => ids.has(id) ? "#" + ids.get(id) : m);
+      if (el.localName === "style") el.textContent = renameSelectors(fix(el.textContent), (k, id) => k === "#" && ids.has(id) ? ids.get(id) : null);
     }
   }
   const vbA = (root.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
@@ -601,8 +622,11 @@ function uniquifyIds(markup, prefix){
     const e = re(id), n = prefix + id;
     markup = markup.replace(new RegExp(`(\\sid=")${e}(")`, "g"), `$1${n}$2`)
       .replace(new RegExp(`url\\(\\s*(['"]?)#${e}\\1\\s*\\)`, "g"), `url(#${n})`)
-      .replace(new RegExp(`(href\\s*=\\s*["'])#${e}(["'])`, "g"), `$1#${n}$2`)
-      .replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/g, (m, a, css, z) => a + css.replace(new RegExp(`#${e}(?![\\w-])`, "g"), `#${n}`) + z);
+      .replace(new RegExp(`(href\\s*=\\s*["'])#${e}(["'])`, "g"), `$1#${n}$2`);
+  }
+  if (ids.length) {
+    const has = new Set(ids);
+    markup = markup.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/g, (m, a, css, z) => a + renameSelectors(css, (k, id) => k === "#" && has.has(id) ? prefix + id : null) + z);
   }
   return markup;
 }
