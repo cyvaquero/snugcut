@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.20
+
+- New MakeIT CSS support test files for #38: `fixtures/makeit-css-support.svg` (class, element-type, descendant,
+  child and `:where()` selectors, `style` attribute, inline style beating a rule, plus a black reference square) and
+  `fixtures/makeit-css-universal.svg` (`*` selector, kept separate because it would restyle everything). Every test
+  square is drawn black, and red means the CSS was applied; in a browser all test squares are red. No app changes.
+
 ## 0.1.19
 
 - The flattened export keeps `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `stroke-dasharray` and
