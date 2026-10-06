@@ -195,7 +195,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.17</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.18</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -429,6 +429,12 @@ function parseSVG(text, name){
       }
       if (el.localName === "style") el.textContent = renameSelectors(fix(el.textContent), (k, id) => k === "#" && ids.has(id) ? ids.get(id) : null);
     }
+  }
+  const sheets = all.filter(el => el.localName === "style");
+  if (sheets.length) {
+    // class names get the same prefix, so one file's .cut rules can't restyle another file's parts on a plate
+    for (const el of all) { const c = (el.getAttribute("class") || "").trim(); if (c) el.setAttribute("class", c.split(/\s+/).map(n => pfx + n).join(" ")); }
+    for (const el of sheets) { const t = renameSelectors(el.textContent, (k, n) => k === "." ? pfx + n : null); if (t !== el.textContent) el.textContent = t; }
   }
   const vbA = (root.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
   const vb = vbA.length === 4 && vbA.every(isFinite) && vbA[2] > 0 && vbA[3] > 0 ? vbA : null;
