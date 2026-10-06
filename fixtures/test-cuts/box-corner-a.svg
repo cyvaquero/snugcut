@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="53mm" height="40mm" viewBox="0 0 53 40">
+  <!-- Box corner test A for 3 mm stock: 8 mm fingers, 3 mm deep, on the right edge. Joins B at 90 degrees. -->
+  <path d="M0 0L53 0L53 8L50 8L50 16L53 16L53 24L50 24L50 32L53 32L53 40L0 40Z" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+</svg>

@@ -2,6 +2,22 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.31
+
+- Test-cut fixtures for kerf and fit (red = cut, blue = score):
+  - `fingers-inplane-a.svg` and `fingers-inplane-b.svg`: an in-plane finger joint (three 6 mm fingers into two). The
+    fit depends only on the kerf, not on material thickness: snug with the right kerf and compensation, loose by
+    about a kerf without.
+  - `box-corner-a.svg` and `box-corner-b.svg`: a 90° box corner for 3 mm stock (8 mm fingers, 3 mm deep).
+  - `slot-gauge-3mm.svg`: open slots 2.8 / 2.9 / 3.0 / 3.1 / 3.2 mm wide, marked by 1–5 score ticks, to check
+    material thickness and fit as cut.
+  - No app changes.
+- `fixtures/` is organised into subfolders: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/` and `test-cuts/`,
+  described in `fixtures/README.md`. File names are unchanged, so paths in older entries and issues refer to
+  `fixtures/<folder>/<name>`.
+- README: a new **Test cuts** section. For each piece in `fixtures/test-cuts/`: how to cut it, what to measure, and
+  how to adjust the kerf from the result.
+
 ## 0.1.30
 
 - Optional kerf compensation (#36): **Compensate kerf on objects** under Kerf, off by default. With it off, SVG and
