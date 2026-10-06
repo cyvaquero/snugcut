@@ -12,6 +12,9 @@ Format `major.minor.iterative`. Major/minor change only on request; the iterativ
   - `slot-gauge-3mm.svg`: open slots 2.8 / 2.9 / 3.0 / 3.1 / 3.2 mm wide, marked by 1–5 score ticks, to check
     material thickness and fit as cut.
   - No app changes.
+- `fixtures/` is organised into subfolders: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/` and `test-cuts/`,
+  described in `fixtures/README.md`. File names are unchanged, so paths in older entries and issues refer to
+  `fixtures/<folder>/<name>`.
 
 ## 0.1.30
 
