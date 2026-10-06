@@ -2,6 +2,11 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.14
+
+- Page description covers other cutters (laser, vinyl, CNC, plasma) and materials; the two modes are listed as
+  bullets. The kerf field is labelled "Kerf" instead of "Laser kerf", and its hint says "the cut" rather than "the beam". README and CLAUDE.md reworded to match.
+
 ## 0.1.13
 
 - Removed `reference/` (the original true-shape and bounding-box apps). `plate-nester.html` is now the only

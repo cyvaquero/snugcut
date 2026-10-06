@@ -1,6 +1,6 @@
 # plate-nester
 
-Client-side SVG nesting for laser cutting (true shape + bounding box) as **one self-contained HTML file with inline
+Client-side SVG nesting for laser, vinyl, CNC and plasma cutting (true shape + bounding box) as **one self-contained HTML file with inline
 JavaScript**, like the original reference apps it replaced.
 The export format is verified in WeCreat MakeIT and must stay exactly as is.
 

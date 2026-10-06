@@ -1,6 +1,6 @@
 # Plate Nester
 
-Nest SVG parts onto laser-cutter plates, in one HTML file. Open
+Nest SVG parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`plate-nester.html`](plate-nester.html) in a browser (double-click is fine): no install, no build, no server.
 Everything runs in the page; nothing is uploaded.
 
