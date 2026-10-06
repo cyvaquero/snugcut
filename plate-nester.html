@@ -195,7 +195,7 @@ footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-betw
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.22</span></footer>
+  <footer><span>All processing stays in your browser.</span><span id="appver">v0.1.23</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -632,7 +632,7 @@ function extractFlat(g){
     let hidden = false;
     for (let a = el; a && a !== g; a = a.parentElement) if (getComputedStyle(a).display === "none") { hidden = true; break; }
     if (hidden) continue;
-    const fill = cssColor(cs.fill), stroke = cssColor(cs.stroke);
+    const fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);   // a line is never filled
     if (fill === undefined || stroke === undefined) return null;
     if (fill === "none" && stroke === "none") continue;
     let d;
