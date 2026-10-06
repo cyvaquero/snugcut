@@ -2,6 +2,14 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.25
+
+- Output file prefix (#28): a new setting under Plate & cutting. With a prefix such as `bracket-3mm`, downloads are
+  named `bracket-3mm-plate-01-of-03.svg` and `bracket-3mm-plates.zip`, and the plate files inside the zip get the same
+  names. The prefix is made safe for file names (`/ \ : * ? " < > |`, control characters and leading/trailing dots are
+  removed, whitespace is collapsed, 60 characters at most), saved with the other settings, and previewed under the
+  field. Empty keeps the current names. The SVG content is unchanged.
+
 ## 0.1.24
 
 - New MakeIT test file for #13, `fixtures/makeit-id-colours.svg`: ids that read as hex colours (`f00`, `ff0000`)
