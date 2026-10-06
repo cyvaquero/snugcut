@@ -212,7 +212,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.31</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.32</span> <a id="changelog" href="https://github.com/cyvaquero/plate-nester/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -690,8 +690,9 @@ function parseSVG(text, name){
   const rootAttrs = KEEP_ATTRS.filter(a => root.hasAttribute(a)).map(a => `${a}="${esc(root.getAttribute(a))}"`).join(" ");
   const ser = new XMLSerializer();
   const inner = [...root.childNodes].filter(n => n.nodeType === 1).map(n => ser.serializeToString(n)).join("");
-  if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none"; document.body.appendChild(host); }
-  // all:initial + black: parts must not inherit the page's theme colour or fonts (currentColor would export as the UI text colour, #44)
+  if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;opacity:0;pointer-events:none"; document.body.appendChild(host); }
+  // all:initial + black: parts must not inherit the page's theme colour or fonts (currentColor would export as the UI text colour, #44).
+  // Hidden with opacity, which isn't inherited: visibility:hidden would make every part's own visibility unreadable (#17).
   const g = document.createElementNS(SVGNS, "g");
   if (root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
@@ -699,7 +700,9 @@ function parseSVG(text, name){
   let bb, rings;
   const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false, stripped};
   try {
-    if (inlineSheets(g)) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
+    const inl = inlineSheets(g);
+    p.hidden = dropHidden(g);
+    if (inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
@@ -726,6 +729,25 @@ const PRES = new Set(["fill","fill-opacity","fill-rule","stroke","stroke-width",
   "stop-color","stop-opacity","flood-color","flood-opacity","lighting-color","marker-start","marker-mid","marker-end","paint-order",
   "vector-effect","shape-rendering","text-rendering","image-rendering","color-interpolation","color-interpolation-filters","overflow",
   "pointer-events","transform-origin","mix-blend-mode","isolation"]);
+function dropHidden(g){
+  // shapes a browser wouldn't show are not part of the cut (#17): removed before anything is measured, nested or
+  // exported. Hidden = display:none on it or an ancestor, visibility other than visible (a visible child of a hidden
+  // group counts, as in CSS), opacity 0 on it or an ancestor, or nothing painted (no fill and no stroke).
+  let n = 0;
+  const paint = (v, o) => v && v !== "none" && !/^rgba\(.*,\s*0\)$/.test(v) && !/^transparent$/.test(v) && !(parseFloat(o) === 0);
+  for (const el of [...g.querySelectorAll("path,rect,circle,ellipse,line,polyline,polygon,text,use,image")]) {
+    if (el.namespaceURI !== SVGNS || el.closest("defs,clipPath,mask,symbol,pattern,marker")) continue;
+    const cs = getComputedStyle(el);
+    let hide = cs.visibility !== "visible";
+    for (let a = el; !hide && a && a !== g; a = a.parentElement) { const c = getComputedStyle(a); hide = c.display === "none" || parseFloat(c.opacity) === 0; }
+    if (!hide && el.localName !== "use" && el.localName !== "image") {
+      const fill = el.localName !== "line" && paint(cs.fill, cs.fillOpacity), stroke = paint(cs.stroke, cs.strokeOpacity) && parseFloat(cs.strokeWidth) > 0;
+      hide = !fill && !stroke;
+    }
+    if (hide) { el.remove(); n++; }
+  }
+  return n;
+}
 function inlineSheets(g){
   // MakeIT ignores class, universal and descendant selectors but applies element-type rules to the whole plate, so a
   // part's <style> can't be exported as is (#38, #42). Write the computed value of every property the rules declare
@@ -1588,14 +1610,16 @@ async function addFiles(list){
   if (!files.length) { toast("Only .svg and .dxf files can be added."); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
   const errs = [];
-  const stripped = [];
+  const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await f.text();
     const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
+    if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
     if (pre) { p.precomp = true; errs.push(`${f.name} was downloaded from Plate Nester with kerf compensation built in, so it won't be compensated again.`); }
   } catch(e) { errs.push(e.message); } }
+  if (hiddenIn.length) errs.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
   if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
   if (errs.length) toast(errs.join(" "));
   restart();
