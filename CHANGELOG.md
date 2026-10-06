@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 0.1.12
+
+- Fragmented outlines are joined on export (#27): open subpaths of the same line style whose ends meet (within
+  0.01 mm) are chained into continuous paths, reversing pieces where needed, and closed with `Z` when they loop back.
+  CAD/DXF-style sources that store every segment separately no longer cut one segment at a time, and their holes are
+  now recognised for inside-first ordering (#25). Objects, ids and geometry are unchanged.
+
 ## 0.1.11
 
 - Exported plate SVGs carry the app version as a comment (`<!-- Plate Nester v0.1.11 -->`) just inside the
