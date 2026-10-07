@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.1-beta
+
+- SnugCut is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0-only) (#196): `LICENSE` holds the
+  license text, the sources carry SPDX identifiers and a copyright notice, the README has a License section (including
+  the libraries' own licenses), and the footer links to the license.
+
 ## 1.2.0-beta
 
 Release of 1.1.1-beta through 1.1.59-beta. Highlights:
