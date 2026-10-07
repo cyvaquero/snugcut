@@ -159,8 +159,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, and the lock icon is open or closed
   to match.
 - **Contrast**: text meets WCAG AA in both themes, and the borders of fields and buttons are at least 3:1.
+- **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
+  visible "Qty" label, and every button has its own name ("Lock orientation of star.svg", "Download SVG, plate 1 of 2").
 - **Known gaps**, tracked as issues:
-  - names, labels and page structure (#102, #103);
   - low-contrast preview guide lines (#105);
   - part names get cut off at 320 px width or 400% zoom (#100);
 - Report other problems as a GitHub issue.

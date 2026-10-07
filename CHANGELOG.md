@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.21-beta
+
+- Parts list and plates (#103):
+  - each quantity field has a visible "Qty" label, and its accessible name is "Qty <file name>";
+  - lock buttons are named per part ("Lock orientation of star-ornament.svg");
+  - plate download buttons are named per plate ("Download SVG, plate 1 of 2"), so every button's name is unique.
+- README updated (#102 and #103 off the known gaps).
+
 ## 1.1.20-beta
 
 - Page structure (#102):

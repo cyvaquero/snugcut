@@ -64,6 +64,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .part .sz.bad{color:var(--warn)}
 .part input[type=number]{padding:5px 6px;font-size:14px}
 .part .acts{display:flex;gap:4px}
+.part .info{min-width:0}
+.qw{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 .icon svg{width:15px;height:15px}
