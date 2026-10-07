@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 100 50" fill="none" stroke="#ff0000" stroke-width="0.2">
+  <!-- Presentation attributes on the root <svg> (#64, case A): both shapes export fill="none" stroke="#ff0000",
+       and are kerf-compensated when compensation is on. Check in MakeIT: two red cut outlines, no filled areas. -->
+  <path d="M0.1 0.1H99.9V49.9H0.1Z"/>
+  <circle cx="50" cy="25" r="10"/>
+</svg>

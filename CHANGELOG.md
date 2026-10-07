@@ -2,6 +2,25 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.2-beta
+
+- Fill, stroke, stroke width, font size, `style` and the other presentation attributes set on the root `<svg>` now
+  count when a part is measured and flattened (#64). Before, they were only applied to the thumbnail and to parts
+  exported as drawn:
+  - red outlines set on the root exported as black filled areas, and skipped kerf compensation;
+  - a file whose only stroke was on the root was rejected as having no visible shapes;
+  - text sized on the root was measured at 16 px, then exported at its real size and ran into its neighbours.
+- Files without presentation attributes on the root export exactly as before.
+- Fixtures: `geometry/root-attrs-stroke.svg`, `root-attrs-stroke-only.svg`, `root-attrs-font-size.svg`.
+
+## 1.0.1-beta
+
+- Class names in a file without a `<style>` block no longer pick up the app's own CSS while the part is measured
+  (#63). A shape with `class="icon"` was measured as 28 × 28 mm (`dot` 8 × 8, `bar` 5 high), so nested copies
+  overlapped on the plate; `note`, `hint` and `icon` turned `currentColor` into the UI grey `#93a0ae`.
+- The class names are prefixed only while measuring; the exported markup keeps them as drawn.
+- Fixture: `css/ui-class-names.svg`.
+
 ## 1.0.0-beta
 
 - First release candidate. Major version bumped to 1 on request; minor and iterative reset to 0.
