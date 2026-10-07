@@ -4,6 +4,18 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.38-beta
+
+- Parts can be nested inside the holes of other parts (True shape, #3). A part with holes gets a **Nest parts inside
+  the holes** button in the parts list, off by default, because SnugCut can't tell a closed cut from a closed score
+  outline. Turned on, smaller parts go into its holes with the usual spacing to the hole's edge and to anything drawn
+  inside it, and each nested part is cut, whole, before the part around it. Fill figures count the hole as empty
+  space for such parts. Four 100 mm rings with 60 mm holes and four 40 mm discs now fit one 210 × 210 mm plate
+  instead of two.
+- New fixtures in `fixtures/nesting/`: a ring, a disc that fits its hole, and a frame with a disc and a score line in
+  its window.
+- Layouts and exports are unchanged unless the button is turned on.
+
 ## 1.1.37-beta
 
 - DXF files that don't declare their units (`$INSUNITS` missing or 0, as in every R12 file) get a **Drawn in** menu

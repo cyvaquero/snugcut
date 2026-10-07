@@ -1,6 +1,6 @@
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
-import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, envelope, esc,
+import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, envelope, esc, hasHoles,
   fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, mulberry, n4, newRun, pack, parseSVG, plateDXF,
   plateSVG, rectFits, score, setVersion, shape, toPlates} from "../lib/snugcut.js";
 
@@ -192,11 +192,14 @@ function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout
 const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 // open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
 const ICON_UNLOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
+// a part's holes open to other parts (#3): an empty frame when off, a frame with a part inside when on
+const ICON_HOLE = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="5.5" y="5.5" width="5" height="5" rx="1" stroke-dasharray="2 1.5"/></svg>`;
+const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
 const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
 function renderParts(){
   // the list is rebuilt: put focus back on the same control of the same part (#95)
   const box = $("parts"), fa = document.activeElement, fr = fa && box.contains(fa) ? fa.closest(".part") : null;
-  const keep = fr ? {uid:fr.dataset.uid, sel:fa.matches("input") ? "input" : fa.matches("select") ? "select" : fa.matches(".lk") ? ".lk" : ".rm"} : null;
+  const keep = fr ? {uid:fr.dataset.uid, sel:fa.matches("input") ? "input" : fa.matches("select") ? "select" : fa.matches(".lk") ? ".lk" : fa.matches(".hl") ? ".hl" : ".rm"} : null;
   box.innerHTML = "";
   const F = binFrame();
   for (const p of parts) {
@@ -204,7 +207,7 @@ function renderParts(){
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${esc(S.unit)}${ok?"":" · too big"}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">Drawn in</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>inches</option></select></div>` : ""}</div>
       <div class="qw"><span class="ql" id="ql-${p.uid}">Qty</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation of ${esc(p.name)}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+      <div class="acts">${S.mode !== "bbox" && hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="Nest other parts inside this part's holes (only if every closed inner outline is cut, not scored)" aria-label="Nest parts inside the holes of ${esc(p.name)}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : ""}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation of ${esc(p.name)}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
@@ -213,7 +216,8 @@ function renderParts(){
     };
     const du = row.querySelector(".du select");
     if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(`${np.name} read in ${du.value === "in" ? "inches" : "millimeters"}: ${fmt(np.wMM)} × ${fmt(np.hMM)} ${S.unit}.`); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
-    const [lk, rm] = row.querySelectorAll(".acts button");
+    const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
+    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
@@ -236,7 +240,7 @@ function updateCount(){
 function reunit(p, units){
   try {
     const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
-    Object.assign(np, {fromDXF:true, qty:p.qty, lock:p.lock, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    Object.assign(np, {fromDXF:true, qty:p.qty, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }

@@ -78,12 +78,18 @@ Settings are remembered in this browser (local storage) and restored next time.
 In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orientation** button that stops that part
 from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
 
+**Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default).
+Turned on, smaller parts can be nested in that part's holes, with the same spacing as anywhere else, and they're cut,
+whole, before the part around them, so the hole's slug can't drop or shift before they're free. A hole is any closed,
+unfilled outline inside the part (the rule kerf compensation uses). SnugCut can't tell a cut from a score, so turn it on
+only for parts whose closed inner outlines are all cut: a part nested inside a scored outline would be cut out of the
+middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear.
+
 What happens to imported files:
 
 - Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
 - Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. Embedded
   (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
-- Holes are cut, but other parts aren't nested inside them yet (#3).
 
 ## Test cuts
 
@@ -160,8 +166,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   with counts and rotations, linked to the image.
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use.
-- **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, and the lock icon is open or closed
-  to match.
+- **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the lock icon is open or closed to
+  match, and the holes icon shows an empty or a filled hole.
 - **Contrast**: text meets WCAG AA in both themes; the borders of fields and buttons and the guide lines on the plate
   previews are at least 3:1.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
