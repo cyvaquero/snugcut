@@ -4,6 +4,17 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.28-beta
+
+- Crafted DXF files can no longer hang the page (#77):
+  - ARC and ELLIPSE angles are reduced with a modulo instead of a loop that adding 2π to never finished on huge
+    values (a start angle of 1e300 froze the tab);
+  - block arrays and nesting are capped: past 250,000 items (array cells plus entities) the file is refused with
+    "… expands to more than 250,000 items (blocks and arrays), so it wasn't added." (a 100000 × 100000 INSERT array
+    hung).
+- Normal DXF imports are byte-identical, including arcs that wrap past 0° or use angles over 360°. Fixtures:
+  `security/dxf-arc-hang.dxf`, `security/dxf-insert-array.dxf`.
+
 ## 1.1.27-beta
 
 - Embedded `data:` content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts (#78). A `data:`
