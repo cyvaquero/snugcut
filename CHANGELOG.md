@@ -2,6 +2,49 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.8-beta
+
+- The two CDN libraries (clipper-lib 6.4.2, jszip 3.10.1) load with Subresource Integrity (`integrity="sha384-…"`,
+  `crossorigin="anonymous"`), so a changed or tampered CDN file is blocked instead of run (#70). A blocked clipper-lib
+  shows the existing "geometry library didn't load" message; a blocked jszip only hides the zip download.
+- README: how to recompute the hashes when a library version changes.
+
+## 1.0.7-beta
+
+- Parts kept as original markup (text, images, effects) were kerf-compensated in DXF exports but not in SVG. Both
+  formats now export them as drawn, with the same notice, as the README says (#68).
+- With compensation on, nesting no longer reserves a compensation allowance around those parts, since they aren't
+  compensated: they get exactly the set spacing.
+
+## 1.0.6-beta
+
+- Clicking **Stop** before the first layout after a change was ready threw an error, left the status stuck at
+  "Nesting…", and made "Search 30 s more" fail. It now says the plates shown are out of date, and "Search 30 s more"
+  starts a fresh search (#67).
+- After changing parts, quantities, rotation locks, kerf, compensation, plate size or any other nesting setting, the
+  previous plates could still be downloaded until the new layout appeared. They are now dimmed and their download
+  buttons disabled until a new layout replaces them.
+- A change also drops the previous search, so "Search 30 s more" can't continue it with the old parts.
+
+## 1.0.5-beta
+
+- DXF export of parts imported from DXF keeps one output layer per source layer, as the export header promises, even
+  when layers share a colour (e.g. CUT and SCORE both colour 7). Open lines are no longer joined across layers (#66).
+- The DXF LAYER table no longer lists layer `0` twice when the source uses it, and its count matches its records.
+- SVG export is unchanged: DXF-imported parts still export with one path per line style.
+- Fixture: `dxf/dxf-same-colour-layers.dxf`.
+
+## 1.0.4-beta
+
+- An SVG whose `viewBox` has a different aspect ratio from its `width`/`height` is no longer stretched (#65). Before,
+  x and y were scaled separately, so a circle was cut as an ellipse. Scaling now follows `preserveAspectRatio` as
+  viewers do:
+  - `meet` (the default, also used for an invalid value) fits the drawing in the box;
+  - `slice` fills the box;
+  - only `none` stretches.
+- Shapes are never cropped to the box, whatever the value: SnugCut always cuts whole shapes.
+- Fixtures: `geometry/viewbox-aspect-meet.svg`, `viewbox-aspect-none.svg`, `viewbox-aspect-slice.svg`.
+
 ## 1.0.3-beta
 
 - New `RELEASING.md` with the release procedure:
