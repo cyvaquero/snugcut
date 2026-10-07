@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.36-beta
+
+- Bounding box mode reports fill from the parts' real outline area, as True shape does, instead of their whole
+  bounding rectangles (#130). The sample parts showed 85% average fill (90% and 80%) while they really cover 53% (70%
+  and 36%). Affects the Average fill stat, the plate cards, the plate image descriptions and the screen-reader summary.
+  The packing still scores whole rectangles, so layouts are unchanged.
+
 ## 1.1.35-beta
 
 - The DXF "nothing to cut" error lists ellipses too and says it looked on visible layers. When the geometry is there
