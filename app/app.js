@@ -162,8 +162,10 @@ function status(t0, ms, token){
   const el = performance.now() - t0;
   $("status").innerHTML = `<span class="dot on"></span>Searching… ${(el/1000).toFixed(1)} of ${(ms/1000).toFixed(0)} s · ${search.tried} layouts tried`;
 }
+let searching = false;
 function setRunning(on){
   const f = document.activeElement;
+  searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
   if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
   if (!on) say(runSummary());
@@ -333,10 +335,14 @@ function drawLayout(){
   });
   $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx(); showStale();
 }
+// while a search runs it can replace the layout at any moment, so single plates of a multi-plate job can't be downloaded
+// (two files could come from different layouts); Download all takes one layout at once (#153)
+const plateBusy = () => searching && !!layout && layout.plates.length > 1;
 function showStale(){
-  const st = !!(layout && layout.stale);
+  const st = !!(layout && layout.stale), busy = !st && plateBusy();
   $("plates").classList.toggle("stale", st);
-  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st); b.title = st ? "Out of date: wait for the new layout" : ""; });
+  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st || busy);
+    b.title = st ? "Out of date: wait for the new layout" : busy ? "Searching: stop the search, or use Download all, so every plate comes from the same layout" : ""; });
   $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
@@ -353,7 +359,7 @@ function plateFile(pl, notes){
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
 function exportPlate(i){
-  if (!layout || layout.stale) return;
+  if (!layout || layout.stale || plateBusy()) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
   toast(`Saved ${fname(i)}`); notes.forEach(t => notice(t));

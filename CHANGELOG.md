@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.49-beta
+
+- While a search is running, single plates of a multi-plate job can't be downloaded (#153): the search can replace
+  the layout at any moment, so two plate files could come from different layouts, with parts missing or cut twice.
+  The buttons say why; **Download all** keeps working and takes every plate from one layout. After Stop, or when the
+  search ends, single plates download as before.
+
 ## 1.1.48-beta
 
 - An SVG path with a number right after Z (`…Z 5 5`) no longer hangs the page (#152). It's treated as malformed path
