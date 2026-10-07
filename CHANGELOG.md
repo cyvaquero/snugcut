@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.42-beta
+
+- True shape nests rounded rectangles by their rounded corners and `<use>` copies by the shapes they copy, instead of
+  by the box around them, so parts can tuck into the corners (#15). A 100 × 60 mm rect with 25 mm corners now nests
+  as 5,432 mm² instead of 5,968 mm²; two L brackets, one placed by a rotated `<use>`, as 928 mm² instead of 1,528.
+  Text, images and copies of a `<symbol>` still nest by their box. Part sizes and the exported files of each part are
+  unchanged; layouts with rounded rects shift (the sample shop sign), on the same number of plates.
+- The "too big" mark in the parts list already shows as soon as a part is added, at any quantity (#16).
+- New fixtures: `geometry/rounded-rect.svg`, `geometry/use-rotated.svg`.
+
 ## 1.1.41-beta
 
 - New **Efficiency** stat after Parts placed: a 1–10 rating of the whole job, with its percentage (#138). It divides

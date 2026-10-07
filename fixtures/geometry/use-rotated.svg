@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="80mm" viewBox="0 0 80 80">
+  <!-- <use> outline (#15): an L-shaped bracket drawn once and placed a second time by a rotated <use>. The nesting
+       outline follows both brackets, not the box around the rotated copy. -->
+  <path id="bracket" d="M2 2H30V10H10V40H2Z" fill="none" stroke="#ff0000" stroke-width="0.2"/>
+  <use href="#bracket" transform="rotate(180 40 40)"/>
+</svg>
