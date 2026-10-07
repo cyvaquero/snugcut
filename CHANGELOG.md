@@ -3,6 +3,12 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.10-beta
+
+- README: a new Accessibility section covers keyboard use, the light/dark theme and reduced motion, and lists the known
+  gaps with their issues. The four test-cut sub-headings (Kerf test, Finger joint, Box corner, Slot gauge) are real
+  `###` headings instead of bold text (#104).
+
 ## 1.1.9-beta
 
 - README: the libraries and fonts come from four public CDNs on every page load (unless cached), which shows them your

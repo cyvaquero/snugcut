@@ -96,7 +96,7 @@ material and with the speed and power you will use, because the kerf changes wit
 | `box-corner-a.svg` + `box-corner-b.svg` | 53 × 40 mm each | How a 90° box corner fits in 3 mm stock |
 | `slot-gauge-3mm.svg` | 64 × 24 mm | Which slot width your 3 mm stock actually needs |
 
-**Kerf test** (`kerf-test.svg`)
+### Kerf test (`kerf-test.svg`)
 
 1. Enter your kerf. To measure it, cut a square and use "Measure it from a test cut" under Kerf.
 2. Cut the piece with **Compensate kerf on objects** off, and again with it on and the kerf offset in your cutter's
@@ -115,7 +115,7 @@ material and with the speed and power you will use, because the kerf changes wit
    with a kerf of 0.06 mm or more (most kerfs), because it's narrower than the kerf; the download then names it in a
    notice. With a finer kerf it's compensated like the other holes.
 
-**Finger joint** (`fingers-inplane-a.svg` + `fingers-inplane-b.svg`)
+### Finger joint (`fingers-inplane-a.svg` + `fingers-inplane-b.svg`)
 
 Cut both pieces on one plate, lay them flat and push A's three 6 mm fingers into B's gaps. The fit depends only on
 the kerf, not on the material thickness.
@@ -128,19 +128,37 @@ the kerf, not on the material thickness.
 Fingers grow and gaps shrink by the same amount, so the fit changes twice as fast as the setting: 0.02 mm less kerf
 makes the joint about 0.04 mm looser.
 
-**Box corner** (`box-corner-a.svg` + `box-corner-b.svg`, 3 mm stock)
+### Box corner (`box-corner-a.svg` + `box-corner-b.svg`, 3 mm stock)
 
 Fingers 8 mm wide and 3 mm deep, the way a box side is joined. Fit the two pieces at 90°: A's fingers on segments 1,
 3 and 5 fill B's gaps. With the right kerf the joint is snug and the faces are flush. If the fingers stick out or sit
 short, the material isn't 3 mm: check it with the slot gauge. The finger depth is drawn for 3 mm; regenerate the pair
 for other stock.
 
-**Slot gauge** (`slot-gauge-3mm.svg`)
+### Slot gauge (`slot-gauge-3mm.svg`)
 
 Five open slots 2.8, 2.9, 3.0, 3.1 and 3.2 mm wide, marked by 1 to 5 score ticks under each slot. Push an offcut of
 the same sheet into each one. The narrowest slot it still enters is the slot width to draw for this material and
 machine, kerf included. Cut it with and without compensation to see how much the kerf changes the fit. With
 compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 slot snugly.
+
+## Accessibility
+
+- **Keyboard**: every control can be reached with Tab and used from the keyboard; the drop zone opens the file picker
+  with Enter or Space.
+- **Display**: the light or dark theme follows the system setting, and the status animation stops when reduced
+  motion is requested.
+- **Known gaps**, tracked as issues:
+  - status changes, results and errors aren't announced to screen readers (#93);
+  - messages disappear after 3.5 s (#94);
+  - keyboard focus is lost after some actions (#95);
+  - plate previews have no text description (#96);
+  - invalid entries aren't flagged (#97);
+  - toggles don't show their state in Windows high-contrast mode (#98);
+  - low-contrast field borders and preview guide lines (#99, #105);
+  - part names get cut off at 320 px width or 400% zoom (#100);
+  - names, labels and page structure (#101, #102, #103).
+- Report other problems as a GitHub issue.
 
 ## Files
 
