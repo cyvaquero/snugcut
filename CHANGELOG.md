@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.44-beta
+
+- The holes, lock and remove buttons in the parts list line up with the quantity input instead of sitting 6.5 px
+  above it, on desktop and on narrow screens (#143).
+
 ## 1.1.43-beta
 
 - In True shape mode, parts without holes show a dimmed red, slashed stand-in where the **Nest parts inside the holes**

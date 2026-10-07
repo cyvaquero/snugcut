@@ -66,7 +66,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .part .du{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;color:var(--muted)}
 .part .du select{width:auto;min-height:24px;padding:2px 6px;font-size:13px}
 .part input[type=number]{padding:5px 6px;font-size:14px}
-.part .acts{display:flex;gap:4px}
+.part .acts{display:flex;gap:4px;padding-top:13px}   /* the height of the Qty label + gap above the input, so the buttons line up with the input (#143) */
 .part .info{min-width:0}
 .qw{display:flex;flex-direction:column;gap:2px;min-width:0}
 /* narrow screens (320 px, 400% zoom): the name gets a full-width row; thumbnail, Qty and buttons go underneath (#100) */
