@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.54-beta
+
+- The header links to the project and the issue tracker (#150): "SnugCut is open source: see SnugCut on GitHub.
+  Found a problem or have a suggestion? Tell us on the issue tracker." Plain links that open in a new tab; nothing is
+  sent.
+
 ## 1.1.53-beta
 
 - Part thumbnails and plate previews stay visible in Windows high contrast (forced colors) with a dark theme (#157):
