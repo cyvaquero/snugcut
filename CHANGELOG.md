@@ -3,6 +3,12 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.6-beta
+
+- Outline precision options are labeled "Standard (0.25 mm)" and "Fine (0.1 mm)" instead of "±0.25 mm" / "±0.1 mm":
+  very complex outlines are simplified further (always outward), so the figure isn't a guaranteed tolerance. The README
+  now explains the setting: it changes only the nesting spacing, never the cut paths (#86).
+
 ## 1.1.5-beta
 
 - README, kerf test: the 0.06 mm pin hole stays as drawn (with a notice) only when the kerf is 0.06 mm or more; with

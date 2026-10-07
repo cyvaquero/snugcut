@@ -11,6 +11,10 @@ Two modes:
   ("Search 30 s more", Stop).
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
+**Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
+follows each part. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
+always outward, so they nest a little less tightly but never overlap.
+
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
 layout is ready.
 
