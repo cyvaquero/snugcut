@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.35-beta
+
+- The DXF "nothing to cut" error lists ellipses too and says it looked on visible layers. When the geometry is there
+  but on frozen, off, non-plotting or Defpoints layers, it says how many items those are, so the user knows where to
+  look ("… 2 items are on frozen, off, non-plotting or Defpoints layers.") (#85).
+
 ## 1.1.34-beta
 
 - "Set a quantity above zero to place parts." appears only when no part has a quantity (#84). When every part is too
