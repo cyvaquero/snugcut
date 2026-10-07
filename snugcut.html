@@ -245,7 +245,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.26-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.27-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -366,11 +366,14 @@ function isHidden(el, root){
 const decodeCSS = s => s.replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?/gi, (m, h) => { const c = parseInt(h, 16); return String.fromCodePoint(c > 0 && c <= 0x10FFFF ? c : 0xFFFD); })
   .replace(/\\([^\n])/g, "$1");
+// data: URLs are kept only for raster images and fonts. Anything else (an embedded SVG or HTML) can carry its own outside
+// links and active content into the exported file, where other software may render it without the browser's limits (#78).
+const safeData = v => /^data:\s*(?:image\/(?:png|jpe?g|gif|webp|avif|bmp)|font\/|application\/(?:x-)?font)/i.test(v);
 function cssExternal(v){
   v = decodeCSS(v).toLowerCase();
   if (v.includes("@import")) return true;
-  for (const m of v.matchAll(/(?:url|src)\(\s*(['"]?)\s*([^'")\s]*)/g)) if (!(m[2][0] === "#" || m[2].startsWith("data:"))) return true;
-  if (/(?:image-set|image|cross-fade)\(/.test(v)) for (const m of v.matchAll(/(['"])\s*([^'"]*)\1/g)) if (!(m[2][0] === "#" || m[2].startsWith("data:"))) return true;
+  for (const m of v.matchAll(/(?:url|src)\(\s*(['"]?)\s*([^'")\s]*)/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
+  if (/(?:image-set|image|cross-fade)\(/.test(v)) for (const m of v.matchAll(/(['"])\s*([^'"]*)\1/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
   return false;
 }
 function splitDecls(t){
@@ -407,7 +410,7 @@ function stripExternal(root){
     for (const a of [...el.attributes]) {
       const v = a.value.trim();
       if (a.localName === "href" || a.localName === "src") {
-        if (v[0] === "#" || (v.toLowerCase().startsWith("data:") && (el.localName === "image" || el.localName === "feImage"))) continue;
+        if (v[0] === "#" || (safeData(v) && (el.localName === "image" || el.localName === "feImage"))) continue;
         el.removeAttributeNS(a.namespaceURI, a.localName); n++;
       } else if (a.localName === "base" && a.namespaceURI === "http://www.w3.org/XML/1998/namespace") {
         el.removeAttributeNS(a.namespaceURI, a.localName);

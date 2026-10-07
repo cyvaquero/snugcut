@@ -78,7 +78,8 @@ from rotating, and a remove button. A few sample parts are loaded at first; they
 What happens to imported files:
 
 - Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
-- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched.
+- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. Embedded
+  (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
 - Holes are cut, but other parts aren't nested inside them yet (#3).
 
 ## Test cuts

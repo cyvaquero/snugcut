@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.27-beta
+
+- Embedded `data:` content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts (#78). A `data:`
+  SVG image, or a `data:` SVG in CSS (`mask`, `filter`, …), was passed through into exported files, where it could
+  carry outside links or active content into other software. Such links are now removed with the usual "Removed links
+  to outside files" notice. Fixture: `security/data-svg-image.svg`. README updated.
+
 ## 1.1.26-beta
 
 - Ids containing `$` sequences (`$'`, `` $` ``, `$&`, `$1`) no longer corrupt parts kept as original markup (#76). The id
