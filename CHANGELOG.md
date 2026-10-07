@@ -3,6 +3,13 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.9-beta
+
+- README: the libraries and fonts come from four public CDNs on every page load (unless cached), which shows them your
+  IP address; your files never leave the browser. It also says what still works without each one: no nesting without
+  clipper-lib, no zip download without jszip, system fonts without Google Fonts. The jszip version is given in the
+  README and `CLAUDE.md` (#89).
+
 ## 1.1.8-beta
 
 - README: a Settings section covering every setting (mode, units, plate and spacing values, compensation,

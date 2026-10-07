@@ -2,7 +2,7 @@
 
 Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`snugcut.html`](snugcut.html) in a browser (double-click is fine): no install, no build, no server.
-Everything runs in the page; nothing is uploaded. It needs a current desktop browser (Chrome or Edge, Firefox 101+,
+Everything runs in the page; your files are never uploaded (see [Files](#files) for the library and font requests). It needs a current desktop browser (Chrome or Edge, Firefox 101+,
 Safari 16.4+); those versions are known API support, not tested minimums.
 
 Two modes:
@@ -155,8 +155,12 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 
-Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
-`jszip@3.10.1` (zip download), plus Google Fonts. It needs network access for those on first load. A
+Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
+`jszip@3.10.1` (zip download), plus Google Fonts. They come from public CDNs (cdn.jsdelivr.net, cdnjs.cloudflare.com,
+fonts.googleapis.com, fonts.gstatic.com) **each time the page loads**, unless the browser has them cached. Those
+requests show the CDNs your IP address and that the page was opened; your files never leave the browser. Without
+clipper-lib the page can't nest and says so; without jszip only "Download all (.zip)" is missing, and each plate can
+still be downloaded on its own; without the fonts the page falls back to system fonts. A
 Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
 else. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
 changed; when bumping a library version, update its URL in the tag and the CSP and recompute its hash with
