@@ -51,6 +51,7 @@ function fillInputs(){
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
+  $("kerf").placeholder = S.unit === "in" ? "e.g. 0.004" : "e.g. 0.10";   // 0.10 in would be 2.54 mm (#172)
   $("u-mm").setAttribute("aria-pressed", S.unit === "mm"); $("u-in").setAttribute("aria-pressed", S.unit === "in");
 }
 function setUnit(u){
@@ -162,8 +163,10 @@ function status(t0, ms, token){
   const el = performance.now() - t0;
   $("status").innerHTML = `<span class="dot on"></span>Searching… ${(el/1000).toFixed(1)} of ${(ms/1000).toFixed(0)} s · ${search.tried} layouts tried`;
 }
+let searching = false;
 function setRunning(on){
   const f = document.activeElement;
+  searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
   if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
   if (!on) say(runSummary());
@@ -282,9 +285,15 @@ $("clear").onclick = () => { removeParts(() => true); restart(); };
 
 let plateURLs = [];
 function renderLayout(){
-  // the plates are rebuilt on every better layout: put focus back on the same plate's Download button (#95)
-  const fa = document.activeElement, fi = fa === $("dlAll") ? -1 : fa && $("plates").contains(fa) && fa.dataset.i != null ? +fa.dataset.i : null;
-  try { drawLayout(); } finally { if (fi != null) refocusPlate(fi); }
+  // the plates are rebuilt on every better layout: put focus back on the same plate's Download button (#95) or "Parts on
+  // this plate" summary, and reopen the part lists that were open (#156)
+  const box = $("plates"), fa = document.activeElement, fi = fa === $("dlAll") ? -1 : fa && box.contains(fa) && fa.dataset.i != null ? +fa.dataset.i : null;
+  const open = [...box.querySelectorAll(".plist")].map(d => d.open), sums = [...box.querySelectorAll(".plist summary")], si = sums.indexOf(fa);
+  try { drawLayout(); } finally {
+    box.querySelectorAll(".plist").forEach((d, i) => { if (open[i]) d.open = true; });
+    if (fi != null) refocusPlate(fi);
+    else if (si >= 0) { const s = box.querySelectorAll(".plist summary"); (s[Math.min(si, s.length - 1)] || drop).focus(); }
+  }
 }
 function refocusPlate(i){
   const bs = $("plates").querySelectorAll(".plate .hd button");
@@ -333,10 +342,14 @@ function drawLayout(){
   });
   $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx(); showStale();
 }
+// while a search runs it can replace the layout at any moment, so single plates of a multi-plate job can't be downloaded
+// (two files could come from different layouts); Download all takes one layout at once (#153)
+const plateBusy = () => searching && !!layout && layout.plates.length > 1;
 function showStale(){
-  const st = !!(layout && layout.stale);
+  const st = !!(layout && layout.stale), busy = !st && plateBusy();
   $("plates").classList.toggle("stale", st);
-  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st); b.title = st ? "Out of date: wait for the new layout" : ""; });
+  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st || busy);
+    b.title = st ? "Out of date: wait for the new layout" : busy ? "Searching: stop the search, or use Download all, so every plate comes from the same layout" : ""; });
   $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
@@ -353,7 +366,7 @@ function plateFile(pl, notes){
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
 function exportPlate(i){
-  if (!layout || layout.stale) return;
+  if (!layout || layout.stale || plateBusy()) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
   toast(`Saved ${fname(i)}`); notes.forEach(t => notice(t));

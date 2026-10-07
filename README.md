@@ -17,17 +17,24 @@ follows each part. Rounded rectangles nest by their rounded corners and `<use>` 
 images and copies of a `<symbol>` nest by the box around them. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
 always outward, so they nest a little less tightly but never overlap.
 
+**Area minimum** is the fewest plates the job could fit on by area alone: the parts' envelopes (outlines plus half
+the spacing all round) divided by the plate's usable area. When the best layout uses more plates than that, the status
+line suggests a longer search ("A longer search may save a plate").
+
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
-material: their outlines minus their holes, in both modes.
+material: their outlines minus their holes, in both modes (parts kept as original markup count their holes as
+material).
 
 **Efficiency** rates the whole job from 1 to 10: the parts' real material divided by the material the job uses up,
 with the percentage next to it. Full plates count whole; the last plate counts only up to one straight cut just past
 its parts, across its width or its height, whichever leaves the larger offcut, and that offcut's size is shown on the
-last plate. Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
+last plate (when it's at least 10 mm across). Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
-layout is ready.
+layout is ready. While a search is running it can replace the layout at any moment, so single plates of a
+multi-plate job can't be downloaded until it ends or you press Stop; **Download all** works throughout and takes every
+plate from the same layout.
 
 SVG sizes come from `width`/`height` (mm, cm, in, pt, pc, px at the set DPI) and the `viewBox`. When their aspect
 ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectRatio`: fit by default, fill for
@@ -35,7 +42,7 @@ ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectR
 
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
 splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`).
-Files that don't declare their units (every R12 file, for one) are read as mm, or as inches when their
+Files that don't declare their units (most R12 files) are read as mm, or as inches when their
 `$MEASUREMENT` header says imperial; a notice says which, and a **Drawn in** menu next to the part switches it between
 mm and inches. Each DXF color becomes a stroke color. Text, hatches and dimensions are skipped
 with a notice, and so is anything on a frozen, off or non-plotting layer or the Defpoints layer. Paper space and
@@ -55,14 +62,19 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
-  is recognized and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
-  narrower than the kerf are exported as drawn (in SVG and DXF), with a notice.
+  is recognized and not compensated a second time. Parts kept as original markup and holes narrower than the kerf
+  are exported as drawn (in SVG and DXF), with a notice.
+
+**Parts kept as original markup**: a part with text, images, `<use>` copies, gradient or pattern fills, clip paths,
+masks or filters is exported exactly as drawn instead of as cut paths. Such a part nests by its outline only: its kerf
+isn't compensated, it gets no **Nest parts inside the holes** button, its holes count as material in the utilization,
+and its text, images and `<use>` copies can't be written to DXF.
 
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
 (polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per color (named by its hex
-value), or per source layer for parts imported from DXF. Text, images and fills can't be written to DXF: filled
-shapes become outlines, and a notice names anything that was left out.
+value), or per source layer for parts imported from DXF. Text, images and `<use>` copies can't be written to DXF and
+are left out; filled shapes become outlines. A notice names anything that was left out.
 
 ## Settings
 
@@ -72,7 +84,7 @@ Settings are remembered in this browser (local storage) and restored next time.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
 - **Plate width / height**, **Kerf**, **Extra gap**, **Edge margin**: the sheet, the width the cut removes, extra
   spacing between parts, and the empty border around the sheet. "Measure it from a test cut" works out the kerf from a
-  designed and a measured size.
+  designed and a measured size; cut that test with compensation off and no kerf offset in your cutter's software.
 - **Compensate kerf on objects**: see above.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
@@ -88,7 +100,8 @@ Settings are remembered in this browser (local storage) and restored next time.
 In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orientation** button that stops that part
 from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
 
-**Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default);
+**Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
+not on parts kept as original markup);
 parts without holes show a dimmed red, slashed stand-in in its place, so the list lines up.
 Turned on, smaller parts can be nested in that part's holes, with the same spacing as anywhere else, and they're cut,
 whole, before the part around them, so the hole's slug can't drop or shift before they're free. A hole is any closed,
@@ -96,7 +109,7 @@ unfilled outline inside the part (the rule kerf compensation uses). SnugCut can'
 only for parts whose closed inner outlines are all cut: a part nested inside a scored outline would be cut out of the
 middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear. Utilization
 counts each part's real material: a hole is empty space, whether the button is on or not, until a part is nested in
-it, and then that part counts.
+it, and then that part counts (parts kept as original markup count their holes as material).
 
 What happens to imported files:
 
@@ -121,7 +134,8 @@ material and with the speed and power you will use, because the kerf changes wit
 
 ### Kerf test (`kerf-test.svg`)
 
-1. Enter your kerf. To measure it, cut a square and use "Measure it from a test cut" under Kerf.
+1. Enter your kerf. To measure it, cut a square with **Compensate kerf on objects** off and no kerf offset in your
+   cutter's software, then use "Measure it from a test cut" under Kerf.
 2. Cut the piece with **Compensate kerf on objects** off, and again with it on and the kerf offset in your cutter's
    software turned off.
 3. Measure both with calipers (k = the kerf):
@@ -180,7 +194,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use.
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the lock icon is open or closed to
-  match, and the holes icon shows an empty or a filled hole.
+  match, the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
+  behind the parts' own colors, so they stay visible in dark themes.
 - **Contrast**: text meets WCAG AA in both themes; the borders of fields and buttons and the guide lines on the plate
   previews are at least 3:1.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
@@ -208,7 +223,7 @@ in SnugCut; the details are in #106.
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
-| `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
+| `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `nesting/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
 `jszip@3.10.1` (zip download), plus Google Fonts. They come from public CDNs (cdn.jsdelivr.net, cdnjs.cloudflare.com,

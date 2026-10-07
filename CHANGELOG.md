@@ -4,6 +4,104 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.0-beta
+
+Release of 1.1.1-beta through 1.1.59-beta. Highlights:
+
+- **Parts inside holes** (True shape, #3): a per-part **Nest parts inside the holes** button; nested parts are cut
+  before the part around them (#151). Parts without holes show a slashed stand-in, so the list lines up (#141).
+- **Utilization** and an **Efficiency** rating from 1 to 10, from the parts' real material, with the last plate's
+  offcut (#130, #137, #138).
+- **DXF files without units** get a **Drawn in** menu (mm / inches) (#90).
+- **Rounded rectangles and `<use>` copies** nest by their real outlines (#15).
+- **Faster search**, no freezes during a search, and big line drawings join quickly (#145, #147, #148, #154).
+- Fixes from the release review: a number after Z in path data no longer hangs the page (#152); no single-plate
+  downloads while a search can replace the layout (#153); visible focus on the mode and units toggles (#155); plate
+  redraws keep focus and open part lists (#156); previews and thumbnails stay visible in forced colors (#157).
+- The header links to the project and the issue tracker (#150) and says your files are never uploaded (#180); docs
+  fixes (#170–#174).
+
+## 1.1.59-beta
+
+- RELEASING.md requires the full fixture regression in the efficiency review (SVG and DXF, compensation off and on),
+  as CLAUDE.md does, and says "math", not "maths" (#174).
+
+## 1.1.58-beta
+
+- README fills four gaps (#173): it explains the **Area minimum** stat, gives the 10 mm threshold for showing the
+  last plate's offcut, says "most R12 files" lack units (SnugCut's own R12 export declares them), and lists
+  `fixtures/nesting/` in the Files table.
+
+## 1.1.57-beta
+
+- The kerf field suggests "e.g. 0.004" in inches instead of "e.g. 0.10", which would be 2.54 mm (#172).
+
+## 1.1.56-beta
+
+- The kerf calculator's hint and the README say to cut the test square with **Compensate kerf on objects** off and no
+  kerf offset in the cutter's software (#171). Measured with compensation on, the square comes out at its drawn size
+  and the calculator would set the kerf to 0.
+
+## 1.1.55-beta
+
+- README explains which parts are kept as original markup (text, images, `<use>` copies, gradient or pattern fills,
+  clip paths, masks, filters) and what that means: exported as drawn, no kerf compensation, no holes button, holes
+  counted as material, and text, images and `<use>` copies left out of DXF. The compensation notice now says
+  "text, images, linked copies or effects" (#170).
+
+## 1.1.54-beta
+
+- The header links to the project and the issue tracker (#150): "SnugCut is open source: see SnugCut on GitHub.
+  Found a problem or have a suggestion? Tell us on the issue tracker." Plain links that open in a new tab; nothing is
+  sent.
+
+## 1.1.53-beta
+
+- Part thumbnails and plate previews stay visible in Windows high contrast (forced colors) with a dark theme (#157):
+  they keep their tan plate behind the parts' lines, with an outline in the system text color. Before, the plate
+  turned black and the black part lines vanished.
+
+## 1.1.52-beta
+
+- When a search redraws the plates, focus stays on the **Parts on this plate** summary it was on, and the part lists
+  that were open stay open (#156). Before, focus dropped to the page and every list closed at each better layout.
+
+## 1.1.51-beta
+
+- Keyboard focus shows on the Nesting mode and Units toggles (#155): a ring inside the button in its text color,
+  visible on pressed and unpressed buttons in both themes. Before, the unpressed button showed no ring at all and the
+  pressed one only a thin strip.
+
+## 1.1.50-beta
+
+- Big CAD/DXF drawings made of separate lines in shuffled order no longer freeze the page while their pieces are
+  joined into outlines (#154): 30,000 shuffled lines take 85 ms instead of 3.5 s. The joined outlines, and so the
+  exports, are exactly the same.
+
+## 1.1.49-beta
+
+- While a search is running, single plates of a multi-plate job can't be downloaded (#153): the search can replace
+  the layout at any moment, so two plate files could come from different layouts, with parts missing or cut twice.
+  The buttons say why; **Download all** keeps working and takes every plate from one layout. After Stop, or when the
+  search ends, single plates download as before.
+
+## 1.1.48-beta
+
+- An SVG path with a number right after Z (`…Z 5 5`) no longer hangs the page (#152). It's treated as malformed path
+  data: the part is measured the way the browser draws it and kept as original markup.
+
+## 1.1.47-beta
+
+- Parts nested in a hole are always cut before the part around it (#151). A part's reference point usually sits
+  exactly on the edge of the hole's free area, and such parts weren't recognized as nested: in a frame with four
+  30 mm squares in its window only one was, so three were cut after the window, when the slug they sit on is loose.
+  Now all four are cut first.
+
+## 1.1.46-beta
+
+- The header says "your files are never uploaded" instead of "nothing is uploaded": the page does load its libraries
+  and fonts from CDNs, as the README's Files section explains (#180).
+
 ## 1.1.45-beta
 
 - Faster nesting search, with identical layouts and exports (efficiency review):
