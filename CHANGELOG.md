@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.43-beta
+
+- In True shape mode, parts without holes show a dimmed red, slashed stand-in where the **Nest parts inside the holes**
+  button sits, so every row's quantity, lock and remove controls line up (#141). It can't be clicked or focused and screen
+  readers skip it; hovering says "No holes to nest parts in". Windows high contrast shows it in the disabled color.
+
 ## 1.1.42-beta
 
 - True shape nests rounded rectangles by their rounded corners and `<use>` copies by the shapes they copy, instead of

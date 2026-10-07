@@ -3,7 +3,7 @@
 :root{
   --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
   --accent:#2d55f0; --accent-soft:#e3e9ff; --accent-fg:#ffffff;
-  --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --warn-soft:#fff1e2; --ok:#1d7349;
+  --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
   --guide:#2d55f0; --guide-margin:#7a6644;   /* preview guide lines: at least 3:1 on the tan plate in both themes (#105) */
   --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -12,11 +12,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f; --field:#5d6b7b;
   --accent:#7390ff; --accent-soft:#1d2747; --accent-fg:#0b1020;
-  --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}}
+  --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --nohole:#ff6b6b; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f; --field:#5d6b7b;
   --accent:#7390ff; --accent-soft:#1d2747; --accent-fg:#0b1020;
-  --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}
+  --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --nohole:#ff6b6b; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}
 
 html,body{background:var(--bg);color:var(--fg)}
 body{font:15px/1.5 var(--f-body);padding-inline:16px;padding-block:20px 40px}
@@ -80,6 +80,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.4;cursor:default}   /* placeholder: the part has no holes (#141) */
 .icon svg{width:15px;height:15px}
 .badge{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
 .results{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -129,4 +130,5 @@ footer a{color:var(--accent)}
 @media (forced-colors: active){
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
   .icon[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-4px}
+  .icon.nohole{color:GrayText;border-color:GrayText;opacity:1}
 }
