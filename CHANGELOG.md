@@ -2,6 +2,15 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.3-beta
+
+- New `RELEASING.md` with the release procedure:
+  - ask about an efficiency review and optimisation before cutting a release branch;
+  - cut the branch and bump the version, only when the maintainer says so;
+  - run the blind review (correctness, documentation, security, accessibility) and file the findings as issues;
+  - fix on `bugfix/` branches, then finish the release only with the maintainer's approval.
+- Linked from the README and `CLAUDE.md`.
+
 ## 1.0.2-beta
 
 - Fill, stroke, stroke width, font size, `style` and the other presentation attributes set on the root `<svg>` now

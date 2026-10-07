@@ -14,6 +14,9 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   - major: only bumped when the user explicitly says so; zeroes minor and iterative.
   - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.
   - iterative: bump automatically with every change.
+- **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
+  automatically. Before cutting it, ask whether to run a code efficiency review and optimisation first. After cutting
+  it, run the blind review prompt in that file.
 - All internal lengths are mm.
 - Sandboxed sessions may not be able to read `~/.gitconfig`: run git with `GIT_CONFIG_GLOBAL` set to a file holding only
   the gh credential helper. The commit identity lives in this clone's `.git/config` (GitHub no-reply address).
