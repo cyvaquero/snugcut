@@ -4,6 +4,18 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.14-beta
+
+- Keyboard focus is no longer dropped to the page (#95):
+  - removing a part moves focus to the next part's quantity (or the previous one, or the drop zone);
+  - when the parts list or the plates are redrawn, focus goes back to the same control (same part, same plate's Download
+    button);
+  - Search 30 s more and Stop hand focus to each other;
+  - buttons that are only temporarily unavailable (downloads while the layout is out of date, Search more while
+    searching) use `aria-disabled`, so they keep focus.
+- README Accessibility section: screen-reader announcements, the message list and focus handling described; #93, #94
+  and #95 removed from the known gaps.
+
 ## 1.1.13-beta
 
 - Messages no longer vanish after 3.5 s (#94):

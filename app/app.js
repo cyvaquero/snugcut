@@ -137,9 +137,11 @@ function status(t0, ms, token){
   $("status").innerHTML = `<span class="dot on"></span>Searching… ${(el/1000).toFixed(1)} of ${(ms/1000).toFixed(0)} s · ${search.tried} layouts tried`;
 }
 function setRunning(on){
-  $("stop").hidden = !on; $("more").disabled = on || !search || !search.items.length;
+  const f = document.activeElement;
+  $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
   if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
   if (!on) say(runSummary());
+  if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
 // one sentence for screen readers when a run ends (#93)
 function runSummary(){
@@ -153,7 +155,7 @@ function runSummary(){
   return t;
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
-$("more").onclick = () => run(30000, false);
+$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(30000, false); };
 let tmr;
 // a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
 // and the old search can't be continued
@@ -164,24 +166,32 @@ function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout
 const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
 function renderParts(){
-  const box = $("parts"); box.innerHTML = "";
+  // the list is rebuilt: put focus back on the same control of the same part (#95)
+  const box = $("parts"), fa = document.activeElement, fr = fa && box.contains(fa) ? fa.closest(".part") : null;
+  const keep = fr ? {uid:fr.dataset.uid, sel:fa.matches("input") ? "input" : fa.matches(".lk") ? ".lk" : ".rm"} : null;
+  box.innerHTML = "";
   const F = binFrame();
   for (const p of parts) {
-    const row = document.createElement("div"); row.className = "part";
+    const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div style="min-width:0"><div class="nm" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}${ok?"":" · too big"}</div></div>
       <input type="number" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
-      <div class="acts"><button type="button" class="icon" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+      <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); } };
     const [lk, rm] = row.querySelectorAll(".acts button");
     lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
-    rm.onclick = () => { removeParts(x => x === p); restart(); };
+    rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
+      const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
+      removeParts(x => x === p); renderParts();
+      (nb ? $("parts").querySelector(`.part[data-uid="${nb.uid}"] input`) : drop).focus(); restart();
+    };
     box.appendChild(row);
   }
   if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">No parts yet. Add SVG or DXF files above.</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
   updateCount();
+  if (keep) { const r = box.querySelector(`.part[data-uid="${keep.uid}"]`); if (r) r.querySelector(keep.sel).focus(); }
 }
 function updateCount(){
   const n = parts.reduce((a, p) => a + p.qty, 0);
@@ -221,6 +231,15 @@ $("clear").onclick = () => { removeParts(() => true); restart(); };
 
 let plateURLs = [];
 function renderLayout(){
+  // the plates are rebuilt on every better layout: put focus back on the same plate's Download button (#95)
+  const fa = document.activeElement, fi = fa === $("dlAll") ? -1 : fa && $("plates").contains(fa) && fa.dataset.i != null ? +fa.dataset.i : null;
+  try { drawLayout(); } finally { if (fi != null) refocusPlate(fi); }
+}
+function refocusPlate(i){
+  const bs = $("plates").querySelectorAll(".plate .hd button");
+  (i === -1 && !$("dlAll").hidden ? $("dlAll") : bs[Math.min(Math.max(i, 0), bs.length - 1)] || drop).focus();
+}
+function drawLayout(){
   plateURLs.forEach(u => URL.revokeObjectURL(u)); plateURLs = [];
   const box = $("plates"), msgs = $("msgs"); box.innerHTML = ""; msgs.innerHTML = "";
   const L = layout; if (!L) return;
@@ -241,7 +260,7 @@ function renderLayout(){
     const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" opacity=".65"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--plate-edge)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     const card = document.createElement("article"); card.className = "plate";
-    card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" class="btn small">Download ${ext().toUpperCase()}</button></div>
+    card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" data-i="${i}" class="btn small">Download ${ext().toUpperCase()}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="Plate ${i+1} layout" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>`;
     card.querySelector("button").onclick = () => exportPlate(i);
@@ -252,8 +271,8 @@ function renderLayout(){
 function showStale(){
   const st = !!(layout && layout.stale);
   $("plates").classList.toggle("stale", st);
-  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.disabled = st; b.title = st ? "Out of date: wait for the new layout" : ""; });
-  $("dlAll").disabled = st;
+  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st); b.title = st ? "Out of date: wait for the new layout" : ""; });
+  $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
 const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";

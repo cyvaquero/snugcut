@@ -48,7 +48,7 @@ details .row{margin-top:8px}
 button.btn{font:600 14px var(--f-body);border-radius:6px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 button.btn.small{font-size:13px;padding:4px 9px}
-button.btn:disabled{opacity:.5;cursor:default}
+button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .drop{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--fg)}
 .drop b{color:var(--accent)}
