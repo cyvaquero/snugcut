@@ -4,6 +4,36 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.35-beta
+
+- The DXF "nothing to cut" error lists ellipses too and says it looked on visible layers. When the geometry is there
+  but on frozen, off, non-plotting or Defpoints layers, it says how many items those are, so the user knows where to
+  look ("… 2 items are on frozen, off, non-plotting or Defpoints layers.") (#85).
+
+## 1.1.34-beta
+
+- "Set a quantity above zero to place parts." appears only when no part has a quantity (#84). When every part is too
+  big, or the margin leaves no usable area, only the message that explains it is shown; it used to be followed by the
+  wrong advice.
+
+## 1.1.33-beta
+
+- Plate cards say "1 part", not "1 parts" (#83).
+
+## 1.1.32-beta
+
+- Parts kept as original markup (text, images, effects) are exported at their exact size (#74). Their `scale()` and
+  offset were rounded to 4 decimal places, which put fine viewBoxes off size: a 100 mm part with a 1200 px/in viewBox
+  came out 100.16 mm, and at about 0.00254 mm per unit 98.43 mm. They are now written with 7 significant digits. Parts
+  whose scale already fit in 4 decimals export as before; others only gain digits.
+
+## 1.1.31-beta
+
+- An SVG with an absolute `width`/`height` (mm, cm, in, pt, pc) but no `viewBox` is no longer scaled by the Unitless SVG
+  scale setting (#73). Its drawing is in CSS px (96 per inch), as in every viewer, so a `width="100mm"` file holding a
+  100-unit square now measures 26.46 mm at any setting (it was 35.28 mm at 72 px/in). Files sized in px or without units
+  still follow the setting. README updated.
+
 ## 1.1.30-beta
 
 - README: the script tags and the CSP are kept in `app/index.html`, not the generated `snugcut.html`. To bump a
