@@ -41,7 +41,8 @@ header ul{margin:4px 0 0;padding-left:20px;color:var(--muted);max-width:72ch}
 @media (max-width:880px){.layout{grid-template-columns:minmax(0,1fr)}}
 .rail{display:flex;flex-direction:column;gap:14px;min-width:0}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.panel h2{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel-hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font:500 13px/1.2 var(--f-body);color:var(--muted)}
@@ -93,6 +94,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 @media (prefers-reduced-motion:no-preference){.dot.on{animation:pulse 1s ease-in-out infinite}}
 @keyframes pulse{50%{opacity:.3}}
 .msgs{display:flex;flex-direction:column;gap:6px}
+.msgs:empty{display:none}
 .msg{font-size:14px;padding:8px 12px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
@@ -104,7 +106,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .plate .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.plate .t{font:700 17px var(--f-display)}
+.plate .t{font:700 17px var(--f-display);margin:0}
 .plate .m{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .sheet{position:relative;width:100%;background:var(--plate);box-shadow:inset 0 0 0 1px var(--plate-edge);border-radius:2px;overflow:hidden}
 .sheet img,.sheet svg{position:absolute;inset:0;width:100%;height:100%}
@@ -145,8 +147,8 @@ footer a{color:var(--accent)}
   <div class="layout">
     <div class="rail">
       <section class="panel" aria-labelledby="h-plate">
-        <h2 id="h-plate">Plate &amp; cutting <span class="unitsw" role="group" aria-label="Units">
-          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></h2>
+        <div class="panel-hd"><h2 id="h-plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units">
+          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
         <div class="row">
           <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="number" id="plateW" min="1" step="any"></div>
           <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
@@ -200,7 +202,7 @@ footer a{color:var(--accent)}
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
-        <h2 id="h-parts">Parts <span id="sampleBadge" class="badge">Sample parts</span></h2>
+        <div class="panel-hd"><h2 id="h-parts">Parts</h2><span id="sampleBadge" class="badge">Sample parts</span></div>
         <div class="drop" id="drop" tabindex="0" role="button">Drop SVG or DXF files here or <b>browse</b></div>
         <input type="file" id="file" accept=".svg,image/svg+xml,.dxf,image/vnd.dxf,application/dxf" multiple hidden>
         <div class="parts" id="parts"></div>
@@ -211,7 +213,8 @@ footer a{color:var(--accent)}
       </section>
     </div>
 
-    <div class="results">
+    <main class="results" aria-labelledby="h-results">
+      <h2 id="h-results" class="sr-only">Results</h2>
       <div class="summary">
         <div class="stat"><span class="v" id="sPlates">–</span><span class="k">Plates</span></div>
         <div class="stat"><span class="v" id="sMin">–</span><span class="k">Area minimum</span></div>
@@ -228,9 +231,9 @@ footer a{color:var(--accent)}
       <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
-    </div>
+    </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.19-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.20-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1878,8 +1881,8 @@ function drawLayout(){
       g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
     }
     const list = [...groups].map(([p, g]) => `<li>${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}</li>`).join("");
-    const card = document.createElement("article"); card.className = "plate";
-    card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" data-i="${i}" class="btn small">Download ${ext().toUpperCase()}</button></div>
+    const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" data-i="${i}" class="btn small">Download ${ext().toUpperCase()}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="plist-${i}" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
       <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;

@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.20-beta
+
+- Page structure (#102):
+  - the units switch and the "Sample parts" badge sit next to their panel headings instead of inside them, so the
+    headings read "Plate & cutting" and "Parts";
+  - the results column is a `<main>` landmark with a (visually hidden) "Results" heading;
+  - each plate's title is an `<h3>` that also names its plate.
+- Empty message lists no longer add space above the plates.
+
 ## 1.1.19-beta
 
 - The drop zone's accessible name is its visible text, "Drop SVG or DXF files here or browse", instead of a different

@@ -27,8 +27,8 @@
   <div class="layout">
     <div class="rail">
       <section class="panel" aria-labelledby="h-plate">
-        <h2 id="h-plate">Plate &amp; cutting <span class="unitsw" role="group" aria-label="Units">
-          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></h2>
+        <div class="panel-hd"><h2 id="h-plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units">
+          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
         <div class="row">
           <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="number" id="plateW" min="1" step="any"></div>
           <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
@@ -82,7 +82,7 @@
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
-        <h2 id="h-parts">Parts <span id="sampleBadge" class="badge">Sample parts</span></h2>
+        <div class="panel-hd"><h2 id="h-parts">Parts</h2><span id="sampleBadge" class="badge">Sample parts</span></div>
         <div class="drop" id="drop" tabindex="0" role="button">Drop SVG or DXF files here or <b>browse</b></div>
         <input type="file" id="file" accept=".svg,image/svg+xml,.dxf,image/vnd.dxf,application/dxf" multiple hidden>
         <div class="parts" id="parts"></div>
@@ -93,7 +93,8 @@
       </section>
     </div>
 
-    <div class="results">
+    <main class="results" aria-labelledby="h-results">
+      <h2 id="h-results" class="sr-only">Results</h2>
       <div class="summary">
         <div class="stat"><span class="v" id="sPlates">–</span><span class="k">Plates</span></div>
         <div class="stat"><span class="v" id="sMin">–</span><span class="k">Area minimum</span></div>
@@ -110,9 +111,9 @@
       <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
-    </div>
+    </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.19-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.20-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
