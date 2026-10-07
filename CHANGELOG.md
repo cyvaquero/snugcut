@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.22-beta
+
+- Part names in the parts list are never cut off (#100). They wrap instead of ending in "…", which hid the rest of the
+  name from keyboard and touch users even on desktop. Below 480 px each part gets two rows: the name across the full
+  width, then the thumbnail, Qty and buttons. Measured at 320 px and with the WCAG text-spacing override: every name
+  fully shown, no horizontal scrolling. README updated.
+
 ## 1.1.21-beta
 
 - Parts list and plates (#103):

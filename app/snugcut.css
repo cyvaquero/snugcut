@@ -59,13 +59,21 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .parts{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow:auto}
 .part{display:grid;grid-template-columns:44px minmax(0,1fr) 64px auto;gap:10px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--sunk)}
 .part img{width:44px;height:44px;object-fit:contain;background:var(--plate);border-radius:4px;padding:3px}
-.part .nm{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.part .nm{font-weight:600;font-size:14px;overflow-wrap:anywhere}   /* wraps, never cut off (#100) */
 .part .sz{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .part .sz.bad{color:var(--warn)}
 .part input[type=number]{padding:5px 6px;font-size:14px}
 .part .acts{display:flex;gap:4px}
 .part .info{min-width:0}
 .qw{display:flex;flex-direction:column;gap:2px;min-width:0}
+/* narrow screens (320 px, 400% zoom): the name gets a full-width row; thumbnail, Qty and buttons go underneath (#100) */
+@media (max-width:480px){
+  .part{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"info info info" "img qty acts"}
+  .part > img{grid-area:img}
+  .part > .info{grid-area:info}
+  .part > .qw{grid-area:qty;max-width:96px}
+  .part > .acts{grid-area:acts}
+}
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
