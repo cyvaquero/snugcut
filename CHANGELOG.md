@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.56-beta
+
+- The kerf calculator's hint and the README say to cut the test square with **Compensate kerf on objects** off and no
+  kerf offset in the cutter's software (#171). Measured with compensation on, the square comes out at its drawn size
+  and the calculator would set the kerf to 0.
+
 ## 1.1.55-beta
 
 - README explains which parts are kept as original markup (text, images, `<use>` copies, gradient or pattern fills,
