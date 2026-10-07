@@ -300,7 +300,7 @@ function drawLayout(){
     }
     const list = [...groups].map(([p, g]) => `<li>${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="plist-${i}" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
       <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;

@@ -4,6 +4,10 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.33-beta
+
+- Plate cards say "1 part", not "1 parts" (#83).
+
 ## 1.1.32-beta
 
 - Parts kept as original markup (text, images, effects) are exported at their exact size (#74). Their `scale()` and
