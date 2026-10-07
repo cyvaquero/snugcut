@@ -3,6 +3,11 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.5-beta
+
+- README, kerf test: the 0.06 mm pin hole stays as drawn (with a notice) only when the kerf is 0.06 mm or more; with
+  a finer kerf it is compensated like the other holes. The guide said it was narrower than any kerf (#82).
+
 ## 1.1.4-beta
 
 - README, test cuts: "set Rotation: None" only works in True shape mode. The guide now also says to untick "Allow

@@ -77,8 +77,9 @@ material and with the speed and power you will use, because the kerf changes wit
 
    With compensation on, parts still too small and holes too big mean the kerf value is too small: raise it by the
    difference (19.96 mm → add 0.04). Parts too big and holes too small mean the kerf value is too big, or the cutter's
-   software is also offsetting. The blue score line, the black mark and the 0.06 mm pin hole stay as drawn; the pin
-   hole is narrower than any kerf, so the download names it in a notice.
+   software is also offsetting. The blue score line and the black mark stay as drawn. So does the 0.06 mm pin hole
+   with a kerf of 0.06 mm or more (most kerfs), because it's narrower than the kerf; the download then names it in a
+   notice. With a finer kerf it's compensated like the other holes.
 
 **Finger joint** (`fingers-inplane-a.svg` + `fingers-inplane-b.svg`)
 
