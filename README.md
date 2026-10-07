@@ -78,7 +78,8 @@ from rotating, and a remove button. A few sample parts are loaded at first; they
 What happens to imported files:
 
 - Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
-- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched.
+- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. Embedded
+  (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
 - Holes are cut, but other parts aren't nested inside them yet (#3).
 
 ## Test cuts
@@ -194,7 +195,7 @@ requests show the CDNs your IP address and that the page was opened; your files 
 clipper-lib the page can't nest and says so; without jszip only "Download all (.zip)" is missing, and each plate can
 still be downloaded on its own; without the fonts the page falls back to system fonts. A
 Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
-else. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
+else, and it allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
 changed; when bumping a library version, update its URL in the tag and the CSP and recompute its hash with
 `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A` (the `integrity` value is `sha384-` plus that).
 

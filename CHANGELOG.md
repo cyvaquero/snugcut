@@ -4,6 +4,42 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.29-beta
+
+- Saved settings are checked before use (#75). Each value must have the right type and one of the values the page
+  offers (units, mode, format, rotation, precision, SVG scale) or a sane range (lengths); anything else keeps its
+  default. A planted `unit` holding markup or a `rotStep` of 1e-6 is ignored instead of reaching the page or stalling
+  the nesting. Values written into the page's markup are escaped as well.
+- No more `'unsafe-inline'` in the script policy:
+  - `tools/build.py` puts the sha256 hash of `snugcut.html`'s one inline script into its CSP on every build, so
+    injected inline handlers don't run (tested: an injected `onclick` is blocked with the CSP and runs without it);
+  - the split app needs only `'self'` for its module;
+  - `CLAUDE.md` and the README describe this.
+
+## 1.1.28-beta
+
+- Crafted DXF files can no longer hang the page (#77):
+  - ARC and ELLIPSE angles are reduced with a modulo instead of a loop that kept adding 2π and never finished on
+    huge values (a start angle of 1e300 froze the tab);
+  - block arrays and nesting are capped: past 250,000 items (array cells plus entities) the file is refused with
+    "… expands to more than 250,000 items (blocks and arrays), so it wasn't added." (a 100000 × 100000 INSERT array
+    hung).
+- Normal DXF imports are byte-identical, including arcs that wrap past 0° or use angles over 360°. Fixtures:
+  `security/dxf-arc-hang.dxf`, `security/dxf-insert-array.dxf`.
+
+## 1.1.27-beta
+
+- Embedded `data:` content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts (#78). A `data:`
+  SVG image, or a `data:` SVG in CSS (`mask`, `filter`, …), was passed through into exported files, where it could
+  carry outside links or active content into other software. Such links are now removed with the usual "Removed links
+  to outside files" notice. Fixture: `security/data-svg-image.svg`. README updated.
+
+## 1.1.26-beta
+
+- Ids containing `$` sequences (`$'`, `` $` ``, `$&`, `$1`) no longer corrupt parts kept as original markup (#76). The id
+  rewrite used the id in a `replace()` replacement string, where `$` sequences expand, so the exported plate was no
+  longer well-formed XML. It now uses replacer functions. Fixture: `security/dollar-id.svg`.
+
 ## 1.1.25-beta
 
 - True shape: cuts no longer reach into the edge margin (#72). The margin was checked against each part's simplified
