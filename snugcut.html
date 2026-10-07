@@ -212,7 +212,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.1-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -694,15 +694,21 @@ function parseSVG(text, name){
   // all:initial + black: parts must not inherit the page's theme colour or fonts (currentColor would export as the UI text colour, #44).
   // Hidden with opacity, which isn't inherited: visibility:hidden would make every part's own visibility unreadable (#17).
   const g = document.createElementNS(SVGNS, "g");
-  if (root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
+  if (sheets.length && root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
+  // Without a <style> the file's class names do nothing, but in the measuring host the page's own rules (.icon, .dot,
+  // .note, …) would match them and resize or recolour the shapes (#63). Prefix them while measuring; mark(false) puts
+  // the drawn names back for the exported markup.
+  const bare = sheets.length ? [] : [...g.querySelectorAll("[class]")].map(el => [el, el.getAttribute("class")]);
+  const mark = on => { for (const [el, c] of bare) el.setAttribute("class", on ? c.split(/\s+/).filter(Boolean).map(n => pfx + n).join(" ") : c); };
+  mark(true);
   host.appendChild(g);
   let bb, rings;
   const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false, stripped};
   try {
     const inl = inlineSheets(g);
     p.hidden = dropHidden(g);
-    if (inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
+    if (inl || p.hidden) { mark(false); p.inner = [...g.children].map(n => ser.serializeToString(n)).join(""); mark(true); }
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
