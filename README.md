@@ -27,7 +27,9 @@ last plate. Nesting parts inside holes raises it. Part shapes cap it: round part
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
-layout is ready.
+layout is ready. While a search is running it can replace the layout at any moment, so single plates of a
+multi-plate job can't be downloaded until it ends or you press Stop; **Download all** works throughout and takes every
+plate from the same layout.
 
 SVG sizes come from `width`/`height` (mm, cm, in, pt, pc, px at the set DPI) and the `viewBox`. When their aspect
 ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectRatio`: fit by default, fill for
