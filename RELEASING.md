@@ -16,7 +16,10 @@ one unasked. If the answer is yes:
 - File each finding as a GitHub issue (see section 3 for the format), then merge into `develop` before cutting the
   release branch.
 
-## 2. Cut the release branch
+## 2. Cut the release branch (only when the maintainer says so)
+
+The release branch is cut only on the maintainer's instruction, never automatically. Step 1 finishing (or being
+declined) is not a reason to cut it; wait to be told, including which version to release.
 
 - Branch `release/<version>` off an up-to-date `develop`.
 - Set the version in the page footer (`snugcut.html`) and add a `CHANGELOG.md` entry. Major and minor versions change
