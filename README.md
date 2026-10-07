@@ -83,7 +83,8 @@ Turned on, smaller parts can be nested in that part's holes, with the same spaci
 whole, before the part around them, so the hole's slug can't drop or shift before they're free. A hole is any closed,
 unfilled outline inside the part (the rule kerf compensation uses). SnugCut can't tell a cut from a score, so turn it on
 only for parts whose closed inner outlines are all cut: a part nested inside a scored outline would be cut out of the
-middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear.
+middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear. Fill figures
+count a part's holes as filled, so parts nested in them add nothing to the fill: their space is already counted.
 
 What happens to imported files:
 

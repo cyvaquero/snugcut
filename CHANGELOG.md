@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.39-beta
+
+- Fill figures count a part's holes as filled, also when **Nest parts inside the holes** is on, and parts nested in
+  a hole add nothing, since their space is already counted (#3). Four rings with 60 mm holes and four 40 mm discs
+  (three nested) on a 210 × 210 mm plate now show 74% fill instead of 57%. Affects the Average fill stat, the plate
+  cards, the plate image descriptions and the screen-reader summary. Layouts without nested parts and all exports are
+  unchanged.
+
 ## 1.1.38-beta
 
 - Parts can be nested inside the holes of other parts (True shape, #3). A part with holes gets a **Nest parts inside
