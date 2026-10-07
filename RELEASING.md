@@ -5,7 +5,7 @@ Releases follow git-flow: a `release/<version>` branch is cut from `develop`, fi
 
 ## 1. Before cutting the release branch: efficiency review
 
-Ask the maintainer whether to run a **code efficiency review and optimisation** of `snugcut.html` first. Don't start
+Ask the maintainer whether to run a **code efficiency review and optimisation** of `lib/snugcut.js` and `app/` first. Don't start
 one unasked. If the answer is yes:
 
 - Work on a `feature/` branch off `develop`.
@@ -22,7 +22,7 @@ The release branch is cut only on the maintainer's instruction, never automatica
 declined) is not a reason to cut it; wait to be told, including which version to release.
 
 - Branch `release/<version>` off an up-to-date `develop`.
-- Set the version in the page footer (`snugcut.html`) and add a `CHANGELOG.md` entry. Major and minor versions change
+- Set the version in the page footer (`app/index.html`), run `python3 tools/build.py`, and add a `CHANGELOG.md` entry. Major and minor versions change
   only when the maintainer asks.
 - Push the branch.
 
@@ -33,18 +33,18 @@ Run the blind review below on the release branch. Every verified finding becomes
 <details>
 <summary>Blind review prompt (paste into Claude Code on the release branch)</summary>
 
-Run a full blind review of this repo (SnugCut, `snugcut.html` + docs + fixtures) on the current branch, then open GitHub issues for every verified finding.
+Run a full blind review of this repo (SnugCut: `lib/snugcut.js`, `app/`, the generated `snugcut.html`, `tools/build.py`, docs and fixtures) on the current branch, then open GitHub issues for every verified finding.
 
 #### 1. Reviews: blind subagents, run in parallel
 Launch 4 independent subagents in ONE message, in the background. Every subagent:
 - is strictly READ-ONLY on the repo (no edits, commits, branches or pushes) and puts scratch files in its own folder under the scratchpad;
 - is BLIND: it must not read git history/log/diffs, GitHub issues or PRs (no `gh`), CHANGELOG history of prior fixes, or anything under ~/.claude. It judges the code as it is now;
-- reads ALL of snugcut.html and verifies findings concretely where it can: run the real functions in headless Chrome (file:// via CDP; use a scratch copy with local or stubbed libs if needed) or a node script, otherwise trace with specific inputs;
+- reads ALL of lib/snugcut.js and app/ (and checks that snugcut.html is current with `python3 tools/build.py --check`) and verifies findings concretely where it can: run the real functions in headless Chrome (file:// via CDP; use a scratch copy with local or stubbed libs if needed) or a node script, otherwise trace with specific inputs;
 - reports each finding with: one-line title (the defect), severity (critical/high/medium/low/info), category, location (function + line numbers), concrete repro (minimal SVG/DXF snippet where relevant, expected vs actual), root cause, proposed fix, and status (CONFIRMED by running / CONFIRMED by trace / PLAUSIBLE), most severe first. It drops style nits and speculation, groups instances with one root cause, and ends with a short list of what it checked that held up.
 
 The four reviewers:
 1. **Code correctness**: wrong output, crashes, lost parts, units/scale, overlaps in nesting, export geometry, DXF import/export, kerf/gap/margin maths, rotation, UI state/race bugs, edge cases. The SVG export format is verified in WeCreat MakeIT and must not change, but wrong values inside it are in scope.
-2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, fixtures/**/README.md and the UI text in snugcut.html (labels, hints, messages, footer) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses British spelling).
+2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, fixtures/**/README.md and the UI text in app/index.html and app/app.js (labels, hints, messages, footer) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses British spelling).
 3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report issues the CSP or sanitiser already blocks unless the defence is incomplete.
 4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colours, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
 

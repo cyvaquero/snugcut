@@ -108,7 +108,10 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
-| `snugcut.html`       | the app: HTML, CSS and inline JavaScript in one file                          |
+| `snugcut.html`       | the app in one file (HTML, CSS and inline JavaScript), **generated** by `tools/build.py` |
+| `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
+| `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library) |
+| `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 
@@ -120,6 +123,16 @@ changed; when bumping a library version, update its URL in the tag and the CSP a
 `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A` (the `integrity` value is `sha384-` plus that).
 
 ## Workflow
+
+`app/` and `lib/` are the source; `snugcut.html` is built from them, so it stays a single file you can double-click.
+After editing the sources, run:
+
+```bash
+python3 tools/build.py
+```
+
+and commit the sources and `snugcut.html` together. The split app (`app/index.html`) uses ES modules, so it only runs
+when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
 release go on `bugfix/` branches with PRs into the `release/` branch. Versions are
