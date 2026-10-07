@@ -2,6 +2,12 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.1.0-beta
+
+- Release for integration in other projects. Minor version bumped to 1.1 on request; iterative reset to 0.
+- Same features as 1.0.11-beta: the library (`lib/snugcut.js`) and app (`app/`) as ES modules, with `snugcut.html`
+  generated from them by `tools/build.py`.
+
 ## 1.0.11-beta
 
 - The source is split into a library and an app, and `snugcut.html` is generated from them:
