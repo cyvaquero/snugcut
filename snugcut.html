@@ -214,7 +214,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.2-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.3-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -472,7 +472,7 @@ function dxfToSVG(text, name){
   if (!unit) notes.push(`${name} doesn't say what units it's drawn in, so it was read as millimetres.`);
 
   const out = new Map(), skipped = {};                          // layer → colour → path data
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0;
   const mul = (A, B) => [A[0]*B[0] + A[2]*B[1], A[1]*B[0] + A[3]*B[1], A[0]*B[2] + A[2]*B[3], A[1]*B[2] + A[3]*B[3], A[0]*B[4] + A[2]*B[5] + A[4], A[1]*B[4] + A[3]*B[5] + A[5]];
   const fmtN = v => { const r = +v.toFixed(4); return Object.is(r, -0) ? "0" : String(r); };
   function draw(r, M, ctx, depth){
@@ -480,7 +480,7 @@ function dxfToSVG(text, name){
     if (num(r, 67) === 1 || num(r, 60) === 1) return;                         // paper space, invisible
     let layer = str(r, 8, "0"); if (layer === "0" && ctx.layer) layer = ctx.layer;
     const L = layers.get(layer) || {color:"#000000", hidden:false};
-    if (L.hidden || layer.toUpperCase() === "DEFPOINTS") return;
+    if (L.hidden || layer.toUpperCase() === "DEFPOINTS") { onHidden++; return; }   // named in a notice (#80)
     const ci = num(r, 62, 256);
     const color = str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0")
       : ci === 256 ? L.color : ci === 0 ? ctx.color || "#000000" : aciColor(Math.abs(ci));
@@ -589,6 +589,7 @@ function dxfToSVG(text, name){
   }
   for (const r of group(model)) draw(r, [1, 0, 0, 1, 0, 0], {layer:null, color:null}, 0);
   const sk = Object.entries(skipped);
+  if (onHidden) notes.push(`${name}: left out ${onHidden} item${onHidden === 1 ? "" : "s"} on frozen, off, non-plotting or Defpoints layers.`);
   if (sk.length) notes.push(`${name}: skipped ${sk.map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")} (only lines, arcs, circles, ellipses, polylines and splines are cut).`);
   if (!count) throw new Error(`${name} has no lines, arcs, circles, polylines or splines in model space.`);
   const w = Math.max(x1 - x0, 1e-3), h = Math.max(y1 - y0, 1e-3), used = new Set();

@@ -21,7 +21,8 @@ ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectR
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
 splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`;
 unitless files are read as mm). Each DXF colour becomes a stroke colour. Text, hatches and dimensions are skipped
-with a notice, and so are frozen, off and non-plotting layers.
+with a notice, and so is anything on a frozen, off or non-plotting layer or the Defpoints layer. Paper space and
+invisible entities are left out without a notice.
 
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
 format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.

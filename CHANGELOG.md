@@ -3,6 +3,12 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.3-beta
+
+- DXF import: entities on frozen, off or non-plotting layers or the Defpoints layer were left out silently, although
+  the README promised a notice. The import now names them ("left out 3 items on frozen, off, non-plotting or Defpoints
+  layers"). The README also says that paper space and invisible entities are left out without a notice (#80).
+
 ## 1.1.2-beta
 
 - Versioning: the scheme now covers a pre-release suffix such as `-beta`. It is added and dropped only on request,
