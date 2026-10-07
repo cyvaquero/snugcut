@@ -11,6 +11,13 @@ Two modes:
   ("Search 30 s more", Stop).
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
+After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
+layout is ready.
+
+SVG sizes come from `width`/`height` (mm, cm, in, pt, pc, px at the set DPI) and the `viewBox`. When their aspect
+ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectRatio`: fit by default, fill for
+`slice`, stretch only for `none`); shapes are never cropped.
+
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
 splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`;
 unitless files are read as mm). Each DXF colour becomes a stroke colour. Text, hatches and dimensions are skipped
@@ -21,7 +28,7 @@ format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45
 
 **Compensate kerf on objects** (off by default) builds the kerf into the downloaded files. Closed cut paths move by
 half the kerf, outlines outward and holes inward, so parts come out at their drawn size. Filled areas and open lines
-stay as drawn, and nesting spacing and margins grow to match. Read this before using it:
+stay as drawn, and nesting spacing and margins grow to match (except around parts that are exported as drawn). Read this before using it:
 
 - **Don't compensate twice.** Turn off kerf offset (kerf compensation) in your cutter's software (LightBurn, xTool
   Studio, MakeIT, Silhouette Studio, …). Otherwise the kerf is applied twice: parts come out a full kerf too big and
@@ -107,7 +114,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
-`jszip` (zip download), plus Google Fonts. It needs network access for those on first load. A
+`jszip@3.10.1` (zip download), plus Google Fonts. It needs network access for those on first load. A
 Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
 else. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
 changed; when bumping a library version, update its URL in the tag and the CSP and recompute its hash with
@@ -115,7 +122,8 @@ changed; when bumping a library version, update its URL in the tag and the CSP a
 
 ## Workflow
 
-git-flow: `main` + `develop`, feature branches off `develop`, PRs into `develop`. Versions are
+git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
+release go on `bugfix/` branches with PRs into the `release/` branch. Versions are
 `major.minor.iterative`, shown in the page footer and in [CHANGELOG.md](CHANGELOG.md): major and minor are bumped only
 on request; the iterative number is bumped with every change. The release steps (an efficiency review before cutting the
 release branch, a blind review after) are in [RELEASING.md](RELEASING.md).
