@@ -3,6 +3,7 @@
 
 ## Local tool settings
 /.claude/settings.local.json
+/.claude/worktrees/
 
 ## OSX
 .DS_Store
