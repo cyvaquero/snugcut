@@ -137,6 +137,7 @@ when served over HTTP (for example `python3 -m http.server`, then open `/app/`),
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
 release go on `bugfix/` branches with PRs into the `release/` branch. Versions are
-`major.minor.iterative`, shown in the page footer and in [CHANGELOG.md](CHANGELOG.md): major and minor are bumped only
-on request; the iterative number is bumped with every change. The release steps (an efficiency review before cutting the
+`major.minor.iterative`, optionally with a pre-release suffix such as `-beta`, shown in the page footer and in
+[CHANGELOG.md](CHANGELOG.md): major, minor and the suffix change only on request; the iterative number is bumped with
+every change, and a suffix stays on until it is dropped (1.1.0-beta, 1.1.1-beta, …). The release steps (an efficiency review before cutting the
 release branch, a blind review after) are in [RELEASING.md](RELEASING.md).

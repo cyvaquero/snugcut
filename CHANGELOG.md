@@ -1,6 +1,14 @@
 # Changelog
 
-Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
+Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
+only on request; the iterative number increments with every change.
+
+## 1.1.2-beta
+
+- Versioning: the scheme now covers a pre-release suffix such as `-beta`. It is added and dropped only on request,
+  stays on later versions, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta). Described in `CLAUDE.md`,
+  the README and the CHANGELOG preamble; the 1.0.0-beta entry now says "first beta release", not "release candidate"
+  (#79).
 
 ## 1.1.1-beta
 
@@ -114,7 +122,7 @@ Format `major.minor.iterative`. Major/minor change only on request; the iterativ
 
 ## 1.0.0-beta
 
-- First release candidate. Major version bumped to 1 on request; minor and iterative reset to 0.
+- First beta release. Major version bumped to 1 on request; minor and iterative reset to 0.
 - Same features as 0.1.33. The footer, the export comment (`<!-- SnugCut v1.0.0-beta -->`) and the DXF `999` marker
   carry the new version.
 
