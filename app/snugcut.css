@@ -4,6 +4,7 @@
   --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
   --accent:#2d55f0; --accent-soft:#e3e9ff; --accent-fg:#ffffff;
   --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --warn-soft:#fff1e2; --ok:#1d7349;
+  --guide:#2d55f0; --guide-margin:#7a6644;   /* preview guide lines: at least 3:1 on the tan plate in both themes (#105) */
   --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -28,7 +29,8 @@ header ul{margin:4px 0 0;padding-left:20px;color:var(--muted);max-width:72ch}
 @media (max-width:880px){.layout{grid-template-columns:minmax(0,1fr)}}
 .rail{display:flex;flex-direction:column;gap:14px;min-width:0}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.panel h2{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel-hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font:500 13px/1.2 var(--f-body);color:var(--muted)}
@@ -58,11 +60,22 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .parts{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow:auto}
 .part{display:grid;grid-template-columns:44px minmax(0,1fr) 64px auto;gap:10px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--sunk)}
 .part img{width:44px;height:44px;object-fit:contain;background:var(--plate);border-radius:4px;padding:3px}
-.part .nm{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.part .nm{font-weight:600;font-size:14px;overflow-wrap:anywhere}   /* wraps, never cut off (#100) */
 .part .sz{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .part .sz.bad{color:var(--warn)}
 .part input[type=number]{padding:5px 6px;font-size:14px}
 .part .acts{display:flex;gap:4px}
+.part .info{min-width:0}
+.qw{display:flex;flex-direction:column;gap:2px;min-width:0}
+/* narrow screens (320 px, 400% zoom): the name gets a full-width row; thumbnail, Qty and buttons go underneath (#100) */
+@media (max-width:480px){
+  .part{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"info info info" "img qty acts"}
+  .part > img{grid-area:img}
+  .part > .info{grid-area:info}
+  .part > .qw{grid-area:qty;max-width:96px}
+  .part > .acts{grid-area:acts}
+}
+.ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 .icon svg{width:15px;height:15px}
@@ -80,6 +93,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 @media (prefers-reduced-motion:no-preference){.dot.on{animation:pulse 1s ease-in-out infinite}}
 @keyframes pulse{50%{opacity:.3}}
 .msgs{display:flex;flex-direction:column;gap:6px}
+.msgs:empty{display:none}
 .msg{font-size:14px;padding:8px 12px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
@@ -91,7 +105,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .plate .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.plate .t{font:700 17px var(--f-display)}
+.plate .t{font:700 17px var(--f-display);margin:0}
 .plate .m{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .sheet{position:relative;width:100%;background:var(--plate);box-shadow:inset 0 0 0 1px var(--plate-edge);border-radius:2px;overflow:hidden}
 .sheet img,.sheet svg{position:absolute;inset:0;width:100%;height:100%}

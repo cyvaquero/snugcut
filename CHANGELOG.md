@@ -4,6 +4,43 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.23-beta
+
+- The guide lines on the plate previews reach 3:1 against the tan plate in both themes (#105). Part outlines use
+  `#2d55f0` at full opacity (4.0:1 light, 3.5:1 dark; was 2.5:1 and 1.5:1), and the edge-margin line uses `#7a6644`
+  (3.9:1 and 3.4:1; was 1.6:1 and 2.1:1). They are new `--guide` and `--guide-margin` colors.
+- README Accessibility section: no known gaps left from the 1.0.0-beta review. It says conformance still needs
+  confirming with real screen readers or an audit.
+
+## 1.1.22-beta
+
+- Part names in the parts list are never cut off (#100). They wrap instead of ending in "…", which hid the rest of the
+  name from keyboard and touch users even on desktop. Below 480 px each part gets two rows: the name across the full
+  width, then the thumbnail, Qty and buttons. Measured at 320 px and with the WCAG text-spacing override: every name
+  fully shown, no horizontal scrolling. README updated.
+
+## 1.1.21-beta
+
+- Parts list and plates (#103):
+  - each quantity field has a visible "Qty" label, and its accessible name is "Qty <file name>";
+  - lock buttons are named per part ("Lock orientation of star-ornament.svg");
+  - plate download buttons are named per plate ("Download SVG, plate 1 of 2"), so every button's name is unique.
+- README updated (#102 and #103 off the known gaps).
+
+## 1.1.20-beta
+
+- Page structure (#102):
+  - the units switch and the "Sample parts" badge sit next to their panel headings instead of inside them, so the
+    headings read "Plate & cutting" and "Parts";
+  - the results column is a `<main>` landmark with a (visually hidden) "Results" heading;
+  - each plate's title is an `<h3>` that also names its plate.
+- Empty message lists no longer add space above the plates.
+
+## 1.1.19-beta
+
+- The drop zone's accessible name is its visible text, "Drop SVG or DXF files here or browse", instead of a different
+  `aria-label` ("Add SVG or DXF files"). Speech-input users can say "click browse" (#101).
+
 ## 1.1.18-beta
 
 - Fields, selects, icon buttons, the drop zone and the toggle groups have borders at least 3:1 against their

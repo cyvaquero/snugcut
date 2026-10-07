@@ -158,18 +158,21 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   value is still in use.
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, and the lock icon is open or closed
   to match.
-- **Contrast**: text meets WCAG AA in both themes, and the borders of fields and buttons are at least 3:1.
-- **Known gaps**, tracked as issues:
-  - low-contrast preview guide lines (#105);
-  - part names get cut off at 320 px width or 400% zoom (#100);
-  - names, labels and page structure (#101, #102, #103).
-- Report other problems as a GitHub issue.
+- **Contrast**: text meets WCAG AA in both themes; the borders of fields and buttons and the guide lines on the plate
+  previews are at least 3:1.
+- **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
+  visible "Qty" label, and every button has its own name ("Lock orientation of star.svg", "Download SVG, plate 1 of 2").
+- **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
+  (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
+- **Known gaps**: none open. Every finding of the 1.0.0-beta accessibility review is fixed (#93–#105). Report
+  problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
-documentation (602, this section) and keeping information visible with forced colors (302.2, #98). SnugCut doesn't
-meet the target yet; the gaps above are what's missing. Section 508 points to WCAG 2.0 AA for web content, so meeting
-WCAG 2.1 AA covers it and adds a few newer criteria (status messages, reflow, text spacing, non-text contrast, label
-in name). The two standards don't conflict anywhere in SnugCut; the details are in #106.
+documentation (602, this section) and keeping information visible with forced colors (302.2, #98). The review's
+findings are fixed, but conformance hasn't yet been confirmed with screen readers (VoiceOver, NVDA) or a full audit.
+Section 508 points to WCAG 2.0 AA for web content, so meeting WCAG 2.1 AA covers it and adds a few newer criteria
+(status messages, reflow, text spacing, non-text contrast, label in name). The two standards don't conflict anywhere
+in SnugCut; the details are in #106.
 
 ## Files
 
