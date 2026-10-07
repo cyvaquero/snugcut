@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.34-beta
+
+- "Set a quantity above zero to place parts." appears only when no part has a quantity (#84). When every part is too
+  big, or the margin leaves no usable area, only the message that explains it is shown; it used to be followed by the
+  wrong advice.
+
 ## 1.1.33-beta
 
 - Plate cards say "1 part", not "1 parts" (#83).

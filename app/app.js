@@ -285,7 +285,8 @@ function drawLayout(){
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
   for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
   if (L.noArea) msg("The edge margin leaves no usable area on the plate.");
-  if (!L.plates.length) box.innerHTML = `<p class="note">${parts.length ? "Set a quantity above zero to place parts." : "Add SVG or DXF files to see them nested on plates."}</p>`;
+  // when nothing was placed, say why only if no message above already does (#84)
+  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${!parts.length ? "Add SVG or DXF files to see them nested on plates." : !parts.some(p => p.qty) ? "Set a quantity above zero to place parts." : "No parts could be placed."}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const fill = Math.round(100 * pl.area / plateA);
