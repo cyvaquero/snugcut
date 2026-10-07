@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.40-beta
+
+- "Fill" is now **utilization**: the share of the plate covered by the parts' real material, their outlines minus
+  their holes, in both modes (#3). A hole counts as empty space until a part is nested in it, and then that part
+  counts. The stat reads **Average utilization**, and the plate cards, image descriptions and screen-reader summary say
+  "utilization". Four 100 mm rings with 60 mm holes and four 40 mm discs (three nested) on a 210 × 210 mm plate show
+  57% (74% in 1.1.39-beta). Layouts and exports are unchanged.
+
 ## 1.1.39-beta
 
 - Fill figures count a part's holes as filled, also when **Nest parts inside the holes** is on, and parts nested in
