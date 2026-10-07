@@ -284,9 +284,15 @@ $("clear").onclick = () => { removeParts(() => true); restart(); };
 
 let plateURLs = [];
 function renderLayout(){
-  // the plates are rebuilt on every better layout: put focus back on the same plate's Download button (#95)
-  const fa = document.activeElement, fi = fa === $("dlAll") ? -1 : fa && $("plates").contains(fa) && fa.dataset.i != null ? +fa.dataset.i : null;
-  try { drawLayout(); } finally { if (fi != null) refocusPlate(fi); }
+  // the plates are rebuilt on every better layout: put focus back on the same plate's Download button (#95) or "Parts on
+  // this plate" summary, and reopen the part lists that were open (#156)
+  const box = $("plates"), fa = document.activeElement, fi = fa === $("dlAll") ? -1 : fa && box.contains(fa) && fa.dataset.i != null ? +fa.dataset.i : null;
+  const open = [...box.querySelectorAll(".plist")].map(d => d.open), sums = [...box.querySelectorAll(".plist summary")], si = sums.indexOf(fa);
+  try { drawLayout(); } finally {
+    box.querySelectorAll(".plist").forEach((d, i) => { if (open[i]) d.open = true; });
+    if (fi != null) refocusPlate(fi);
+    else if (si >= 0) { const s = box.querySelectorAll(".plist summary"); (s[Math.min(si, s.length - 1)] || drop).focus(); }
+  }
 }
 function refocusPlate(i){
   const bs = $("plates").querySelectorAll(".plate .hd button");
