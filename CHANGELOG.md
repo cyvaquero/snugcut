@@ -4,6 +4,10 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.57-beta
+
+- The kerf field suggests "e.g. 0.004" in inches instead of "e.g. 0.10", which would be 2.54 mm (#172).
+
 ## 1.1.56-beta
 
 - The kerf calculator's hint and the README say to cut the test square with **Compensate kerf on objects** off and no
