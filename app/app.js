@@ -1,0 +1,291 @@
+// SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
+// snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
+import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, envelope, esc,
+  fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, mulberry, n4, newRun, pack, parseSVG, plateDXF,
+  plateSVG, rectFits, score, setVersion, shape, toPlates} from "../lib/snugcut.js";
+
+(() => {
+const $ = id => document.getElementById(id);
+setVersion($("appver").textContent);
+$("changelog").href += "#" + $("appver").textContent.replace(/^v|\./g, "");   // GitHub's anchor for "## 0.1.27" is #0127
+if (!CL) { $("plates").innerHTML = `<div class="fatal">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
+try { Object.assign(S, JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
+const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
+
+let parts = [];
+let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea, stale}
+
+const toDisp = mm => S.unit === "in" ? mm / IN : mm;
+const fromDisp = v => S.unit === "in" ? v * IN : v;
+const fmt = (mm, d) => (+toDisp(mm).toFixed(d ?? (S.unit === "in" ? 3 : 1))).toString();
+const LEN = ["plateW","plateH","kerf","gap","margin"];
+function fillInputs(){
+  for (const k of LEN) {
+    const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
+    $(k).value = +toDisp(S[k]).toFixed(dec);
+    $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
+  }
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; $("compWarn").hidden = !S.comp; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  document.body.dataset.mode = S.mode;
+  $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
+  document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
+  $("u-mm").setAttribute("aria-pressed", S.unit === "mm"); $("u-in").setAttribute("aria-pressed", S.unit === "in");
+}
+function setUnit(u){
+  if (S.unit === u) return;
+  const conv = v => isNaN(v) ? "" : +(u === "in" ? v / IN : v * IN).toFixed(4);
+  $("kDesign").value = conv(parseFloat($("kDesign").value)); $("kMeasured").value = conv(parseFloat($("kMeasured").value));
+  S.unit = u; save(); fillInputs(); kerfCalc(); renderParts(); renderLayout();
+}
+$("u-mm").onclick = () => setUnit("mm");
+$("u-in").onclick = () => setUnit("in");
+for (const k of LEN) $(k).addEventListener("input", () => {
+  const v = parseFloat($(k).value);
+  if (!isNaN(v) && v >= 0) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
+});
+$("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
+$("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
+$("outline").onchange = e => { S.outline = e.target.checked; save(); };
+$("kerfComp").onchange = e => { S.comp = e.target.checked; $("compWarn").hidden = !S.comp; save(); invalidateGeometry(); restart(); };
+$("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
+$("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
+$("rotate").onchange = e => { S.rotate = e.target.checked; save(); restart(); };
+const setMode = m => { if (S.mode === m) return; S.mode = m; save(); fillInputs(); restart(); };
+$("m-shape").onclick = () => setMode("shape");
+$("m-bbox").onclick = () => setMode("bbox");
+$("dpi").onchange = e => { S.dpi = +e.target.value; save(); parts.forEach(measureScale); invalidateGeometry(); restart(); };
+
+function filePrefix(){
+  // the user's prefix made safe for file names on every OS (no path or reserved characters, no leading dots), plus "-"
+  const p = String(S.prefix || "").replace(/[\/\\:*?"<>|\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim()
+    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, 60).trim();
+  return p ? p + "-" : "";
+}
+function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
+const ext = () => S.format === "dxf" ? "dxf" : "svg";
+function kerfCalc(){
+  const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
+  if (isNaN(d) || isNaN(m) || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
+  const k = fromDisp(d - m);
+  $("kOut").textContent = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`; $("kUse").disabled = false; return k;
+}
+$("kDesign").oninput = kerfCalc; $("kMeasured").oninput = kerfCalc;
+$("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast("Kerf updated"); } };
+
+/* ---------- search controller ---------- */
+let search = null;   // {items, bestOrder, bestScore, tried, F}
+async function run(ms, fresh){
+  const token = newRun();
+  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false); return; }
+  const F = binFrame();
+  $("status").innerHTML = `<span class="dot on"></span>Nesting…`;
+  const plateA = S.plateW * S.plateH;
+  setRunning(true);
+  const t0 = performance.now();
+  try {
+    if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
+      const items = [], oversize = [];
+      if (F.R <= F.L || F.B <= F.T) { layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }
+      for (const p of parts) {
+        if (!p.qty) continue;
+        if (!fitsPlate(p, F)) { oversize.push(p); continue; }
+        const e = envelope(p);
+        for (let k = 0; k < p.qty; k++) items.push({part:p, envArea:e.area});
+      }
+      const minPlates = items.length ? Math.ceil(items.reduce((s, it) => s + it.envArea, 0) / ((F.R - F.L) * (F.B - F.T)) - 1e-9) : 0;
+      search = {items, oversize, minPlates, bestOrder:null, bestScore:null, tried:0, F, rnd:mulberry(7)};
+      if (!items.length) { layout = {plates:[], oversize, minPlates:0}; renderLayout(); return; }
+      const idx = items.map((_, i) => i);
+      const keys = [it => it.envArea, it => { const s = shape(it.part, 0); return Math.max(s.maxX - s.minX, s.maxY - s.minY); }];
+      for (const key of keys) {
+        const order = [...idx].sort((a, b) => key(items[b]) - key(items[a]) || items[a].part.uid - items[b].part.uid);
+        const bins = await pack(items, order, it => angleList(it.part), token, F);
+        search.tried++;
+        const sc = score(bins, plateA);
+        if (!search.bestScore || better(sc, search.bestScore)) { search.bestOrder = order; search.bestScore = sc; layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); }
+        status(t0, ms, token);
+      }
+    }
+    const {items, rnd} = search;
+    if (items.length < 2) return;
+    let cur = search.bestOrder, curScore = search.bestScore;
+    while (performance.now() - t0 < ms) {
+      if (search.bestScore[0] <= search.minPlates && search.bestScore[0] === 1) break;
+      const o = cur.slice(), n = o.length;
+      const moves = 1 + Math.floor(rnd() * 3);
+      for (let m = 0; m < moves; m++) {
+        const a = Math.floor(rnd() * n), b = Math.floor(rnd() * n);
+        if (rnd() < 0.5) [o[a], o[b]] = [o[b], o[a]]; else { const [x] = o.splice(a, 1); o.splice(b, 0, x); }
+      }
+      const bins = await pack(items, o, it => angleList(it.part), token, search.F);
+      search.tried++;
+      const sc = score(bins, plateA);
+      if (!better(curScore, sc)) { cur = o; curScore = sc; }
+      if (better(sc, search.bestScore)) { search.bestOrder = o; search.bestScore = sc; layout = {plates:toPlates(bins), oversize:search.oversize, minPlates:search.minPlates}; renderLayout(); }
+      status(t0, ms, token);
+    }
+  } catch(e) {
+    if (e !== ABORT) { console.error(e); toast("Nesting stopped after an error: " + (e.message || e)); }
+    else return;
+  } finally {
+    if (isCurrent(token)) setRunning(false);
+  }
+}
+function status(t0, ms, token){
+  if (!isCurrent(token)) return;
+  const el = performance.now() - t0;
+  $("status").innerHTML = `<span class="dot on"></span>Searching… ${(el/1000).toFixed(1)} of ${(ms/1000).toFixed(0)} s · ${search.tried} layouts tried`;
+}
+function setRunning(on){
+  $("stop").hidden = !on; $("more").disabled = on || !search || !search.items.length;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
+}
+$("stop").onclick = () => { newRun(); setRunning(false); };
+$("more").onclick = () => run(30000, false);
+let tmr;
+// a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
+// and the old search can't be continued
+function staleLayout(){ search = null; if (layout) { layout.stale = true; showStale(); } }
+function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
+
+/* ---------- parts list ---------- */
+const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
+const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+function renderParts(){
+  const box = $("parts"); box.innerHTML = "";
+  const F = binFrame();
+  for (const p of parts) {
+    const row = document.createElement("div"); row.className = "part";
+    const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
+    row.innerHTML = `<img alt="" src="${p.thumb}"><div style="min-width:0"><div class="nm" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}${ok?"":" · too big"}</div></div>
+      <input type="number" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
+      <div class="acts"><button type="button" class="icon" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+    const q = row.querySelector("input");
+    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); } };
+    const [lk, rm] = row.querySelectorAll(".acts button");
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
+    rm.onclick = () => { removeParts(x => x === p); restart(); };
+    box.appendChild(row);
+  }
+  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">No parts yet. Add SVG or DXF files above.</p>`;
+  $("sampleBadge").hidden = !parts.some(p => p.sample);
+  updateCount();
+}
+function updateCount(){
+  const n = parts.reduce((a, p) => a + p.qty, 0);
+  $("partCount").textContent = `${parts.length} file${parts.length===1?"":"s"} · ${n} part${n===1?"":"s"}`;
+}
+function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); return false; } return true; }); }
+
+/* ---------- files ---------- */
+const drop = $("drop"), file = $("file");
+drop.onclick = () => file.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); file.click(); } };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
+file.onchange = () => { addFiles(file.files); file.value = ""; };
+async function addFiles(list){
+  const isDXF = f => /\.dxf$/i.test(f.name);
+  const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
+  if (!files.length) { toast("Only .svg and .dxf files can be added."); return; }
+  if (parts.some(p => p.sample)) removeParts(p => p.sample);
+  const errs = [];
+  const stripped = [], hiddenIn = [];
+  for (const f of files) { try {
+    let text = await f.text();
+    const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
+    if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
+    const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
+    if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
+    if (pre) { p.precomp = true; errs.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
+  } catch(e) { errs.push(e.message); } }
+  if (hiddenIn.length) errs.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
+  if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
+  if (errs.length) toast(errs.join(" "));
+  restart();
+}
+$("clear").onclick = () => { removeParts(() => true); restart(); };
+
+let plateURLs = [];
+function renderLayout(){
+  plateURLs.forEach(u => URL.revokeObjectURL(u)); plateURLs = [];
+  const box = $("plates"), msgs = $("msgs"); box.innerHTML = ""; msgs.innerHTML = "";
+  const L = layout; if (!L) return;
+  const plateA = S.plateW * S.plateH;
+  const placed = L.plates.reduce((a, b) => a + b.items.length, 0);
+  $("sPlates").textContent = L.plates.length || "–";
+  $("sMin").textContent = L.minPlates || "–";
+  $("sFill").textContent = L.plates.length ? Math.round(100 * L.plates.reduce((a, b) => a + b.area, 0) / (plateA * L.plates.length)) + "%" : "–";
+  $("sParts").textContent = placed;
+  const msg = t => { const m = document.createElement("div"); m.className = "msg"; m.textContent = t; msgs.appendChild(m); };
+  const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
+  for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
+  if (L.noArea) msg("The edge margin leaves no usable area on the plate.");
+  if (!L.plates.length) box.innerHTML = `<p class="note">${parts.length ? "Set a quantity above zero to place parts." : "Add SVG or DXF files to see them nested on plates."}</p>`;
+  L.plates.forEach((pl, i) => {
+    const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
+    const fill = Math.round(100 * pl.area / plateA);
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" opacity=".65"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
+    const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--plate-edge)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
+    const card = document.createElement("article"); card.className = "plate";
+    card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" class="btn small">Download ${ext().toUpperCase()}</button></div>
+      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="Plate ${i+1} layout" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
+      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>`;
+    card.querySelector("button").onclick = () => exportPlate(i);
+    box.appendChild(card);
+  });
+  $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx(); showStale();
+}
+function showStale(){
+  const st = !!(layout && layout.stale);
+  $("plates").classList.toggle("stale", st);
+  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.disabled = st; b.title = st ? "Out of date: wait for the new layout" : ""; });
+  $("dlAll").disabled = st;
+}
+const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
+const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";
+function download(data, filename, type){
+  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], {type}));
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+function plateFile(pl, notes){
+  if (kerfC()) notes.add(`Kerf compensation is built in (${fmt(S.kerf / 2, S.unit === "in" ? 4 : 3)} ${S.unit} per side): don't add a kerf offset in your cutter's software.`);
+  if (ext() === "svg") return plateSVG(pl, {notes});
+  const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
+}
+function exportPlate(i){
+  if (!layout || layout.stale) return;
+  const notes = new Set();
+  download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
+  toast(`Saved ${fname(i)}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
+}
+$("dlAll").onclick = async () => {
+  if (!layout || layout.stale || !window.JSZip) return;
+  const zip = new JSZip();
+  const notes = new Set();
+  layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
+  download(await zip.generateAsync({type:"blob"}), zipName());
+  toast(`Saved ${zipName()}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
+};
+
+let toastT;
+function toast(t){ const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3500); }
+
+/* ---------- sample parts ---------- */
+const S0 = 'fill="none" stroke="#000" stroke-width="0.2"';
+const SAMPLES = [
+  ["star-ornament.svg", 8, `<svg xmlns="${SVGNS}" width="70mm" height="67mm" viewBox="0 0 70 67"><polygon points="35,0.5 43.2,24.6 69.2,25.1 48.6,40.8 56.1,65.9 35,51 13.9,65.9 21.4,40.8 0.8,25.1 26.8,24.6" ${S0}/><circle cx="35" cy="12" r="1.8" ${S0}/></svg>`],
+  ["l-bracket.svg", 6, `<svg xmlns="${SVGNS}" width="80mm" height="60mm" viewBox="0 0 80 60"><polygon points="0,0 80,0 80,16 16,16 16,60 0,60" ${S0}/><circle cx="8" cy="50" r="2.5" ${S0}/><circle cx="70" cy="8" r="2.5" ${S0}/></svg>`],
+  ["crescent-moon.svg", 6, `<svg xmlns="${SVGNS}" width="34mm" height="60mm" viewBox="0 0 34 60"><path d="M30 0 A30 30 0 0 0 30 60 A36 36 0 0 1 30 0 Z" ${S0}/></svg>`],
+  ["coaster-round.svg", 4, `<svg xmlns="${SVGNS}" width="95mm" height="95mm" viewBox="0 0 95 95"><circle cx="47.5" cy="47.5" r="47.4" ${S0}/><circle cx="47.5" cy="47.5" r="38" fill="none" stroke="#2d55f0" stroke-width="0.3"/></svg>`],
+  ["shop-sign.svg", 2, `<svg xmlns="${SVGNS}" width="180mm" height="80mm" viewBox="0 0 180 80"><rect x="0.1" y="0.1" width="179.8" height="79.8" rx="8" ${S0}/><circle cx="12" cy="40" r="2.5" ${S0}/><circle cx="168" cy="40" r="2.5" ${S0}/><rect x="30" y="22" width="120" height="36" rx="3" fill="#2d55f0" opacity=".35"/></svg>`],
+  ["hex-tag.svg", 6, `<svg xmlns="${SVGNS}" width="50mm" height="43.3mm" viewBox="0 0 50 43.3"><polygon points="12.5,0.1 37.5,0.1 49.9,21.65 37.5,43.2 12.5,43.2 0.1,21.65" ${S0}/><circle cx="25" cy="8" r="2" ${S0}/></svg>`],
+];
+fillInputs();
+for (const [n, q, t] of SAMPLES) { try { const p = parseSVG(t, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+renderParts();
+run(4000, true);
+})();
