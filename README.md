@@ -30,9 +30,8 @@ format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45
 half the kerf, outlines outward and holes inward, so parts come out at their drawn size. Filled areas and open lines
 stay as drawn, and nesting spacing and margins grow to match (except around parts that are exported as drawn). Read this before using it:
 
-- **Don't compensate twice.** Turn off kerf offset (kerf compensation) in your cutter's software (LightBurn, xTool
-  Studio, MakeIT, Silhouette Studio, …). Otherwise the kerf is applied twice: parts come out a full kerf too big and
-  holes a full kerf too small. Don't offset the downloaded files yourself either.
+- **Turn off kerf offset in your cutter's software.** The downloaded files already include it, so leaving it on
+  applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.
 - **Measure the kerf** for the material and settings you cut with ("Measure it from a test cut"). A wrong kerf makes
   every part the wrong size.
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.

@@ -2,6 +2,10 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.10-beta
+
+- README: shorter wording for the kerf-compensation warning about turning off kerf offset in the cutter's software.
+
 ## 1.0.9-beta
 
 - Docs brought up to date for the release:
