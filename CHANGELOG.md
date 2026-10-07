@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.48-beta
+
+- An SVG path with a number right after Z (`…Z 5 5`) no longer hangs the page (#152). It's treated as malformed path
+  data: the part is measured the way the browser draws it and kept as original markup.
+
 ## 1.1.47-beta
 
 - Parts nested in a hole are always cut before the part around it (#151). A part's reference point usually sits
