@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.52-beta
+
+- When a search redraws the plates, focus stays on the **Parts on this plate** summary it was on, and the part lists
+  that were open stay open (#156). Before, focus dropped to the page and every list closed at each better layout.
+
 ## 1.1.51-beta
 
 - Keyboard focus shows on the Nesting mode and Units toggles (#155): a ring inside the button in its text color,
