@@ -93,6 +93,10 @@ button.btn:disabled{opacity:.5;cursor:default}
 .msg{font-size:14px;padding:8px 12px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
+.msg.has-x{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.msg.err{border-left:3px solid var(--warn)}
+.msg .x{flex:none;border:0;background:none;color:inherit;cursor:pointer;padding:2px;border-radius:4px;line-height:0}
+.msg .x svg{width:14px;height:14px}
 .plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -211,11 +215,12 @@ footer a{color:var(--accent)}
         <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden>Stop</button>
       </div>
+      <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.12-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.13-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1702,7 +1707,7 @@ async function run(ms, fresh){
       status(t0, ms, token);
     }
   } catch(e) {
-    if (e !== ABORT) { console.error(e); toast("Nesting stopped after an error: " + (e.message || e)); say("Nesting stopped after an error.", true); }
+    if (e !== ABORT) { console.error(e); notice("Nesting stopped after an error: " + (e.message || e), true); }
     else return;
   } finally {
     if (isCurrent(token)) setRunning(false);
@@ -1777,21 +1782,21 @@ file.onchange = () => { addFiles(file.files); file.value = ""; };
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
-  if (!files.length) { toast("Only .svg and .dxf files can be added."); say("Only .svg and .dxf files can be added.", true); return; }
+  if (!files.length) { notice("Only .svg and .dxf files can be added.", true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
-  const errs = [];
+  const errs = [], notes = [];                                // errors: files that couldn't be added
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await f.text();
     const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
-    if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; errs.push(...r.notes); }
+    if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; notes.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
-    if (pre) { p.precomp = true; errs.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
+    if (pre) { p.precomp = true; notes.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
   } catch(e) { errs.push(e.message); } }
-  if (hiddenIn.length) errs.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
-  if (stripped.length) errs.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
-  if (errs.length) toast(errs.join(" "));
+  if (hiddenIn.length) notes.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
+  if (stripped.length) notes.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
+  errs.forEach(t => notice(t, true)); notes.forEach(t => notice(t));
   restart();
 }
 $("clear").onclick = () => { removeParts(() => true); restart(); };
@@ -1849,7 +1854,7 @@ function exportPlate(i){
   if (!layout || layout.stale) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
-  toast(`Saved ${fname(i)}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
+  toast(`Saved ${fname(i)}`); notes.forEach(t => notice(t));
 }
 $("dlAll").onclick = async () => {
   if (!layout || layout.stale || !window.JSZip) return;
@@ -1857,11 +1862,29 @@ $("dlAll").onclick = async () => {
   const notes = new Set();
   layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
   download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(`Saved ${zipName()}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
+  toast(`Saved ${zipName()}`); notes.forEach(t => notice(t));
 };
 
+// short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
+// the pointer is over it, and Esc closes it (#94). Warnings and errors go to notice() and stay until dismissed.
 let toastT;
-function toast(t){ const el = $("toast"); el.textContent = t; el.hidden = false; say(t); clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3500); }
+function toast(t){
+  const el = $("toast"); el.textContent = t; el.hidden = false; say(t); clearTimeout(toastT);
+  const wait = ms => { toastT = setTimeout(() => el.matches(":hover") ? wait(1000) : (el.hidden = true), ms); };
+  wait(Math.max(20000, t.length * 100));
+}
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) { clearTimeout(toastT); $("toast").hidden = true; } });
+// warnings and errors: one item each in the message list, until dismissed (#94); announced once (#93)
+function notice(t, err){
+  const box = $("notices");
+  if ([...box.children].some(m => m.dataset.text === t)) { say(t, err); return; }   // already on screen
+  const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = t;
+  const s = document.createElement("span"); s.textContent = t;
+  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = "Dismiss";
+  x.setAttribute("aria-label", "Dismiss: " + (t.length > 60 ? t.slice(0, 57) + "…" : t));
+  x.onclick = () => { const nb = m.nextElementSibling || m.previousElementSibling; m.remove(); (nb ? nb.querySelector(".x") : drop).focus(); };
+  m.append(s, x); box.appendChild(m); say(t, err);
+}
 // screen-reader announcements (#93): the live regions stay in the page, and each message is added as a new node so a
 // repeated message is announced again; urgent ones (errors) go to the role="alert" region
 function say(t, urgent){ const p = document.createElement("p"); p.textContent = t; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }

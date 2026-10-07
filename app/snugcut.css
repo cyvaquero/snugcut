@@ -80,6 +80,10 @@ button.btn:disabled{opacity:.5;cursor:default}
 .msg{font-size:14px;padding:8px 12px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
+.msg.has-x{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.msg.err{border-left:3px solid var(--warn)}
+.msg .x{flex:none;border:0;background:none;color:inherit;cursor:pointer;padding:2px;border-radius:4px;line-height:0}
+.msg .x svg{width:14px;height:14px}
 .plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}

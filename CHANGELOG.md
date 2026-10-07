@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.13-beta
+
+- Messages no longer vanish after 3.5 s (#94):
+  - warnings and errors (import problems, notices from downloads such as the kerf-compensation warning, nesting
+    errors) appear as separate items in a message list above the plates and stay until dismissed. Each has a Dismiss
+    button, errors are marked, and the same message isn't added twice;
+  - the toast is only for short confirmations ("Saved plate-01-of-02.svg", "Kerf updated"). It stays at least 20 s
+    (longer for long text), stays while the pointer is over it, and Esc closes it.
+
 ## 1.1.12-beta
 
 - Screen readers now hear what happens (#93). Two visually hidden live regions (polite and alert) are always in the
