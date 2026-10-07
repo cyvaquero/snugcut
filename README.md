@@ -148,10 +148,11 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   with Enter or Space.
 - **Display**: the light or dark theme follows the system setting, and the status animation stops when reduced
   motion is requested.
+- **Screen readers**: the result of each run, confirmations and errors are announced. Warnings and errors also stay in
+  the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
+- **Focus** stays in place when the parts list or the plates are redrawn. Removing a part moves it to the next part,
+  and Search more and Stop hand it to each other.
 - **Known gaps**, tracked as issues:
-  - status changes, results and errors aren't announced to screen readers (#93);
-  - messages disappear after 3.5 s (#94);
-  - keyboard focus is lost after some actions (#95);
   - plate previews have no text description (#96);
   - invalid entries aren't flagged (#97);
   - toggles don't show their state in Windows high-contrast mode (#98);

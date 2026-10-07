@@ -107,12 +107,15 @@
         <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden>Stop</button>
       </div>
+      <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.11-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.14-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
+<div class="sr-only" id="sayAlert" role="alert"></div>
 
 <script type="module" src="app.js"></script>

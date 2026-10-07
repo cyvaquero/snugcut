@@ -48,7 +48,7 @@ details .row{margin-top:8px}
 button.btn{font:600 14px var(--f-body);border-radius:6px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 button.btn.small{font-size:13px;padding:4px 9px}
-button.btn:disabled{opacity:.5;cursor:default}
+button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .drop{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--fg)}
 .drop b{color:var(--accent)}
@@ -80,6 +80,10 @@ button.btn:disabled{opacity:.5;cursor:default}
 .msg{font-size:14px;padding:8px 12px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
+.msg.has-x{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.msg.err{border-left:3px solid var(--warn)}
+.msg .x{flex:none;border:0;background:none;color:inherit;cursor:pointer;padding:2px;border-radius:4px;line-height:0}
+.msg .x svg{width:14px;height:14px}
 .plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -92,6 +96,7 @@ button.btn:disabled{opacity:.5;cursor:default}
 .bar i{display:block;height:100%;background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}
 .note{font-size:13px;color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .fatal{padding:16px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
 .modesw{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}
 .modesw button{font:600 14px var(--f-body);background:transparent;color:var(--muted);border:0;padding:7px 16px;cursor:pointer}
