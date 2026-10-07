@@ -17,6 +17,10 @@ follows each part. Rounded rectangles nest by their rounded corners and `<use>` 
 images and copies of a `<symbol>` nest by the box around them. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
 always outward, so they nest a little less tightly but never overlap.
 
+**Area minimum** is the fewest plates the job could fit on by area alone: the parts' envelopes (outlines plus half
+the spacing all round) divided by the plate's usable area. When the best layout uses more plates than that, the status
+line suggests a longer search ("A longer search may save a plate").
+
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
 material: their outlines minus their holes, in both modes (parts kept as original markup count their holes as
 material).
@@ -24,7 +28,7 @@ material).
 **Efficiency** rates the whole job from 1 to 10: the parts' real material divided by the material the job uses up,
 with the percentage next to it. Full plates count whole; the last plate counts only up to one straight cut just past
 its parts, across its width or its height, whichever leaves the larger offcut, and that offcut's size is shown on the
-last plate. Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
+last plate (when it's at least 10 mm across). Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
@@ -38,7 +42,7 @@ ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectR
 
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
 splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`).
-Files that don't declare their units (every R12 file, for one) are read as mm, or as inches when their
+Files that don't declare their units (most R12 files) are read as mm, or as inches when their
 `$MEASUREMENT` header says imperial; a notice says which, and a **Drawn in** menu next to the part switches it between
 mm and inches. Each DXF color becomes a stroke color. Text, hatches and dimensions are skipped
 with a notice, and so is anything on a frozen, off or non-plotting layer or the Defpoints layer. Paper space and
@@ -219,7 +223,7 @@ in SnugCut; the details are in #106.
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
-| `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
+| `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `nesting/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
 `jszip@3.10.1` (zip download), plus Google Fonts. They come from public CDNs (cdn.jsdelivr.net, cdnjs.cloudflare.com,
