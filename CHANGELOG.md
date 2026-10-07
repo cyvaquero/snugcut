@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.26-beta
+
+- Ids containing `$` sequences (`$'`, `` $` ``, `$&`, `$1`) no longer corrupt parts kept as original markup (#76). The id
+  rewrite used the id in a `replace()` replacement string, where `$` sequences expand, so the exported plate was no
+  longer well-formed XML. It now uses replacer functions. Fixture: `security/dollar-id.svg`.
+
 ## 1.1.25-beta
 
 - True shape: cuts no longer reach into the edge margin (#72). The margin was checked against each part's simplified

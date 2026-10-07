@@ -245,7 +245,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.25-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.26-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -968,9 +968,10 @@ function uniquifyIds(markup, prefix){
   const re = v => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   for (const id of ids) {
     const e = re(id), n = prefix + id;
-    markup = markup.replace(new RegExp(`(\\sid=")${e}(")`, "g"), `$1${n}$2`)
-      .replace(new RegExp(`url\\(\\s*(['"]?)#${e}\\1\\s*\\)`, "g"), `url(#${n})`)
-      .replace(new RegExp(`(href\\s*=\\s*["'])#${e}(["'])`, "g"), `$1#${n}$2`);
+    // replacer functions, not replacement strings: a $ in an id ($', $&, $1…) must not expand (#76)
+    markup = markup.replace(new RegExp(`(\\sid=")${e}(")`, "g"), (m, a, b) => a + n + b)
+      .replace(new RegExp(`url\\(\\s*(['"]?)#${e}\\1\\s*\\)`, "g"), () => `url(#${n})`)
+      .replace(new RegExp(`(href\\s*=\\s*["'])#${e}(["'])`, "g"), (m, a, b) => a + "#" + n + b);
   }
   if (ids.length) {
     const has = new Set(ids);
