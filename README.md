@@ -18,7 +18,8 @@ images and copies of a `<symbol>` nest by the box around them. It changes only t
 always outward, so they nest a little less tightly but never overlap.
 
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
-material: their outlines minus their holes, in both modes.
+material: their outlines minus their holes, in both modes (parts kept as original markup count their holes as
+material).
 
 **Efficiency** rates the whole job from 1 to 10: the parts' real material divided by the material the job uses up,
 with the percentage next to it. Full plates count whole; the last plate counts only up to one straight cut just past
@@ -57,14 +58,19 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
-  is recognized and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
-  narrower than the kerf are exported as drawn (in SVG and DXF), with a notice.
+  is recognized and not compensated a second time. Parts kept as original markup and holes narrower than the kerf
+  are exported as drawn (in SVG and DXF), with a notice.
+
+**Parts kept as original markup**: a part with text, images, `<use>` copies, gradient or pattern fills, clip paths,
+masks or filters is exported exactly as drawn instead of as cut paths. Such a part nests by its outline only: its kerf
+isn't compensated, it gets no **Nest parts inside the holes** button, its holes count as material in the utilization,
+and its text, images and `<use>` copies can't be written to DXF.
 
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
 (polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per color (named by its hex
-value), or per source layer for parts imported from DXF. Text, images and fills can't be written to DXF: filled
-shapes become outlines, and a notice names anything that was left out.
+value), or per source layer for parts imported from DXF. Text, images and `<use>` copies can't be written to DXF and
+are left out; filled shapes become outlines. A notice names anything that was left out.
 
 ## Settings
 
@@ -90,7 +96,8 @@ Settings are remembered in this browser (local storage) and restored next time.
 In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orientation** button that stops that part
 from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
 
-**Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default);
+**Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
+not on parts kept as original markup);
 parts without holes show a dimmed red, slashed stand-in in its place, so the list lines up.
 Turned on, smaller parts can be nested in that part's holes, with the same spacing as anywhere else, and they're cut,
 whole, before the part around them, so the hole's slug can't drop or shift before they're free. A hole is any closed,
@@ -98,7 +105,7 @@ unfilled outline inside the part (the rule kerf compensation uses). SnugCut can'
 only for parts whose closed inner outlines are all cut: a part nested inside a scored outline would be cut out of the
 middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear. Utilization
 counts each part's real material: a hole is empty space, whether the button is on or not, until a part is nested in
-it, and then that part counts.
+it, and then that part counts (parts kept as original markup count their holes as material).
 
 What happens to imported files:
 
