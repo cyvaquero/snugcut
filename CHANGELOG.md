@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.50-beta
+
+- Big CAD/DXF drawings made of separate lines in shuffled order no longer freeze the page while their pieces are
+  joined into outlines (#154): 30,000 shuffled lines take 85 ms instead of 3.5 s. The joined outlines, and so the
+  exports, are exactly the same.
+
 ## 1.1.49-beta
 
 - While a search is running, single plates of a multi-plate job can't be downloaded (#153): the search can replace
