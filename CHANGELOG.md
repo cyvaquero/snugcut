@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.37-beta
+
+- DXF files that don't declare their units (`$INSUNITS` missing or 0, as in every R12 file) get a **Drawn in** menu
+  (mm / inches) next to the part, so an inch drawing no longer comes in 25.4 times too small with no way to fix it
+  (#90). Switching reads the file again in the chosen units and keeps the part's place, quantity and lock; screen
+  readers hear the new size. Such files are read as inches when their `$MEASUREMENT` header says imperial, otherwise
+  as mm, and the notice says which. Files that declare their units are unchanged, and so are all exports.
+
 ## 1.1.36-beta
 
 - Bounding box mode reports fill from the parts' real outline area, as True shape does, instead of their whole

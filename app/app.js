@@ -196,13 +196,13 @@ const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strok
 function renderParts(){
   // the list is rebuilt: put focus back on the same control of the same part (#95)
   const box = $("parts"), fa = document.activeElement, fr = fa && box.contains(fa) ? fa.closest(".part") : null;
-  const keep = fr ? {uid:fr.dataset.uid, sel:fa.matches("input") ? "input" : fa.matches(".lk") ? ".lk" : ".rm"} : null;
+  const keep = fr ? {uid:fr.dataset.uid, sel:fa.matches("input") ? "input" : fa.matches("select") ? "select" : fa.matches(".lk") ? ".lk" : ".rm"} : null;
   box.innerHTML = "";
   const F = binFrame();
   for (const p of parts) {
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
-    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${esc(S.unit)}${ok?"":" · too big"}</div></div>
+    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${esc(S.unit)}${ok?"":" · too big"}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">Drawn in</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>inches</option></select></div>` : ""}</div>
       <div class="qw"><span class="ql" id="ql-${p.uid}">Qty</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
       <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation of ${esc(p.name)}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
@@ -211,6 +211,8 @@ function renderParts(){
       fieldErr(q, ok ? "" : `Enter a whole number, 0 or more; still using ${p.qty}.`);
       if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
     };
+    const du = row.querySelector(".du select");
+    if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(`${np.name} read in ${du.value === "in" ? "inches" : "millimeters"}: ${fmt(np.wMM)} × ${fmt(np.hMM)} ${S.unit}.`); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const [lk, rm] = row.querySelectorAll(".acts button");
     lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
@@ -228,6 +230,15 @@ function renderParts(){
 function updateCount(){
   const n = parts.reduce((a, p) => a + p.qty, 0);
   $("partCount").textContent = `${parts.length} file${parts.length===1?"":"s"} · ${n} part${n===1?"":"s"}`;
+}
+// a DXF file that doesn't declare its units is read again in the units the user picks (#90); the part keeps its place,
+// quantity and lock
+function reunit(p, units){
+  try {
+    const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
+    Object.assign(np, {fromDXF:true, qty:p.qty, lock:p.lock, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
+  } catch(e) { notice(e.message, true); return null; }
 }
 function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); return false; } return true; }); }
 
@@ -249,8 +260,9 @@ async function addFiles(list){
   for (const f of files) { try {
     let text = await f.text();
     const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
-    if (isDXF(f)) { const r = dxfToSVG(text, f.name); text = r.svg; notes.push(...r.notes); }
-    const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); parts.push(p); if (p.stripped) stripped.push(p.name);
+    let dxf = null;
+    if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
+    const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
     if (pre) { p.precomp = true; notes.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
   } catch(e) { errs.push(e.message); } }
