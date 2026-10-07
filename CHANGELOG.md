@@ -2,6 +2,91 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.9-beta
+
+- Docs brought up to date for the release:
+  - README: out-of-date plates are dimmed and can't be downloaded (#67); how SVG sizes and a `viewBox` with another
+    aspect ratio are scaled (#65); nesting doesn't add the compensation allowance around parts exported as drawn
+    (#68); the jszip version.
+  - README and `CLAUDE.md`: git-flow wording covers `bugfix/` branches and fixes during a release.
+
+## 1.0.8-beta
+
+- The two CDN libraries (clipper-lib 6.4.2, jszip 3.10.1) load with Subresource Integrity (`integrity="sha384-…"`,
+  `crossorigin="anonymous"`), so a changed or tampered CDN file is blocked instead of run (#70). A blocked clipper-lib
+  shows the existing "geometry library didn't load" message; a blocked jszip only hides the zip download.
+- README: how to recompute the hashes when a library version changes.
+
+## 1.0.7-beta
+
+- Parts kept as original markup (text, images, effects) were kerf-compensated in DXF exports but not in SVG. Both
+  formats now export them as drawn, with the same notice, as the README says (#68).
+- With compensation on, nesting no longer reserves a compensation allowance around those parts, since they aren't
+  compensated: they get exactly the set spacing.
+
+## 1.0.6-beta
+
+- Clicking **Stop** before the first layout after a change was ready threw an error, left the status stuck at
+  "Nesting…", and made "Search 30 s more" fail. It now says the plates shown are out of date, and "Search 30 s more"
+  starts a fresh search (#67).
+- After changing parts, quantities, rotation locks, kerf, compensation, plate size or any other nesting setting, the
+  previous plates could still be downloaded until the new layout appeared. They are now dimmed and their download
+  buttons disabled until a new layout replaces them.
+- A change also drops the previous search, so "Search 30 s more" can't continue it with the old parts.
+
+## 1.0.5-beta
+
+- DXF export of parts imported from DXF keeps one output layer per source layer, as the export header promises, even
+  when layers share a colour (e.g. CUT and SCORE both colour 7). Open lines are no longer joined across layers (#66).
+- The DXF LAYER table no longer lists layer `0` twice when the source uses it, and its count matches its records.
+- SVG export is unchanged: DXF-imported parts still export with one path per line style.
+- Fixture: `dxf/dxf-same-colour-layers.dxf`.
+
+## 1.0.4-beta
+
+- An SVG whose `viewBox` has a different aspect ratio from its `width`/`height` is no longer stretched (#65). Before,
+  x and y were scaled separately, so a circle was cut as an ellipse. Scaling now follows `preserveAspectRatio` as
+  viewers do:
+  - `meet` (the default, also used for an invalid value) fits the drawing in the box;
+  - `slice` fills the box;
+  - only `none` stretches.
+- Shapes are never cropped to the box, whatever the value: SnugCut always cuts whole shapes.
+- Fixtures: `geometry/viewbox-aspect-meet.svg`, `viewbox-aspect-none.svg`, `viewbox-aspect-slice.svg`.
+
+## 1.0.3-beta
+
+- New `RELEASING.md` with the release procedure:
+  - ask about an efficiency review and optimisation before cutting a release branch;
+  - cut the branch and bump the version, only when the maintainer says so;
+  - run the blind review (correctness, documentation, security, accessibility) and file the findings as issues;
+  - fix on `bugfix/` branches, then finish the release only with the maintainer's approval.
+- Linked from the README and `CLAUDE.md`.
+
+## 1.0.2-beta
+
+- Fill, stroke, stroke width, font size, `style` and the other presentation attributes set on the root `<svg>` now
+  count when a part is measured and flattened (#64). Before, they were only applied to the thumbnail and to parts
+  exported as drawn:
+  - red outlines set on the root exported as black filled areas, and skipped kerf compensation;
+  - a file whose only stroke was on the root was rejected as having no visible shapes;
+  - text sized on the root was measured at 16 px, then exported at its real size and ran into its neighbours.
+- Files without presentation attributes on the root export exactly as before.
+- Fixtures: `geometry/root-attrs-stroke.svg`, `root-attrs-stroke-only.svg`, `root-attrs-font-size.svg`.
+
+## 1.0.1-beta
+
+- Class names in a file without a `<style>` block no longer pick up the app's own CSS while the part is measured
+  (#63). A shape with `class="icon"` was measured as 28 × 28 mm (`dot` 8 × 8, `bar` 5 high), so nested copies
+  overlapped on the plate; `note`, `hint` and `icon` turned `currentColor` into the UI grey `#93a0ae`.
+- The class names are prefixed only while measuring; the exported markup keeps them as drawn.
+- Fixture: `css/ui-class-names.svg`.
+
+## 1.0.0-beta
+
+- First release candidate. Major version bumped to 1 on request; minor and iterative reset to 0.
+- Same features as 0.1.33. The footer, the export comment (`<!-- SnugCut v1.0.0-beta -->`) and the DXF `999` marker
+  carry the new version.
+
 ## 0.1.33
 
 - Renamed **Plate Nester → SnugCut**.

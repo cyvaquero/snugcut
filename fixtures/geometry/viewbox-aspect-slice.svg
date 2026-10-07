@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 100 100" preserveAspectRatio="xMinYMax slice">
+  <!-- viewBox aspect test (#65): same circle as viewbox-aspect-meet.svg, but "slice" scales the viewBox uniformly to
+       fill the box (the larger of the two scales). Expected: a 100 mm circle (part size 100 x 100 mm). The xMinYMax
+       alignment only moves it in the viewport, and viewers crop it to the box, but SnugCut cuts whole shapes and does
+       not clip to the viewport. -->
+  <circle cx="50" cy="50" r="50" fill="none" stroke="#ff0000" stroke-width="0.2"/>
+</svg>

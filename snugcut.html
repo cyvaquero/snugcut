@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js" integrity="sha384-oV9/r5hoq7qHFHfbghYwt50E2fe8J20vXRW0eIGQl20k40zMEAhSXMCh9ANASVB9" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <style>
 /* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens. */
 :root{
@@ -93,6 +93,7 @@ button.btn:disabled{opacity:.5;cursor:default}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
 .plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .plate .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .plate .t{font:700 17px var(--f-display)}
@@ -212,7 +213,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v0.1.33</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.9-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -235,7 +236,7 @@ try { Object.assign(S, JSON.parse(localStorage.getItem("snugcut.settings") || lo
 const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
 let parts = [], uid = 0, geoVer = 0;
-let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea}
+let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea, stale}
 
 const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
@@ -694,15 +695,23 @@ function parseSVG(text, name){
   // all:initial + black: parts must not inherit the page's theme colour or fonts (currentColor would export as the UI text colour, #44).
   // Hidden with opacity, which isn't inherited: visibility:hidden would make every part's own visibility unreadable (#17).
   const g = document.createElementNS(SVGNS, "g");
-  if (root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
+  if (sheets.length && root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
+  // the root's fill, stroke, font-size, style, … inherit to every shape, so measuring and flattening must see them (#64)
+  for (const a of KEEP_ATTRS) if (a !== "class" && root.hasAttribute(a)) g.setAttribute(a, root.getAttribute(a));
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
+  // Without a <style> the file's class names do nothing, but in the measuring host the page's own rules (.icon, .dot,
+  // .note, …) would match them and resize or recolour the shapes (#63). Prefix them while measuring; mark(false) puts
+  // the drawn names back for the exported markup.
+  const bare = sheets.length ? [] : [...g.querySelectorAll("[class]")].map(el => [el, el.getAttribute("class")]);
+  const mark = on => { for (const [el, c] of bare) el.setAttribute("class", on ? c.split(/\s+/).filter(Boolean).map(n => pfx + n).join(" ") : c); };
+  mark(true);
   host.appendChild(g);
   let bb, rings;
-  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false, stripped};
+  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, stripped};
   try {
     const inl = inlineSheets(g);
     p.hidden = dropHidden(g);
-    if (inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
+    if (inl || p.hidden) { mark(false); p.inner = [...g.children].map(n => ser.serializeToString(n)).join(""); mark(true); }
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
@@ -799,7 +808,13 @@ function inlineSheets(g){
 function measureScaleOnly(p){
   let kx, ky;
   if (p.vb) { const w = lenToMM(p.wAttr, S.dpi), h = lenToMM(p.hAttr, S.dpi); kx = w ? w/p.vb[2] : null; ky = h ? h/p.vb[3] : null;
-    if (kx == null && ky == null) kx = ky = IN / S.dpi; else if (kx == null) kx = ky; else if (ky == null) ky = kx; }
+    if (kx == null && ky == null) kx = ky = IN / S.dpi; else if (kx == null) kx = ky; else if (ky == null) ky = kx;
+    // viewBox and width/height with different aspect ratios: viewers scale uniformly unless preserveAspectRatio is
+    // "none" (#65); meet (the default, also for an invalid value) fits the viewBox inside, slice fills the box. The
+    // xMid/yMax… alignment only shifts the drawing in the viewport, and parts are placed by their own bbox, so it
+    // doesn't change the cut.
+    else if (kx !== ky) { const m = /^\s*(?:defer\s+)?(none|x(?:Min|Mid|Max)Y(?:Min|Mid|Max))(?:\s+(meet|slice))?\s*$/.exec(p.par || "");
+      if (!m || m[1] !== "none") kx = ky = (m && m[2] === "slice" ? Math.max : Math.min)(kx, ky); } }
   else kx = ky = IN / S.dpi;
   p.kx = kx; p.ky = ky;
 }
@@ -986,17 +1001,18 @@ function uniquifyIds(markup, prefix){
   }
   return markup;
 }
-function cutPlan(p, flat = p.flat){
+function cutPlan(p, flat = p.flat, byLayer = false){
   // the part's subpaths with their nesting depth (how many closed contours contain them), computed once per part;
-  // inner cuts (holes, slots, engraving) must come before the outline that contains them
-  const ck = p.kx + "," + p.ky, slot = flat === p.flat ? "cutPlan" : "loosePlan";
+  // inner cuts (holes, slots, engraving) must come before the outline that contains them.
+  // byLayer (DXF export of parts imported from DXF): open pieces are only joined within their source layer
+  const ck = p.kx + "," + p.ky, slot = (flat === p.flat ? "cutPlan" : "loosePlan") + (byLayer ? "L" : "");
   if (p[slot] && p[slot + "Key"] === ck) return p[slot];
   let subs = [];
   flat.forEach((it, item) => {
     let cur = null;
     for (const sg of it.segs) { if (sg[0] === "M" || !cur) { cur = {item, segs:[]}; subs.push(cur); } cur.segs.push(sg); }
   });
-  subs = joinSubpaths(flat, subs, 0.01 / Math.min(p.kx, p.ky));
+  subs = joinSubpaths(flat, subs, 0.01 / Math.min(p.kx, p.ky), byLayer);
   for (const sub of subs) {
     const pts = []; let x = 0, y = 0;
     for (const sg of sub.segs) {
@@ -1029,10 +1045,11 @@ function cutPlan(p, flat = p.flat){
   return (p[slot] = subs);
 }
 const lineKey = it => [it.cap, it.join, it.ml, it.dash ? it.dash.join(",") : "", it.doff].join("|");
-function joinSubpaths(flat, subs, tol){
+function joinSubpaths(flat, subs, tol, byLayer){
   // chain open subpaths of the same line style whose ends meet (within tol, part units) into continuous paths,
   // reversing pieces where needed; a chain that returns to its start is closed with Z. CAD/DXF exports often
   // store every segment of an outline as its own subpath, which the laser would otherwise cut one at a time.
+  // byLayer: only pieces on the same source layer are chained.
   const end = segs => { const s = segs[segs.length - 1]; return [s[s.length - 2], s[s.length - 1]]; };
   const start = segs => [segs[0][1], segs[0][2]];
   const near = (a, b) => Math.abs(a[0] - b[0]) <= tol && Math.abs(a[1] - b[1]) <= tol;
@@ -1044,7 +1061,7 @@ function joinSubpaths(flat, subs, tol){
     }
     return out;
   };
-  const styleKey = sub => { const it = flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) : null; };
+  const styleKey = sub => { const it = flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) + (byLayer ? "|" + it.lay : "") : null; };
   const isOpen = sub => sub.segs.length > 1 && sub.segs[sub.segs.length - 1][0] !== "Z" && sub.segs.every((sg, i) => i === 0 ? sg[0] === "M" : sg[0] === "L" || sg[0] === "C");
   const out = [], pool = new Map();
   for (const sub of subs) {
@@ -1085,13 +1102,14 @@ function joinSubpaths(flat, subs, tol){
   const done = new Set();
   return out.flatMap(sub => sub.pending == null ? [sub] : done.has(sub.pending) ? [] : (done.add(sub.pending), chains.get(sub.pending)));
 }
-function cutGroups(p, flat, sc){
+function cutGroups(p, flat, sc, byLayer = false){
   // the part's subpaths in cut order, grouped by line style (one SVG <path> each): same-style lines share a group,
-  // every filled shape is its own; groups with the deepest (innermost) cuts first, the outline that contains them last
+  // every filled shape is its own; groups with the deepest (innermost) cuts first, the outline that contains them last.
+  // byLayer (DXF export of parts imported from DXF): also grouped by source layer, one output layer per source layer
   const groups = new Map();
-  for (const sub of cutPlan(p, flat)) {
+  for (const sub of cutPlan(p, flat, byLayer)) {
     const it = flat[sub.item];
-    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) : "F|" + sub.item;
+    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) + (byLayer ? "|" + it.lay : "") : "F|" + sub.item;
     if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
     groups.get(key).subs.push(sub);
   }
@@ -1139,11 +1157,12 @@ function kerfPaths(p, gr, M, notes){
     });
   });
 }
+const markupNote = (p, notes) => { if (kerfC() && !p.precomp) notes.add(`${p.name} has text, images or effects, so its kerf can't be compensated; it is exported as drawn.`); };
 function partMarkup(p, M, id, fallbackTransform, notes){
   // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
   // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
   if (!p.flat) {
-    if (kerfC(p) && notes) notes.add(`${p.name} has text, images or effects, so its kerf can't be compensated; it is exported as drawn.`);
+    if (notes) markupNote(p, notes);
     return `<g id="${id}" transform="${fallbackTransform}"><g ${p.rootAttrs}>${uniquifyIds(p.inner, id + "_")}</g></g>`;
   }
   const [a, b, c, d, e, f] = M, sc = Math.sqrt(Math.abs(a*d - b*c));
@@ -1323,7 +1342,9 @@ function nfp(A, B){
 }
 
 /* ---------- placement ---------- */
-const kerfC = p => S.comp && !(p && p.precomp) ? S.kerf / 2 : 0;   // how far compensated cuts move out from the drawn outline
+// how far compensated cuts move out from the drawn outline; 0 for parts kept as original markup (text, images, effects),
+// which both exports write as drawn, so nesting gives them no compensation allowance either. kerfC() = compensation on.
+const kerfC = p => S.comp && !(p && (p.precomp || !p.flat)) ? S.kerf / 2 : 0;
 function binFrame(){
   const half = (S.kerf + S.gap) / 2, tol = S.prec;   // compensated parts: the envelope's extra half kerf keeps the cut inside the margin
   // envelopes extend half-spacing + tol beyond the part; let that overhang the margin line
@@ -1505,7 +1526,7 @@ async function run(ms, fresh){
   setRunning(true);
   const t0 = performance.now();
   try {
-    if (fresh || !search) {
+    if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.R <= F.L || F.B <= F.T) { layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }
       for (const p of parts) {
@@ -1560,12 +1581,15 @@ function status(t0, ms, token){
 }
 function setRunning(on){
   $("stop").hidden = !on; $("more").disabled = on || !search || !search.items.length;
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && search && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
 }
 $("stop").onclick = () => { runToken++; setRunning(false); };
 $("more").onclick = () => run(30000, false);
 let tmr;
-function restart(){ clearTimeout(tmr); runToken++; tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
+// a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
+// and the old search can't be continued
+function staleLayout(){ search = null; if (layout) { layout.stale = true; showStale(); } }
+function restart(){ clearTimeout(tmr); runToken++; staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
 
 /* ---------- parts list ---------- */
 const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
@@ -1580,9 +1604,9 @@ function renderParts(){
       <input type="number" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
       <div class="acts"><button type="button" class="icon" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
-    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); runToken++; tmr = setTimeout(() => run(4000, true), 350); } };
+    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); runToken++; staleLayout(); tmr = setTimeout(() => run(4000, true), 350); } };
     const [lk, rm] = row.querySelectorAll(".acts button");
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); runToken++; tmr = setTimeout(() => run(4000, true), 250); };
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); runToken++; staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     rm.onclick = () => { removeParts(x => x === p); restart(); };
     box.appendChild(row);
   }
@@ -1704,10 +1728,10 @@ function plateDXF(plate){
   for (const it of cutSequence(plate.items)) {
     const p = it.part, flat = p.flat || p.loose;
     if (!flat) { notes.add(`${p.name} has nothing that can be written to DXF.`); continue; }
-    if (!p.flat) for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`);
+    if (!p.flat) { markupNote(p, notes); for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`); }   // written as drawn, like the SVG
     const [a, b, c, d, e, g] = placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), sc = Math.sqrt(Math.abs(a*d - b*c));
     const T = (x, y) => [a*x + c*y + e, H - (b*x + d*y + g)];
-    for (const gr of cutGroups(p, flat, sc)) {
+    for (const gr of cutGroups(p, flat, sc, p.fromDXF)) {
       const col = gr.it.stroke !== "none" ? gr.it.stroke : gr.it.fill;
       if (gr.fill) notes.add("Filled areas are written as their outlines.");
       const L = p.fromDXF && gr.it.lay ? layer(gr.it.lay, col) : layer(col.replace("#", ""), col), aci = aciNear(col);
@@ -1732,8 +1756,8 @@ function plateDXF(plate){
   const hdr = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "9", "$INSUNITS", "70", "4", "9", "$MEASUREMENT", "70", "1",
     "9", "$EXTMIN", "10", "0", "20", "0", "30", "0", "9", "$EXTMAX", "10", f(W), "20", f(H), "30", "0", "0", "ENDSEC",
     "0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LTYPE", "70", "1", "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0", "0", "ENDTAB",
-    "0", "TABLE", "2", "LAYER", "70", String(layers.size + 1), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
-  for (const [n, ci] of layers) hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
+    "0", "TABLE", "2", "LAYER", "70", String(layers.size + (layers.has("0") ? 0 : 1)), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
+  for (const [n, ci] of layers) if (n !== "0") hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
   hdr.push("0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "BLOCKS", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES");
   const all = (kerfC() ? ["999", `SnugCut ${document.getElementById("appver").textContent} ${compMark()}`] : []).concat(hdr, out, ["0", "ENDSEC", "0", "EOF"]);
   let dxf = ""; for (let i = 0; i < all.length; i += 2) dxf += all[i].padStart(3) + "\r\n" + all[i + 1] + "\r\n";
@@ -1767,7 +1791,13 @@ function renderLayout(){
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });
-  $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx();
+  $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx(); showStale();
+}
+function showStale(){
+  const st = !!(layout && layout.stale);
+  $("plates").classList.toggle("stale", st);
+  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.disabled = st; b.title = st ? "Out of date: wait for the new layout" : ""; });
+  $("dlAll").disabled = st;
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
 const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";
@@ -1784,12 +1814,13 @@ function plateFile(pl, notes){
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
 function exportPlate(i){
+  if (!layout || layout.stale) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
   toast(`Saved ${fname(i)}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
 }
 $("dlAll").onclick = async () => {
-  if (!layout || !window.JSZip) return;
+  if (!layout || layout.stale || !window.JSZip) return;
   const zip = new JSZip();
   const notes = new Set();
   layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
