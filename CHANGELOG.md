@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.30-beta
+
+- README: the script tags and the CSP are kept in `app/index.html`, not the generated `snugcut.html`. To bump a
+  library, change its URL and `integrity` there and run `python3 tools/build.py`, which copies them into `snugcut.html`
+  and writes in the hash of its inline script. The paragraph is also rewrapped.
+
 ## 1.1.29-beta
 
 - Saved settings are checked before use (#75). Each value must have the right type and one of the values the page
