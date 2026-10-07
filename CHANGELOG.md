@@ -2,6 +2,14 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.5-beta
+
+- DXF export of parts imported from DXF keeps one output layer per source layer, as the export header promises, even
+  when layers share a colour (e.g. CUT and SCORE both colour 7). Open lines are no longer joined across layers (#66).
+- The DXF LAYER table no longer lists layer `0` twice when the source uses it, and its count matches its records.
+- SVG export is unchanged: DXF-imported parts still export with one path per line style.
+- Fixture: `dxf/dxf-same-colour-layers.dxf`.
+
 ## 1.0.4-beta
 
 - An SVG whose `viewBox` has a different aspect ratio from its `width`/`height` is no longer stretched (#65). Before,

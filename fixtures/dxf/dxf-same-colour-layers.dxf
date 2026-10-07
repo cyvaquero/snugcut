@@ -1,0 +1,202 @@
+999
+SnugCut fixture (#66): layers CUT and SCORE share colour 7, plus a line on layer 0. Units: mm.
+999
+DXF export must keep CUT, SCORE and 0 as separate layers, list layer 0 once in the LAYER table,
+999
+and never chain lines across layers: the CUT line at y=30 ends where a SCORE line starts, and the
+999
+SCORE diagonal meets two corners of the CUT outline.
+  0
+SECTION
+  2
+HEADER
+  9
+$ACADVER
+  1
+AC1009
+  9
+$INSUNITS
+ 70
+4
+  0
+ENDSEC
+  0
+SECTION
+  2
+TABLES
+  0
+TABLE
+  2
+LAYER
+ 70
+3
+  0
+LAYER
+  2
+0
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+  0
+LAYER
+  2
+CUT
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+  0
+LAYER
+  2
+SCORE
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+  0
+ENDTAB
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  0
+LINE
+  8
+CUT
+ 10
+0
+ 20
+0
+ 30
+0.0
+ 11
+60
+ 21
+0
+ 31
+0.0
+  0
+LINE
+  8
+CUT
+ 10
+60
+ 20
+0
+ 30
+0.0
+ 11
+60
+ 21
+40
+ 31
+0.0
+  0
+LINE
+  8
+CUT
+ 10
+60
+ 20
+40
+ 30
+0.0
+ 11
+0
+ 21
+40
+ 31
+0.0
+  0
+LINE
+  8
+CUT
+ 10
+0
+ 20
+40
+ 30
+0.0
+ 11
+0
+ 21
+0
+ 31
+0.0
+  0
+LINE
+  8
+SCORE
+ 10
+0
+ 20
+0
+ 30
+0.0
+ 11
+60
+ 21
+40
+ 31
+0.0
+  0
+LINE
+  8
+CUT
+ 10
+10
+ 20
+30
+ 30
+0.0
+ 11
+25
+ 21
+30
+ 31
+0.0
+  0
+LINE
+  8
+SCORE
+ 10
+25
+ 20
+30
+ 30
+0.0
+ 11
+40
+ 21
+30
+ 31
+0.0
+  0
+LINE
+  8
+0
+ 10
+35
+ 20
+10
+ 30
+0.0
+ 11
+50
+ 21
+10
+ 31
+0.0
+  0
+ENDSEC
+  0
+EOF

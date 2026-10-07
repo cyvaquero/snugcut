@@ -212,7 +212,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.4-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.5-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -1000,17 +1000,18 @@ function uniquifyIds(markup, prefix){
   }
   return markup;
 }
-function cutPlan(p, flat = p.flat){
+function cutPlan(p, flat = p.flat, byLayer = false){
   // the part's subpaths with their nesting depth (how many closed contours contain them), computed once per part;
-  // inner cuts (holes, slots, engraving) must come before the outline that contains them
-  const ck = p.kx + "," + p.ky, slot = flat === p.flat ? "cutPlan" : "loosePlan";
+  // inner cuts (holes, slots, engraving) must come before the outline that contains them.
+  // byLayer (DXF export of parts imported from DXF): open pieces are only joined within their source layer
+  const ck = p.kx + "," + p.ky, slot = (flat === p.flat ? "cutPlan" : "loosePlan") + (byLayer ? "L" : "");
   if (p[slot] && p[slot + "Key"] === ck) return p[slot];
   let subs = [];
   flat.forEach((it, item) => {
     let cur = null;
     for (const sg of it.segs) { if (sg[0] === "M" || !cur) { cur = {item, segs:[]}; subs.push(cur); } cur.segs.push(sg); }
   });
-  subs = joinSubpaths(flat, subs, 0.01 / Math.min(p.kx, p.ky));
+  subs = joinSubpaths(flat, subs, 0.01 / Math.min(p.kx, p.ky), byLayer);
   for (const sub of subs) {
     const pts = []; let x = 0, y = 0;
     for (const sg of sub.segs) {
@@ -1043,10 +1044,11 @@ function cutPlan(p, flat = p.flat){
   return (p[slot] = subs);
 }
 const lineKey = it => [it.cap, it.join, it.ml, it.dash ? it.dash.join(",") : "", it.doff].join("|");
-function joinSubpaths(flat, subs, tol){
+function joinSubpaths(flat, subs, tol, byLayer){
   // chain open subpaths of the same line style whose ends meet (within tol, part units) into continuous paths,
   // reversing pieces where needed; a chain that returns to its start is closed with Z. CAD/DXF exports often
   // store every segment of an outline as its own subpath, which the laser would otherwise cut one at a time.
+  // byLayer: only pieces on the same source layer are chained.
   const end = segs => { const s = segs[segs.length - 1]; return [s[s.length - 2], s[s.length - 1]]; };
   const start = segs => [segs[0][1], segs[0][2]];
   const near = (a, b) => Math.abs(a[0] - b[0]) <= tol && Math.abs(a[1] - b[1]) <= tol;
@@ -1058,7 +1060,7 @@ function joinSubpaths(flat, subs, tol){
     }
     return out;
   };
-  const styleKey = sub => { const it = flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) : null; };
+  const styleKey = sub => { const it = flat[sub.item]; return it.fill === "none" ? it.stroke + "|" + it.sw + "|" + it.so + "|" + lineKey(it) + (byLayer ? "|" + it.lay : "") : null; };
   const isOpen = sub => sub.segs.length > 1 && sub.segs[sub.segs.length - 1][0] !== "Z" && sub.segs.every((sg, i) => i === 0 ? sg[0] === "M" : sg[0] === "L" || sg[0] === "C");
   const out = [], pool = new Map();
   for (const sub of subs) {
@@ -1099,13 +1101,14 @@ function joinSubpaths(flat, subs, tol){
   const done = new Set();
   return out.flatMap(sub => sub.pending == null ? [sub] : done.has(sub.pending) ? [] : (done.add(sub.pending), chains.get(sub.pending)));
 }
-function cutGroups(p, flat, sc){
+function cutGroups(p, flat, sc, byLayer = false){
   // the part's subpaths in cut order, grouped by line style (one SVG <path> each): same-style lines share a group,
-  // every filled shape is its own; groups with the deepest (innermost) cuts first, the outline that contains them last
+  // every filled shape is its own; groups with the deepest (innermost) cuts first, the outline that contains them last.
+  // byLayer (DXF export of parts imported from DXF): also grouped by source layer, one output layer per source layer
   const groups = new Map();
-  for (const sub of cutPlan(p, flat)) {
+  for (const sub of cutPlan(p, flat, byLayer)) {
     const it = flat[sub.item];
-    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) : "F|" + sub.item;
+    const key = it.fill === "none" ? "L|" + it.stroke + "|" + n3(it.sw * sc) + "|" + n3(it.so) + "|" + lineKey(it) + (byLayer ? "|" + it.lay : "") : "F|" + sub.item;
     if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
     groups.get(key).subs.push(sub);
   }
@@ -1721,7 +1724,7 @@ function plateDXF(plate){
     if (!p.flat) for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`);
     const [a, b, c, d, e, g] = placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), sc = Math.sqrt(Math.abs(a*d - b*c));
     const T = (x, y) => [a*x + c*y + e, H - (b*x + d*y + g)];
-    for (const gr of cutGroups(p, flat, sc)) {
+    for (const gr of cutGroups(p, flat, sc, p.fromDXF)) {
       const col = gr.it.stroke !== "none" ? gr.it.stroke : gr.it.fill;
       if (gr.fill) notes.add("Filled areas are written as their outlines.");
       const L = p.fromDXF && gr.it.lay ? layer(gr.it.lay, col) : layer(col.replace("#", ""), col), aci = aciNear(col);
@@ -1746,8 +1749,8 @@ function plateDXF(plate){
   const hdr = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "9", "$INSUNITS", "70", "4", "9", "$MEASUREMENT", "70", "1",
     "9", "$EXTMIN", "10", "0", "20", "0", "30", "0", "9", "$EXTMAX", "10", f(W), "20", f(H), "30", "0", "0", "ENDSEC",
     "0", "SECTION", "2", "TABLES", "0", "TABLE", "2", "LTYPE", "70", "1", "0", "LTYPE", "2", "CONTINUOUS", "70", "0", "3", "Solid line", "72", "65", "73", "0", "40", "0", "0", "ENDTAB",
-    "0", "TABLE", "2", "LAYER", "70", String(layers.size + 1), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
-  for (const [n, ci] of layers) hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
+    "0", "TABLE", "2", "LAYER", "70", String(layers.size + (layers.has("0") ? 0 : 1)), "0", "LAYER", "2", "0", "70", "0", "62", "7", "6", "CONTINUOUS"];
+  for (const [n, ci] of layers) if (n !== "0") hdr.push("0", "LAYER", "2", n, "70", "0", "62", String(ci), "6", "CONTINUOUS");
   hdr.push("0", "ENDTAB", "0", "ENDSEC", "0", "SECTION", "2", "BLOCKS", "0", "ENDSEC", "0", "SECTION", "2", "ENTITIES");
   const all = (kerfC() ? ["999", `SnugCut ${document.getElementById("appver").textContent} ${compMark()}`] : []).concat(hdr, out, ["0", "ENDSEC", "0", "EOF"]);
   let dxf = ""; for (let i = 0; i < all.length; i += 2) dxf += all[i].padStart(3) + "\r\n" + all[i + 1] + "\r\n";
