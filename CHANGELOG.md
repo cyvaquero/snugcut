@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.55-beta
+
+- README explains which parts are kept as original markup (text, images, `<use>` copies, gradient or pattern fills,
+  clip paths, masks, filters) and what that means: exported as drawn, no kerf compensation, no holes button, holes
+  counted as material, and text, images and `<use>` copies left out of DXF. The compensation notice now says
+  "text, images, linked copies or effects" (#170).
+
 ## 1.1.54-beta
 
 - The header links to the project and the issue tracker (#150): "SnugCut is open source: see SnugCut on GitHub.
