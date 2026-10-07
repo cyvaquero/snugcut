@@ -2,7 +2,8 @@
 
 Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`snugcut.html`](snugcut.html) in a browser (double-click is fine): no install, no build, no server.
-Everything runs in the page; nothing is uploaded.
+Everything runs in the page; nothing is uploaded. It needs a current desktop browser (Chrome or Edge, Firefox 101+,
+Safari 16.4+); those versions are known API support, not tested minimums.
 
 Two modes:
 
@@ -50,6 +51,35 @@ DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circle
 (polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per color (named by its hex
 value), or per source layer for parts imported from DXF. Text, images and fills can't be written to DXF: filled
 shapes become outlines, and a notice names anything that was left out.
+
+## Settings
+
+Settings are remembered in this browser (local storage) and restored next time.
+
+- **Nesting mode**: True shape or Bounding box (top right).
+- **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
+- **Plate width / height**, **Kerf**, **Extra gap**, **Edge margin**: the sheet, the width the cut removes, extra
+  spacing between parts, and the empty border around the sheet. "Measure it from a test cut" works out the kerf from a
+  designed and a measured size.
+- **Compensate kerf on objects**: see above.
+- **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
+- **Outline precision** (True shape): see above.
+- **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
+  72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are.
+- **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
+- **Output file prefix**: put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
+  `nested-plates.zip` without a prefix or `<prefix>-plates.zip` with one. "Download all (.zip)" appears when there is
+  more than one plate.
+- **Export format**: SVG, or DXF (R12, mm).
+
+In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orientation** button that stops that part
+from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
+
+What happens to imported files:
+
+- Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
+- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched.
+- Holes are cut, but other parts aren't nested inside them yet (#3).
 
 ## Test cuts
 
@@ -120,6 +150,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
+| `CHANGELOG.md`       | what changed in each version                                                  |
+| `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 

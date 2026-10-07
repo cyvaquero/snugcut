@@ -3,6 +3,14 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.8-beta
+
+- README: a Settings section covering every setting (mode, units, plate and spacing values, compensation,
+  rotation, outline precision, unitless SVG scale, plate outline, file prefix and names, export format), the
+  quantity and orientation lock in the parts list, sample parts, settings kept in the browser, and what happens to
+  imported files (hidden shapes and outside links left out; no nesting inside holes yet). It also gives the browsers
+  needed, and the Files table lists `CHANGELOG.md` and `CLAUDE.md` (#88).
+
 ## 1.1.7-beta
 
 - The project uses **American English**. #87 had it backwards: "neighboring" was right, and the British spellings
