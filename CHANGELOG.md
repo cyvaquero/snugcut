@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.18-beta
+
+- Fields, selects, icon buttons, the drop zone and the toggle groups have borders at least 3:1 against their
+  backgrounds in both themes (#99): a new `--field` color (light `#7e8b99`, dark `#5d6b7b`). Measured 3.01–3.48:1;
+  it was 1.3–1.4:1 with `--line`, which stays for dividers. README updated.
+
 ## 1.1.17-beta
 
 - In Windows high-contrast (forced colors) mode, the pressed state of the mode and unit toggles and the orientation
