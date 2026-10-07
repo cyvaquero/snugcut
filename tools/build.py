@@ -6,10 +6,11 @@
 
 app/index.html, app/snugcut.css, app/app.js and lib/snugcut.js are the source of truth. The page's stylesheet link
 and module script are replaced by the CSS and the JavaScript inline: the library first, then the app, in one
-classic script (export/import lines removed), and 'self' is dropped from the CSP since nothing is loaded from disk.
+classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
+(no 'unsafe-inline', so injected inline handlers can't run), and 'self' is dropped since nothing is loaded from disk.
 Python 3 standard library only.
 """
-import pathlib, re, sys
+import base64, hashlib, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "snugcut.html"
@@ -38,9 +39,18 @@ def build():
     if html.count(link) != 1 or html.count(mod) != 1: fail("app/index.html must have exactly one snugcut.css link and one app.js module script")
     csp = re.search(r'(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(">)', html)
     if not csp: fail("app/index.html has no Content-Security-Policy <meta>")
-    html = html.replace(csp.group(0), csp.group(1) + csp.group(2).replace("'self' ", "") + csp.group(3), 1)
+    script = "\n(() => {\n" + lib + app + "})();\n"
+    digest = "'sha256-" + base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode() + "'"
+    dirs = []
+    for d in csp.group(2).split(";"):
+        d = d.strip()
+        if "'unsafe-inline'" in d and d.startswith("script-src"): fail("app/index.html: script-src must not allow 'unsafe-inline'")
+        if d.startswith("script-src"): d = d.replace("'self'", digest)    # the one inline script, by hash
+        else: d = d.replace("'self' ", "")
+        dirs.append(d)
+    html = html.replace(csp.group(0), csp.group(1) + "; ".join(dirs) + csp.group(3), 1)
     html = html.replace(link, "<style>\n" + css + "</style>\n", 1)
-    html = html.replace(mod, "<script>\n(() => {\n" + lib + app + "})();\n</script>\n", 1)
+    html = html.replace(mod, "<script>" + script + "</script>\n", 1)
     if not html.startswith("<!doctype html>\n"): fail("app/index.html must start with <!doctype html>")
     return html.replace("<!doctype html>\n", "<!doctype html>\n" + NOTICE + "\n", 1)
 

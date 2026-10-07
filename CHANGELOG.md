@@ -4,6 +4,18 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.29-beta
+
+- Saved settings are checked before use (#75). Each value must have the right type and one of the values the page
+  offers (units, mode, format, rotation, precision, SVG scale) or a sane range (lengths); anything else keeps its
+  default. A planted `unit` holding markup or a `rotStep` of 1e-6 is ignored instead of reaching the page or stalling
+  the nesting. Values written into the page's markup are escaped as well.
+- No more `'unsafe-inline'` in the script policy:
+  - `tools/build.py` puts the sha256 hash of `snugcut.html`'s one inline script into its CSP on every build, so
+    injected inline handlers don't run (tested: an injected `onclick` is blocked with the CSP and runs without it);
+  - the split app needs only `'self'` for its module;
+  - `CLAUDE.md` and the README describe this.
+
 ## 1.1.28-beta
 
 - Crafted DXF files can no longer hang the page (#77):
