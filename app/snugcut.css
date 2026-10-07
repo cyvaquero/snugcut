@@ -123,6 +123,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .modesw{display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}
 .modesw button{font:600 14px var(--f-body);background:transparent;color:var(--muted);border:0;padding:7px 16px;cursor:pointer}
 .modesw button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
+/* inside the button, in its text color: the groups clip anything outside, and a ring in the accent color vanished against
+   the pressed neighbor (#155) */
+.unitsw button:focus-visible,.modesw button:focus-visible{outline:2px solid currentColor;outline-offset:-4px}
 body[data-mode="bbox"] [data-only="shape"],body[data-mode="shape"] [data-only="bbox"]{display:none!important}
 footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 footer a{color:var(--accent)}
