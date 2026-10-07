@@ -16,6 +16,9 @@ Two modes:
 follows each part. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
 always outward, so they nest a little less tightly but never overlap.
 
+**Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
+material: their outlines minus their holes, in both modes.
+
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
 layout is ready.
 
@@ -83,8 +86,9 @@ Turned on, smaller parts can be nested in that part's holes, with the same spaci
 whole, before the part around them, so the hole's slug can't drop or shift before they're free. A hole is any closed,
 unfilled outline inside the part (the rule kerf compensation uses). SnugCut can't tell a cut from a score, so turn it on
 only for parts whose closed inner outlines are all cut: a part nested inside a scored outline would be cut out of the
-middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear. Fill figures
-count a part's holes as filled, so parts nested in them add nothing to the fill: their space is already counted.
+middle of the part around it. Anything drawn inside a hole (a smaller cut, a score line) is kept clear. Utilization
+counts each part's real material: a hole is empty space, whether the button is on or not, until a part is nested in
+it, and then that part counts.
 
 What happens to imported files:
 
@@ -163,7 +167,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
 - **Focus** stays in place when the parts list or the plates are redrawn. Removing a part moves it to the next part,
   and Search more and Stop hand it to each other.
-- **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% fill") and have a "Parts on this plate" list
+- **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
   with counts and rotations, linked to the image.
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use.
