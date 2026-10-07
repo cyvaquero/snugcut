@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.23-beta
+
+- The guide lines on the plate previews reach 3:1 against the tan plate in both themes (#105). Part outlines use
+  `#2d55f0` at full opacity (4.0:1 light, 3.5:1 dark; was 2.5:1 and 1.5:1), and the edge-margin line uses `#7a6644`
+  (3.9:1 and 3.4:1; was 1.6:1 and 2.1:1). They are new `--guide` and `--guide-margin` colors.
+- README Accessibility section: no known gaps left from the 1.0.0-beta review. It says conformance still needs
+  confirming with real screen readers or an audit.
+
 ## 1.1.22-beta
 
 - Part names in the parts list are never cut off (#100). They wrap instead of ending in "…", which hid the rest of the
