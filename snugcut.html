@@ -142,7 +142,7 @@ footer a{color:var(--accent)}
           <label class="check"><input type="checkbox" id="kerfComp"> Compensate kerf on objects</label>
           <p class="hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
           <div class="msg" id="compWarn" hidden><b>The kerf is now built into your downloads.</b><ul>
-            <li>Turn off kerf offset in your cutter's software (LightBurn, xTool Studio, MakeIT, Silhouette Studio, …). Otherwise the kerf is applied twice: parts come out a full kerf too big and holes a full kerf too small. Don't offset the downloaded files yourself either.</li>
+            <li><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
             <li>Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
             <li>Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
             <li>Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>

@@ -4,7 +4,8 @@ Format `major.minor.iterative`. Major/minor change only on request; the iterativ
 
 ## 1.0.10-beta
 
-- README: shorter wording for the kerf-compensation warning about turning off kerf offset in the cutter's software.
+- Shorter wording for the warning to turn off kerf offset in the cutter's software, in the README and in the app's
+  kerf-compensation notice, which now match.
 
 ## 1.0.9-beta
 
