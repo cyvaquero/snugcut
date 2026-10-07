@@ -160,9 +160,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   to match.
 - **Contrast**: text meets WCAG AA in both themes, and the borders of fields and buttons are at least 3:1.
 - **Known gaps**, tracked as issues:
+  - names, labels and page structure (#102, #103);
   - low-contrast preview guide lines (#105);
   - part names get cut off at 320 px width or 400% zoom (#100);
-  - names, labels and page structure (#101, #102, #103).
 - Report other problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility

@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.19-beta
+
+- The drop zone's accessible name is its visible text, "Drop SVG or DXF files here or browse", instead of a different
+  `aria-label` ("Add SVG or DXF files"). Speech-input users can say "click browse" (#101).
+
 ## 1.1.18-beta
 
 - Fields, selects, icon buttons, the drop zone and the toggle groups have borders at least 3:1 against their
