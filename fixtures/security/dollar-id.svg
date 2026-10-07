@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50mm" height="20mm" viewBox="0 0 50 20">
+  <!-- Ids with $ sequences ($' $` $& $1) in a part kept as original markup (#76): the exported plate must stay
+       well-formed, with the ids written as they are (plus SnugCut's prefix). -->
+  <defs><linearGradient id="g$&amp;1"><stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#00f"/></linearGradient></defs>
+  <g id="a$'b"><rect width="50" height="20" fill="none" stroke="#f00" stroke-width="0.2"/><text x="5" y="12" font-size="8" fill="url(#g$&amp;1)">Hi</text></g>
+  <use href="#a$'b" x="0" y="0" id="u$`1"/>
+</svg>

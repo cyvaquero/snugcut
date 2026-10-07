@@ -5,14 +5,15 @@ Releases follow git-flow: a `release/<version>` branch is cut from `develop`, fi
 
 ## 1. Before cutting the release branch: efficiency review
 
-Ask the maintainer whether to run a **code efficiency review and optimisation** of `lib/snugcut.js` and `app/` first. Don't start
+Ask the maintainer whether to run a **code efficiency review and optimization** of `lib/snugcut.js` and `app/` first. Don't start
 one unasked. If the answer is yes:
 
 - Work on a `feature/` branch off `develop`.
 - Look at the hot paths: the nesting and layout search, curve sampling, Clipper offsets, building the export, redraws
   and DOM work, and anything parsed or computed more than once.
 - Measure before and after on the files in `fixtures/` (import time, search speed, layouts tried in a fixed time).
-- The SVG export must stay **byte-for-byte identical**: its format is verified in WeCreat MakeIT.
+- Exports must stay **byte-for-byte identical**: run the full fixture regression (every fixture, SVG and DXF,
+  compensation off and on), as CLAUDE.md requires. The SVG format is verified in WeCreat MakeIT.
 - File each finding as a GitHub issue (see section 3 for the format), then merge into `develop` before cutting the
   release branch.
 
@@ -43,10 +44,10 @@ Launch 4 independent subagents in ONE message, in the background. Every subagent
 - reports each finding with: one-line title (the defect), severity (critical/high/medium/low/info), category, location (function + line numbers), concrete repro (minimal SVG/DXF snippet where relevant, expected vs actual), root cause, proposed fix, and status (CONFIRMED by running / CONFIRMED by trace / PLAUSIBLE), most severe first. It drops style nits and speculation, groups instances with one root cause, and ends with a short list of what it checked that held up.
 
 The four reviewers:
-1. **Code correctness**: wrong output, crashes, lost parts, units/scale, overlaps in nesting, export geometry, DXF import/export, kerf/gap/margin maths, rotation, UI state/race bugs, edge cases. The SVG export format is verified in WeCreat MakeIT and must not change, but wrong values inside it are in scope.
-2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, fixtures/**/README.md and the UI text in app/index.html and app/app.js (labels, hints, messages, footer) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses British spelling).
-3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report issues the CSP or sanitiser already blocks unless the defence is incomplete.
-4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colours, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
+1. **Code correctness**: wrong output, crashes, lost parts, units/scale, overlaps in nesting, export geometry, DXF import/export, kerf/gap/margin math, rotation, UI state/race bugs, edge cases. The SVG export format is verified in WeCreat MakeIT and must not change, but wrong values inside it are in scope.
+2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, fixtures/**/README.md and the UI text in app/index.html and app/app.js (labels, hints, messages, footer) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
+3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report issues the CSP or sanitizer already blocks unless the defense is incomplete.
+4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colors, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
 
 #### 2. Verify and deduplicate (you, not a subagent)
 - Check every finding against the code yourself (grep/sed the cited lines) before filing. Drop or correct anything that doesn't hold, and say what you dropped and why.
@@ -64,7 +65,7 @@ Match the format of the existing review issues (read #17 and #46 first). Each bo
 Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements). Write the bodies to scratch files with a TSV manifest (id, title, labels), create the issues in severity order with `gh issue create --body-file`, and fill in cross-references between new issues (`#NN`) once their numbers exist.
 
 #### 4. Report
-Summarise by severity with links to every new issue, call out the release blockers, list merged and dropped findings, and list any decisions that need the maintainer. If the WCAG/508 differences matter beyond single findings, open one `accessibility` + `documentation` issue summarising them.
+Summarize by severity with links to every new issue, call out the release blockers, list merged and dropped findings, and list any decisions that need the maintainer. If the WCAG/508 differences matter beyond single findings, open one `accessibility` + `documentation` issue summarizing them.
 
 </details>
 

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,8 @@
 <div class="wrap">
   <header>
     <h1>SnugCut</h1>
-    <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; nothing is uploaded.</p>
+    <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
+    <p>SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener">issue tracker</a>.</p>
     <ul>
       <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
       <li><b>Bounding box</b> packs rectangles fast.</li>
@@ -27,8 +28,8 @@
   <div class="layout">
     <div class="rail">
       <section class="panel" aria-labelledby="h-plate">
-        <h2 id="h-plate">Plate &amp; cutting <span class="unitsw" role="group" aria-label="Units">
-          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></h2>
+        <div class="panel-hd"><h2 id="h-plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units">
+          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
         <div class="row">
           <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="number" id="plateW" min="1" step="any"></div>
           <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
@@ -46,7 +47,7 @@
             <li>Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
           <details>
             <summary>Measure it from a test cut</summary>
-            <p class="hint" style="margin-top:6px">Cut a square, then measure the piece that drops out.</p>
+            <p class="hint" style="margin-top:6px">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
             <div class="row">
               <div class="field"><label for="kDesign">Designed (<span class="u">mm</span>)</label><input type="number" id="kDesign" step="any"></div>
               <div class="field"><label for="kMeasured">Measured (<span class="u">mm</span>)</label><input type="number" id="kMeasured" step="any"></div>
@@ -62,7 +63,7 @@
           <div class="field"><label for="rotStep">Rotation</label>
             <select id="rotStep"><option value="0">None</option><option value="180">180° flips</option><option value="90">90° steps</option><option value="45">45° steps</option><option value="30">30° steps</option><option value="15">15° steps</option></select></div>
           <div class="field"><label for="prec">Outline precision</label>
-            <select id="prec"><option value="0.25">Standard (±0.25 mm)</option><option value="0.1">Fine (±0.1 mm)</option></select></div>
+            <select id="prec"><option value="0.25">Standard (0.25 mm)</option><option value="0.1">Fine (0.1 mm)</option></select></div>
         </div>
         <div class="row">
           <div class="field"><label for="dpi">Unitless SVG scale</label>
@@ -82,8 +83,8 @@
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
-        <h2 id="h-parts">Parts <span id="sampleBadge" class="badge">Sample parts</span></h2>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add SVG or DXF files">Drop SVG or DXF files here or <b>browse</b></div>
+        <div class="panel-hd"><h2 id="h-parts">Parts</h2><span id="sampleBadge" class="badge">Sample parts</span></div>
+        <div class="drop" id="drop" tabindex="0" role="button">Drop SVG or DXF files here or <b>browse</b></div>
         <input type="file" id="file" accept=".svg,image/svg+xml,.dxf,image/vnd.dxf,application/dxf" multiple hidden>
         <div class="parts" id="parts"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -93,12 +94,14 @@
       </section>
     </div>
 
-    <div class="results">
+    <main class="results" aria-labelledby="h-results">
+      <h2 id="h-results" class="sr-only">Results</h2>
       <div class="summary">
         <div class="stat"><span class="v" id="sPlates">–</span><span class="k">Plates</span></div>
         <div class="stat"><span class="v" id="sMin">–</span><span class="k">Area minimum</span></div>
-        <div class="stat"><span class="v" id="sFill">–</span><span class="k">Average fill</span></div>
+        <div class="stat"><span class="v" id="sFill">–</span><span class="k">Average utilization</span></div>
         <div class="stat"><span class="v" id="sParts">–</span><span class="k">Parts placed</span></div>
+        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK">Efficiency</span></div>
         <div class="sp"></div>
         <button type="button" class="btn primary" id="dlAll" hidden>Download all (.zip)</button>
       </div>
@@ -107,12 +110,15 @@
         <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden>Stop</button>
       </div>
+      <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
-    </div>
+    </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
+<div class="sr-only" id="sayAlert" role="alert"></div>
 
 <script type="module" src="app.js"></script>

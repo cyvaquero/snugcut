@@ -1,5 +1,5 @@
 999
-SnugCut fixture (#66): layers CUT and SCORE share colour 7, plus a line on layer 0. Units: mm.
+SnugCut fixture (#66): layers CUT and SCORE share color 7, plus a line on layer 0. Units: mm.
 999
 DXF export must keep CUT, SCORE and 0 as separate layers, list layer 0 once in the LAYER table,
 999

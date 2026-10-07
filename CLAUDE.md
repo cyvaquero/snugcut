@@ -22,6 +22,9 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **CSP**: `app/index.html` carries its own Content-Security-Policy `<meta>`, as strict as `snugcut.html`'s plus
   `'self'` for its own module and stylesheet. Any new or changed library/CDN URL goes into both: edit the CSP in
   `app/index.html`, and the build writes it into `snugcut.html` (minus `'self'`). Otherwise the browser blocks it.
+  `script-src` never allows `'unsafe-inline'`: the build puts the sha256 hash of `snugcut.html`'s one inline script into
+  its `script-src` on every run, so injected inline handlers can't run. Never add inline `on…=` handlers or
+  `javascript:` URLs; attach handlers in `app.js`.
 - **Exports must not change by accident**: a structural or refactoring change must leave SVG and DXF exports from
   `snugcut.html` byte-identical. Run the fixture regression (every fixture, SVG and DXF, compensation off and on) and
   report it.
@@ -30,10 +33,16 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer (`app/index.html`, built into `snugcut.html`) and `CHANGELOG.md`:
   - major: only bumped when the user explicitly says so; zeroes minor and iterative.
   - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.
-  - iterative: bump automatically with every change.
+  - iterative: bump automatically with every change (once per change, not per commit: follow-up commits on an unmerged
+    PR keep its version).
+  - pre-release suffix: a `-beta` (or similar) suffix follows the number only when the user asks for it. It stays on
+    every later version, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta…), until the user says to
+    drop it. Once dropped, a suffix comes back only for a major rewrite of what the app does or how it works.
 - **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
-  automatically. Before cutting it, ask whether to run a code efficiency review and optimisation first. After cutting
+  automatically. Before cutting it, ask whether to run a code efficiency review and optimization first. After cutting
   it, run the blind review prompt in that file.
+- **American English** in all text: UI, docs, CHANGELOG, code comments, fixture names and comments (color, behavior,
+  recognize, millimeters, …). HTML/ARIA names keep their spec spelling (`aria-labelledby`).
 - All internal lengths are mm.
 - Sandboxed sessions may not be able to read `~/.gitconfig`: run git with `GIT_CONFIG_GLOBAL` set to a file holding only
   the gh credential helper. The commit identity lives in this clone's `.git/config` (GitHub no-reply address).
