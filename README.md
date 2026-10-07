@@ -65,7 +65,8 @@ Settings are remembered in this browser (local storage) and restored next time.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
 - **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
-  72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are.
+  72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
+  `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).
 - **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
 - **Output file prefix**: put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
   `nested-plates.zip` without a prefix or `<prefix>-plates.zip` with one. "Download all (.zip)" appears when there is

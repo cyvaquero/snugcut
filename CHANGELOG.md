@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.31-beta
+
+- An SVG with an absolute `width`/`height` (mm, cm, in, pt, pc) but no `viewBox` is no longer scaled by the Unitless SVG
+  scale setting (#73). Its drawing is in CSS px (96 per inch), as in every viewer, so a `width="100mm"` file holding a
+  100-unit square now measures 26.46 mm at any setting (it was 35.28 mm at 72 px/in). Files sized in px or without units
+  still follow the setting. README updated.
+
 ## 1.1.30-beta
 
 - README: the script tags and the CSP are kept in `app/index.html`, not the generated `snugcut.html`. To bump a
