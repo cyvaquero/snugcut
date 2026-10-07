@@ -93,6 +93,7 @@ button.btn:disabled{opacity:.5;cursor:default}
 .msg ul{margin:6px 0 0;padding-left:18px}
 .msg li{margin-top:4px}
 .plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .plate .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .plate .t{font:700 17px var(--f-display)}
@@ -212,7 +213,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.5-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -235,7 +236,7 @@ try { Object.assign(S, JSON.parse(localStorage.getItem("snugcut.settings") || lo
 const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
 let parts = [], uid = 0, geoVer = 0;
-let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea}
+let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea, stale}
 
 const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
@@ -1522,7 +1523,7 @@ async function run(ms, fresh){
   setRunning(true);
   const t0 = performance.now();
   try {
-    if (fresh || !search) {
+    if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.R <= F.L || F.B <= F.T) { layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }
       for (const p of parts) {
@@ -1577,12 +1578,15 @@ function status(t0, ms, token){
 }
 function setRunning(on){
   $("stop").hidden = !on; $("more").disabled = on || !search || !search.items.length;
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && search && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
 }
 $("stop").onclick = () => { runToken++; setRunning(false); };
 $("more").onclick = () => run(30000, false);
 let tmr;
-function restart(){ clearTimeout(tmr); runToken++; tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
+// a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
+// and the old search can't be continued
+function staleLayout(){ search = null; if (layout) { layout.stale = true; showStale(); } }
+function restart(){ clearTimeout(tmr); runToken++; staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
 
 /* ---------- parts list ---------- */
 const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
@@ -1597,9 +1601,9 @@ function renderParts(){
       <input type="number" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
       <div class="acts"><button type="button" class="icon" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
-    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); runToken++; tmr = setTimeout(() => run(4000, true), 350); } };
+    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); runToken++; staleLayout(); tmr = setTimeout(() => run(4000, true), 350); } };
     const [lk, rm] = row.querySelectorAll(".acts button");
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); runToken++; tmr = setTimeout(() => run(4000, true), 250); };
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); runToken++; staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     rm.onclick = () => { removeParts(x => x === p); restart(); };
     box.appendChild(row);
   }
@@ -1784,7 +1788,13 @@ function renderLayout(){
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });
-  $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx();
+  $("dlAll").hidden = !(L.plates.length > 1 && window.JSZip); prefixEx(); showStale();
+}
+function showStale(){
+  const st = !!(layout && layout.stale);
+  $("plates").classList.toggle("stale", st);
+  $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.disabled = st; b.title = st ? "Out of date: wait for the new layout" : ""; });
+  $("dlAll").disabled = st;
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
 const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";
@@ -1801,12 +1811,13 @@ function plateFile(pl, notes){
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
 function exportPlate(i){
+  if (!layout || layout.stale) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
   toast(`Saved ${fname(i)}` + (notes.size ? `. ${[...notes].join(" ")}` : ""));
 }
 $("dlAll").onclick = async () => {
-  if (!layout || !window.JSZip) return;
+  if (!layout || layout.stale || !window.JSZip) return;
   const zip = new JSZip();
   const notes = new Set();
   layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));

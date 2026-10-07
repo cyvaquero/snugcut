@@ -2,6 +2,16 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.6-beta
+
+- Clicking **Stop** before the first layout after a change was ready threw an error, left the status stuck at
+  "Nesting…", and made "Search 30 s more" fail. It now says the plates shown are out of date, and "Search 30 s more"
+  starts a fresh search (#67).
+- After changing parts, quantities, rotation locks, kerf, compensation, plate size or any other nesting setting, the
+  previous plates could still be downloaded until the new layout appeared. They are now dimmed and their download
+  buttons disabled until a new layout replaces them.
+- A change also drops the previous search, so "Search 30 s more" can't continue it with the old parts.
+
 ## 1.0.5-beta
 
 - DXF export of parts imported from DXF keeps one output layer per source layer, as the export header promises, even
