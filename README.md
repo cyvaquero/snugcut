@@ -103,6 +103,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 | Path                 | What                                                                          |
 | -------------------- | ----------------------------------------------------------------------------- |
 | `snugcut.html`       | the app: HTML, CSS and inline JavaScript in one file                          |
+| `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
@@ -114,4 +115,5 @@ else.
 
 git-flow: `main` + `develop`, feature branches off `develop`, PRs into `develop`. Versions are
 `major.minor.iterative`, shown in the page footer and in [CHANGELOG.md](CHANGELOG.md): major and minor are bumped only
-on request; the iterative number is bumped with every change.
+on request; the iterative number is bumped with every change. The release steps (an efficiency review before cutting the
+release branch, a blind review after) are in [RELEASING.md](RELEASING.md).
