@@ -83,7 +83,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .icon svg{width:15px;height:15px}
 .badge{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
 .results{display:flex;flex-direction:column;gap:14px;min-width:0}
-.summary{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.summary{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .stat{display:flex;flex-direction:column}
 .stat .v{font:600 26px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
 .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}

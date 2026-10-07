@@ -19,6 +19,12 @@ always outward, so they nest a little less tightly but never overlap.
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
 material: their outlines minus their holes, in both modes.
 
+**Efficiency** rates the whole job from 1 to 10: the parts' real material divided by the material the job uses up,
+with the percentage next to it. Full plates count whole; the last plate counts only up to one straight cut just past
+its parts, across its width or its height, whichever leaves the larger offcut, and that offcut's size is shown on the
+last plate. Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
+rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
+
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
 layout is ready.
 

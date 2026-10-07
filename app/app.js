@@ -1,6 +1,6 @@
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
-import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, envelope, esc, hasHoles,
+import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
   fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, mulberry, n4, newRun, pack, parseSVG, plateDXF,
   plateSVG, rectFits, score, setVersion, shape, toPlates} from "../lib/snugcut.js";
 
@@ -177,6 +177,8 @@ function runSummary(){
   const n = layout.plates.length, placed = layout.plates.reduce((a, b) => a + b.items.length, 0);
   const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? Math.round(100 * layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : 0;
   let t = n ? `Nesting finished: ${n} plate${n === 1 ? "" : "s"}, ${fill}% average utilization, ${placed} of ${want} parts placed.` : (want ? "Nesting finished: nothing could be placed." : "No parts to nest.");
+  const E = n && efficiency(layout.plates);
+  if (E) t += ` Efficiency ${E.rating} out of 10: the parts use ${Math.round(E.eff * 100)}% of the material the job takes up.`;
   if (layout.oversize.length) t += ` ${layout.oversize.length} file${layout.oversize.length === 1 ? " doesn't" : "s don't"} fit on the plate and ${layout.oversize.length === 1 ? "was" : "were"} left out.`;
   return t;
 }
@@ -297,6 +299,10 @@ function drawLayout(){
   $("sMin").textContent = L.minPlates || "–";
   $("sFill").textContent = L.plates.length ? Math.round(100 * L.plates.reduce((a, b) => a + b.area, 0) / (plateA * L.plates.length)) + "%" : "–";
   $("sParts").textContent = placed;
+  // efficiency rating (#138): "6/10" read as "6 out of 10", with the percentage under it
+  const E = efficiency(L.plates), cut = E && Math.min(E.offcut.w, E.offcut.h) >= 10 ? E.offcut : null;
+  $("sEff").innerHTML = E ? `${E.rating}<span aria-hidden="true">/</span><span class="sr-only"> out of </span>10` : "–";
+  $("sEffK").textContent = E ? `Efficiency · ${Math.round(E.eff * 100)}%` : "Efficiency";
   const msg = t => { const m = document.createElement("div"); m.className = "msg"; m.textContent = t; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
   for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
@@ -317,7 +323,7 @@ function drawLayout(){
     }
     const list = [...groups].map(([p, g]) => `<li>${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill}% utilization · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill}% utilization · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}${cut && i === L.plates.length - 1 ? ` · offcut ${fmt(cut.w)} × ${fmt(cut.h)} ${esc(S.unit)}` : ""}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="plist-${i}" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
       <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;

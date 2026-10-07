@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.41-beta
+
+- New **Efficiency** stat after Parts placed: a 1–10 rating of the whole job, with its percentage (#138). It divides
+  the parts' real material by the material the job uses up: full plates count whole, and the last plate only up to
+  one straight cut just past its parts, across its width or height, whichever leaves the larger offcut. The last
+  plate's card shows that offcut's size (when it's at least 10 mm across), and the screen-reader summary reads the
+  rating. Nesting parts inside holes raises it: four rings with 60 mm holes and four 40 mm discs on a 210 × 210 mm
+  plate rate 5/10 (47%) with the rings' holes off and 6/10 (58%) with them on. Layouts and exports are unchanged.
+
 ## 1.1.40-beta
 
 - "Fill" is now **utilization**: the share of the plate covered by the parts' real material, their outlines minus
