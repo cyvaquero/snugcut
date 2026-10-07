@@ -128,7 +128,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .unitsw button:focus-visible,.modesw button:focus-visible{outline:2px solid currentColor;outline-offset:-4px}
 body[data-mode="bbox"] [data-only="shape"],body[data-mode="shape"] [data-only="bbox"]{display:none!important}
 footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-footer a{color:var(--accent)}
+footer a,header p a{color:var(--accent)}
 /* Windows High Contrast / forced colors: pressed toggles keep a visible state (#98) */
 @media (forced-colors: active){
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}

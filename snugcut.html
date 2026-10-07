@@ -141,7 +141,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .unitsw button:focus-visible,.modesw button:focus-visible{outline:2px solid currentColor;outline-offset:-4px}
 body[data-mode="bbox"] [data-only="shape"],body[data-mode="shape"] [data-only="bbox"]{display:none!important}
 footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-footer a{color:var(--accent)}
+footer a,header p a{color:var(--accent)}
 /* Windows High Contrast / forced colors: pressed toggles keep a visible state (#98) */
 @media (forced-colors: active){
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
@@ -157,6 +157,7 @@ footer a{color:var(--accent)}
   <header>
     <h1>SnugCut</h1>
     <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
+    <p>SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener">issue tracker</a>.</p>
     <ul>
       <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
       <li><b>Bounding box</b> packs rectangles fast.</li>
@@ -256,7 +257,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.53-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.54-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
