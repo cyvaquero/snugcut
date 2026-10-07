@@ -13,7 +13,8 @@ Two modes:
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
-follows each part. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
+follows each part. Rounded rectangles nest by their rounded corners and `<use>` copies by the shapes they copy; text,
+images and copies of a `<symbol>` nest by the box around them. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
 always outward, so they nest a little less tightly but never overlap.
 
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
