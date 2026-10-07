@@ -2,6 +2,17 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.4-beta
+
+- An SVG whose `viewBox` has a different aspect ratio from its `width`/`height` is no longer stretched (#65). Before,
+  x and y were scaled separately, so a circle was cut as an ellipse. Scaling now follows `preserveAspectRatio` as
+  viewers do:
+  - `meet` (the default, also used for an invalid value) fits the drawing in the box;
+  - `slice` fills the box;
+  - only `none` stretches.
+- Shapes are never cropped to the box, whatever the value: SnugCut always cuts whole shapes.
+- Fixtures: `geometry/viewbox-aspect-meet.svg`, `viewbox-aspect-none.svg`, `viewbox-aspect-slice.svg`.
+
 ## 1.0.3-beta
 
 - New `RELEASING.md` with the release procedure:

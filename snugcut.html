@@ -212,7 +212,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.3-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.4-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -706,7 +706,7 @@ function parseSVG(text, name){
   mark(true);
   host.appendChild(g);
   let bb, rings;
-  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), qty:1, lock:false, stripped};
+  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, stripped};
   try {
     const inl = inlineSheets(g);
     p.hidden = dropHidden(g);
@@ -807,7 +807,13 @@ function inlineSheets(g){
 function measureScaleOnly(p){
   let kx, ky;
   if (p.vb) { const w = lenToMM(p.wAttr, S.dpi), h = lenToMM(p.hAttr, S.dpi); kx = w ? w/p.vb[2] : null; ky = h ? h/p.vb[3] : null;
-    if (kx == null && ky == null) kx = ky = IN / S.dpi; else if (kx == null) kx = ky; else if (ky == null) ky = kx; }
+    if (kx == null && ky == null) kx = ky = IN / S.dpi; else if (kx == null) kx = ky; else if (ky == null) ky = kx;
+    // viewBox and width/height with different aspect ratios: viewers scale uniformly unless preserveAspectRatio is
+    // "none" (#65); meet (the default, also for an invalid value) fits the viewBox inside, slice fills the box. The
+    // xMid/yMax… alignment only shifts the drawing in the viewport, and parts are placed by their own bbox, so it
+    // doesn't change the cut.
+    else if (kx !== ky) { const m = /^\s*(?:defer\s+)?(none|x(?:Min|Mid|Max)Y(?:Min|Mid|Max))(?:\s+(meet|slice))?\s*$/.exec(p.par || "");
+      if (!m || m[1] !== "none") kx = ky = (m && m[2] === "slice" ? Math.max : Math.min)(kx, ky); } }
   else kx = ky = IN / S.dpi;
   p.kx = kx; p.ky = ky;
 }
