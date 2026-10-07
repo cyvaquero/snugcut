@@ -261,3 +261,16 @@ release go on `bugfix/` branches with PRs into the `release/` branch. Versions a
 every change, and a suffix stays on until it is dropped (1.1.0-beta, 1.1.1-beta, …). Once dropped, a suffix comes
 back only for a major rewrite of what the app does or how it works. The release steps (an efficiency review before cutting the
 release branch, a blind review after) are in [RELEASING.md](RELEASING.md).
+
+## License
+
+Copyright (C) 2026 Guy Heckman.
+
+SnugCut is free software under the [GNU Affero General Public License](LICENSE), version 3 or (at your option)
+any later version (AGPL-3.0-or-later). You may use it
+for anything, including commercial work such as cutting parts you sell, and you may copy, modify and share it. If you
+distribute a modified version, or let people use one over a network (for example as part of a hosted service), you
+must make its complete source code available to them under the same license.
+
+The libraries it loads keep their own licenses: clipper-lib (Boost Software License 1.0), JSZip (MIT or GPLv3) and the
+Google Fonts (SIL Open Font License).
