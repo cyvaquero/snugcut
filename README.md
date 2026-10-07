@@ -168,10 +168,11 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
-documentation (602, this section) and keeping information visible with forced colors (302.2, #98). The review's findings are
-fixed, but conformance hasn't yet been confirmed with screen readers (VoiceOver, NVDA) or a full audit. Section 508 points to WCAG 2.0 AA for web content, so meeting
-WCAG 2.1 AA covers it and adds a few newer criteria (status messages, reflow, text spacing, non-text contrast, label
-in name). The two standards don't conflict anywhere in SnugCut; the details are in #106.
+documentation (602, this section) and keeping information visible with forced colors (302.2, #98). The review's
+findings are fixed, but conformance hasn't yet been confirmed with screen readers (VoiceOver, NVDA) or a full audit.
+Section 508 points to WCAG 2.0 AA for web content, so meeting WCAG 2.1 AA covers it and adds a few newer criteria
+(status messages, reflow, text spacing, non-text contrast, label in name). The two standards don't conflict anywhere
+in SnugCut; the details are in #106.
 
 ## Files
 
