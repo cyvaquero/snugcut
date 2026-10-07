@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later
+   Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). */
 /* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens.
    --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99). */
 :root{

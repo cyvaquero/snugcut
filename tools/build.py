@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 """Generate snugcut.html (one self-contained file) from app/ and lib/.
 
     python3 tools/build.py          write snugcut.html
