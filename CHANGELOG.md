@@ -4,6 +4,23 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.0-beta
+
+Release of 1.1.1-beta through 1.1.59-beta. Highlights:
+
+- **Parts inside holes** (True shape, #3): a per-part **Nest parts inside the holes** button; nested parts are cut
+  before the part around them (#151). Parts without holes show a slashed stand-in, so the list lines up (#141).
+- **Utilization** and an **Efficiency** rating from 1 to 10, from the parts' real material, with the last plate's
+  offcut (#130, #137, #138).
+- **DXF files without units** get a **Drawn in** menu (mm / inches) (#90).
+- **Rounded rectangles and `<use>` copies** nest by their real outlines (#15).
+- **Faster search**, no freezes during a search, and big line drawings join quickly (#145, #147, #148, #154).
+- Fixes from the release review: a number after Z in path data no longer hangs the page (#152); no single-plate
+  downloads while a search can replace the layout (#153); visible focus on the mode and units toggles (#155); plate
+  redraws keep focus and open part lists (#156); previews and thumbnails stay visible in forced colors (#157).
+- The header links to the project and the issue tracker (#150) and says your files are never uploaded (#180); docs
+  fixes (#170–#174).
+
 ## 1.1.59-beta
 
 - RELEASING.md requires the full fixture regression in the efficiency review (SVG and DXF, compensation off and on),
