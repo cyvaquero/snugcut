@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.24-beta
+
+- "Search 30 s more" can't continue an old search after the edge margin or plate size leaves no usable area: that
+  case now drops the search, so the button is unavailable and no layout with the old margin can appear (#71). Since
+  1.0.6-beta (#67) every settings change already dropped the old search, so this no longer reproduced; the fix makes
+  the no-area case safe on its own.
+
 ## 1.1.23-beta
 
 - The guide lines on the plate previews reach 3:1 against the tan plate in both themes (#105). Part outlines use
