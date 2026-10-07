@@ -24,7 +24,7 @@ a major rewrite of what the app does or how it works.
 
 - Parts kept as original markup (text, images, effects) are exported at their exact size (#74). Their `scale()` and
   offset were rounded to 4 decimal places, which put fine viewBoxes off size: a 100 mm part with a 1200 px/in viewBox
-  came out 100.16 mm, and at about 0.00254 mm per unit 98.43 mm. They are now written with 9 significant digits. Parts
+  came out 100.16 mm, and at about 0.00254 mm per unit 98.43 mm. They are now written with 7 significant digits. Parts
   whose scale already fit in 4 decimals export as before; others only gain digits.
 
 ## 1.1.31-beta
