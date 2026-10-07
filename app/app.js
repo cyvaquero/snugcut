@@ -51,6 +51,7 @@ function fillInputs(){
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
+  $("kerf").placeholder = S.unit === "in" ? "e.g. 0.004" : "e.g. 0.10";   // 0.10 in would be 2.54 mm (#172)
   $("u-mm").setAttribute("aria-pressed", S.unit === "mm"); $("u-in").setAttribute("aria-pressed", S.unit === "in");
 }
 function setUnit(u){
