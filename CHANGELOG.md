@@ -4,6 +4,19 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.16-beta
+
+- Invalid entries are no longer ignored, truncated or misreported silently (#97). The field is marked
+  `aria-invalid` and a message under it (its description) says what's wrong and which value is still in use:
+  - "Plate width must be more than 0; still using 300 mm." (a plate size of 0 is refused, instead of being reported
+    as a margin problem);
+  - "Kerf can't be negative …", "Enter a number …";
+  - quantities must be whole numbers: 2.5 or -3 get "Enter a whole number, 0 or more; still using 8." instead of
+    becoming 2 or being ignored;
+  - kerf calculator: "Measured must be smaller than designed: the cut takes material away.", and both values must be
+    more than 0.
+- The message goes as soon as the value is valid, or when the units are switched. README updated.
+
 ## 1.1.15-beta
 
 - Plate previews have a text alternative (#96): the image is described as "Plate 1 of 2: 15 parts, 75% fill" and points

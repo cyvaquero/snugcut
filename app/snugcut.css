@@ -41,6 +41,8 @@ input:focus-visible,select:focus-visible,button:focus-visible,.drop:focus-visibl
 .kerf label{color:var(--fg);font-weight:600}
 .kerf input{font-size:17px;background:var(--surface)}
 .hint{font-size:13px;color:var(--muted);margin:0}
+.ferr{font-size:13px;color:var(--warn);margin:0}
+.part .ferr{grid-column:1/-1}
 details summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:500}
 details .row{margin-top:8px}
 .check{display:flex;gap:8px;align-items:center;font-size:14px}

@@ -154,8 +154,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   and Search more and Stop hand it to each other.
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% fill") and have a "Parts on this plate" list
   with counts and rotations, linked to the image.
+- **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
+  value is still in use.
 - **Known gaps**, tracked as issues:
-  - invalid entries aren't flagged (#97);
   - toggles don't show their state in Windows high-contrast mode (#98);
   - low-contrast field borders and preview guide lines (#99, #105);
   - part names get cut off at 320 px width or 400% zoom (#100);
