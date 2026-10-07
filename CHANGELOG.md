@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.12-beta
+
+- Screen readers now hear what happens (#93). Two visually hidden live regions (polite and alert) are always in the
+  page:
+  - each run ends with one summary ("Nesting finished: 2 plates, 53% average fill, 32 of 32 parts placed.", files left
+    out, or "out of date" after Stop). Progress ticks aren't announced;
+  - every toast message is announced, and errors (wrong file type, nesting stopped after an error) go to the alert
+    region;
+  - the "geometry library didn't load" box has `role="alert"`.
+
 ## 1.1.11-beta
 
 - README, Accessibility: the target is WCAG 2.1 AA plus Section 508's documentation (602) and forced-colors (302.2)

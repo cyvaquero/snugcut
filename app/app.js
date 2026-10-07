@@ -8,7 +8,7 @@ import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout,
 const $ = id => document.getElementById(id);
 setVersion($("appver").textContent);
 $("changelog").href += "#" + $("appver").textContent.replace(/^v|\./g, "");   // GitHub's anchor for "## 0.1.27" is #0127
-if (!CL) { $("plates").innerHTML = `<div class="fatal">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
+if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
 try { Object.assign(S, JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
@@ -125,7 +125,7 @@ async function run(ms, fresh){
       status(t0, ms, token);
     }
   } catch(e) {
-    if (e !== ABORT) { console.error(e); toast("Nesting stopped after an error: " + (e.message || e)); }
+    if (e !== ABORT) { console.error(e); toast("Nesting stopped after an error: " + (e.message || e)); say("Nesting stopped after an error.", true); }
     else return;
   } finally {
     if (isCurrent(token)) setRunning(false);
@@ -139,6 +139,18 @@ function status(t0, ms, token){
 function setRunning(on){
   $("stop").hidden = !on; $("more").disabled = on || !search || !search.items.length;
   if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
+  if (!on) say(runSummary());
+}
+// one sentence for screen readers when a run ends (#93)
+function runSummary(){
+  if (!layout) return "Ready.";
+  if (layout.stale) return "Stopped before a new layout was ready. The plates shown are out of date.";
+  if (layout.noArea) return "The edge margin leaves no usable area on the plate.";
+  const n = layout.plates.length, placed = layout.plates.reduce((a, b) => a + b.items.length, 0);
+  const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? Math.round(100 * layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : 0;
+  let t = n ? `Nesting finished: ${n} plate${n === 1 ? "" : "s"}, ${fill}% average fill, ${placed} of ${want} parts placed.` : (want ? "Nesting finished: nothing could be placed." : "No parts to nest.");
+  if (layout.oversize.length) t += ` ${layout.oversize.length} file${layout.oversize.length === 1 ? " doesn't" : "s don't"} fit on the plate and ${layout.oversize.length === 1 ? "was" : "were"} left out.`;
+  return t;
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
 $("more").onclick = () => run(30000, false);
@@ -188,7 +200,7 @@ file.onchange = () => { addFiles(file.files); file.value = ""; };
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
-  if (!files.length) { toast("Only .svg and .dxf files can be added."); return; }
+  if (!files.length) { toast("Only .svg and .dxf files can be added."); say("Only .svg and .dxf files can be added.", true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
   const errs = [];
   const stripped = [], hiddenIn = [];
@@ -272,7 +284,10 @@ $("dlAll").onclick = async () => {
 };
 
 let toastT;
-function toast(t){ const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3500); }
+function toast(t){ const el = $("toast"); el.textContent = t; el.hidden = false; say(t); clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3500); }
+// screen-reader announcements (#93): the live regions stay in the page, and each message is added as a new node so a
+// repeated message is announced again; urgent ones (errors) go to the role="alert" region
+function say(t, urgent){ const p = document.createElement("p"); p.textContent = t; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
 
 /* ---------- sample parts ---------- */
 const S0 = 'fill="none" stroke="#000" stroke-width="0.2"';
