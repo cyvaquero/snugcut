@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.47-beta
+
+- Parts nested in a hole are always cut before the part around it (#151). A part's reference point usually sits
+  exactly on the edge of the hole's free area, and such parts weren't recognized as nested: in a frame with four
+  30 mm squares in its window only one was, so three were cut after the window, when the slug they sit on is loose.
+  Now all four are cut first.
+
 ## 1.1.46-beta
 
 - The header says "your files are never uploaded" instead of "nothing is uploaded": the page does load its libraries
