@@ -24,8 +24,10 @@ ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectR
 `slice`, stretch only for `none`); shapes are never cropped.
 
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
-splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`;
-unitless files are read as mm). Each DXF color becomes a stroke color. Text, hatches and dimensions are skipped
+splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`).
+Files that don't declare their units (every R12 file, for one) are read as mm, or as inches when their
+`$MEASUREMENT` header says imperial; a notice says which, and a **Drawn in** menu next to the part switches it between
+mm and inches. Each DXF color becomes a stroke color. Text, hatches and dimensions are skipped
 with a notice, and so is anything on a frozen, off or non-plotting layer or the Defpoints layer. Paper space and
 invisible entities are left out without a notice.
 
