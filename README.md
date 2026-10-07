@@ -89,7 +89,7 @@ In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orie
 from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
 
 **Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default);
-parts without holes show a dimmed red stand-in in its place, so the list lines up.
+parts without holes show a dimmed red, slashed stand-in in its place, so the list lines up.
 Turned on, smaller parts can be nested in that part's holes, with the same spacing as anywhere else, and they're cut,
 whole, before the part around them, so the hole's slug can't drop or shift before they're free. A hole is any closed,
 unfilled outline inside the part (the rule kerf compensation uses). SnugCut can't tell a cut from a score, so turn it on
