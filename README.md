@@ -80,7 +80,7 @@ Settings are remembered in this browser (local storage) and restored next time.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
 - **Plate width / height**, **Kerf**, **Extra gap**, **Edge margin**: the sheet, the width the cut removes, extra
   spacing between parts, and the empty border around the sheet. "Measure it from a test cut" works out the kerf from a
-  designed and a measured size.
+  designed and a measured size; cut that test with compensation off and no kerf offset in your cutter's software.
 - **Compensate kerf on objects**: see above.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
@@ -130,7 +130,8 @@ material and with the speed and power you will use, because the kerf changes wit
 
 ### Kerf test (`kerf-test.svg`)
 
-1. Enter your kerf. To measure it, cut a square and use "Measure it from a test cut" under Kerf.
+1. Enter your kerf. To measure it, cut a square with **Compensate kerf on objects** off and no kerf offset in your
+   cutter's software, then use "Measure it from a test cut" under Kerf.
 2. Cut the piece with **Compensate kerf on objects** off, and again with it on and the kerf offset in your cutter's
    software turned off.
 3. Measure both with calipers (k = the kerf):
