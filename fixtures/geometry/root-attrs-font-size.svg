@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="300mm" height="50mm" viewBox="0 0 300 50" font-size="40">
   <!-- Root font-size (#64, case C): the text is measured at 40, so the part is as wide as the exported text and
-       doesn't run into its neighbours on the plate. -->
+       doesn't run into its neighbors on the plate. -->
   <rect x="0.1" y="0.1" width="10" height="10" fill="none" stroke="#ff0000" stroke-width="0.2"/>
   <text x="0" y="45" fill="#0000ff">Hello World</text>
 </svg>

@@ -2,7 +2,8 @@
 
 Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`snugcut.html`](snugcut.html) in a browser (double-click is fine): no install, no build, no server.
-Everything runs in the page; nothing is uploaded.
+Everything runs in the page; your files are never uploaded (see [Files](#files) for the library and font requests). It needs a current desktop browser (Chrome or Edge, Firefox 101+,
+Safari 16.4+); those versions are known API support, not tested minimums.
 
 Two modes:
 
@@ -10,6 +11,10 @@ Two modes:
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded order search
   ("Search 30 s more", Stop).
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
+
+**Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
+follows each part. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
+always outward, so they nest a little less tightly but never overlap.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
 layout is ready.
@@ -20,8 +25,9 @@ ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectR
 
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
 splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`;
-unitless files are read as mm). Each DXF colour becomes a stroke colour. Text, hatches and dimensions are skipped
-with a notice, and so are frozen, off and non-plotting layers.
+unitless files are read as mm). Each DXF color becomes a stroke color. Text, hatches and dimensions are skipped
+with a notice, and so is anything on a frozen, off or non-plotting layer or the Defpoints layer. Paper space and
+invisible entities are left out without a notice.
 
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
 format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
@@ -37,21 +43,51 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
-  is recognised and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
+  is recognized and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
   narrower than the kerf are exported as drawn (in SVG and DXF), with a notice.
 
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
-(polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per colour (named by its hex
+(polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per color (named by its hex
 value), or per source layer for parts imported from DXF. Text, images and fills can't be written to DXF: filled
 shapes become outlines, and a notice names anything that was left out.
 
+## Settings
+
+Settings are remembered in this browser (local storage) and restored next time.
+
+- **Nesting mode**: True shape or Bounding box (top right).
+- **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
+- **Plate width / height**, **Kerf**, **Extra gap**, **Edge margin**: the sheet, the width the cut removes, extra
+  spacing between parts, and the empty border around the sheet. "Measure it from a test cut" works out the kerf from a
+  designed and a measured size.
+- **Compensate kerf on objects**: see above.
+- **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
+- **Outline precision** (True shape): see above.
+- **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
+  72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are.
+- **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
+- **Output file prefix**: put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
+  `nested-plates.zip` without a prefix or `<prefix>-plates.zip` with one. "Download all (.zip)" appears when there is
+  more than one plate.
+- **Export format**: SVG, or DXF (R12, mm).
+
+In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orientation** button that stops that part
+from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
+
+What happens to imported files:
+
+- Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
+- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched.
+- Holes are cut, but other parts aren't nested inside them yet (#3).
+
 ## Test cuts
 
-`fixtures/test-cuts/` has small pieces for dialling in the kerf and the fit before cutting a real job. Red `#ff0000`
+`fixtures/test-cuts/` has small pieces for dialing in the kerf and the fit before cutting a real job. Red `#ff0000`
 is cut and blue `#0000ff` is score; set any black filled marks to engrave or turn them off. Cut each test from the
 material and with the speed and power you will use, because the kerf changes with all three. Set "Edge margin" and
-"Extra gap" as usual, and set **Rotation: None** so the pieces stay the way they are drawn.
+"Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), untick **Allow
+90° rotation** (Bounding box), or press each piece's **Lock orientation** button in the parts list.
 
 | File | Size | What it tells you |
 |---|---|---|
@@ -60,7 +96,7 @@ material and with the speed and power you will use, because the kerf changes wit
 | `box-corner-a.svg` + `box-corner-b.svg` | 53 × 40 mm each | How a 90° box corner fits in 3 mm stock |
 | `slot-gauge-3mm.svg` | 64 × 24 mm | Which slot width your 3 mm stock actually needs |
 
-**Kerf test** (`kerf-test.svg`)
+### Kerf test (`kerf-test.svg`)
 
 1. Enter your kerf. To measure it, cut a square and use "Measure it from a test cut" under Kerf.
 2. Cut the piece with **Compensate kerf on objects** off, and again with it on and the kerf offset in your cutter's
@@ -75,34 +111,60 @@ material and with the speed and power you will use, because the kerf changes wit
 
    With compensation on, parts still too small and holes too big mean the kerf value is too small: raise it by the
    difference (19.96 mm → add 0.04). Parts too big and holes too small mean the kerf value is too big, or the cutter's
-   software is also offsetting. The blue score line, the black mark and the 0.06 mm pin hole stay as drawn; the pin
-   hole is narrower than any kerf, so the download names it in a notice.
+   software is also offsetting. The blue score line and the black mark stay as drawn. So does the 0.06 mm pin hole
+   with a kerf of 0.06 mm or more (most kerfs), because it's narrower than the kerf; the download then names it in a
+   notice. With a finer kerf it's compensated like the other holes.
 
-**Finger joint** (`fingers-inplane-a.svg` + `fingers-inplane-b.svg`)
+### Finger joint (`fingers-inplane-a.svg` + `fingers-inplane-b.svg`)
 
 Cut both pieces on one plate, lay them flat and push A's three 6 mm fingers into B's gaps. The fit depends only on
 the kerf, not on the material thickness.
 
-- **Compensation off:** about one kerf of play is expected.
+- **Compensation off:** about two kerfs of play in total is expected: each finger comes out half a kerf narrower on
+  each side, and each gap half a kerf wider.
 - **Compensation on, too tight:** lower the kerf a little.
 - **Compensation on, too loose:** raise it.
 
 Fingers grow and gaps shrink by the same amount, so the fit changes twice as fast as the setting: 0.02 mm less kerf
 makes the joint about 0.04 mm looser.
 
-**Box corner** (`box-corner-a.svg` + `box-corner-b.svg`, 3 mm stock)
+### Box corner (`box-corner-a.svg` + `box-corner-b.svg`, 3 mm stock)
 
 Fingers 8 mm wide and 3 mm deep, the way a box side is joined. Fit the two pieces at 90°: A's fingers on segments 1,
 3 and 5 fill B's gaps. With the right kerf the joint is snug and the faces are flush. If the fingers stick out or sit
 short, the material isn't 3 mm: check it with the slot gauge. The finger depth is drawn for 3 mm; regenerate the pair
 for other stock.
 
-**Slot gauge** (`slot-gauge-3mm.svg`)
+### Slot gauge (`slot-gauge-3mm.svg`)
 
 Five open slots 2.8, 2.9, 3.0, 3.1 and 3.2 mm wide, marked by 1 to 5 score ticks under each slot. Push an offcut of
 the same sheet into each one. The narrowest slot it still enters is the slot width to draw for this material and
 machine, kerf included. Cut it with and without compensation to see how much the kerf changes the fit. With
 compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 slot snugly.
+
+## Accessibility
+
+- **Keyboard**: every control can be reached with Tab and used from the keyboard; the drop zone opens the file picker
+  with Enter or Space.
+- **Display**: the light or dark theme follows the system setting, and the status animation stops when reduced
+  motion is requested.
+- **Known gaps**, tracked as issues:
+  - status changes, results and errors aren't announced to screen readers (#93);
+  - messages disappear after 3.5 s (#94);
+  - keyboard focus is lost after some actions (#95);
+  - plate previews have no text description (#96);
+  - invalid entries aren't flagged (#97);
+  - toggles don't show their state in Windows high-contrast mode (#98);
+  - low-contrast field borders and preview guide lines (#99, #105);
+  - part names get cut off at 320 px width or 400% zoom (#100);
+  - names, labels and page structure (#101, #102, #103).
+- Report other problems as a GitHub issue.
+
+**Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
+documentation (602, this section) and keeping information visible with forced colors (302.2, #98). SnugCut doesn't
+meet the target yet; the gaps above are what's missing. Section 508 points to WCAG 2.0 AA for web content, so meeting
+WCAG 2.1 AA covers it and adds a few newer criteria (status messages, reflow, text spacing, non-text contrast, label
+in name). The two standards don't conflict anywhere in SnugCut; the details are in #106.
 
 ## Files
 
@@ -112,11 +174,17 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
+| `CHANGELOG.md`       | what changed in each version                                                  |
+| `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `test-cuts/` (see `fixtures/README.md`) |
 
-Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
-`jszip@3.10.1` (zip download), plus Google Fonts. It needs network access for those on first load. A
+Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
+`jszip@3.10.1` (zip download), plus Google Fonts. They come from public CDNs (cdn.jsdelivr.net, cdnjs.cloudflare.com,
+fonts.googleapis.com, fonts.gstatic.com) **each time the page loads**, unless the browser has them cached. Those
+requests show the CDNs your IP address and that the page was opened; your files never leave the browser. Without
+clipper-lib the page can't nest and says so; without jszip only "Download all (.zip)" is missing, and each plate can
+still be downloaded on its own; without the fonts the page falls back to system fonts. A
 Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
 else. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
 changed; when bumping a library version, update its URL in the tag and the CSP and recompute its hash with
@@ -136,6 +204,8 @@ when served over HTTP (for example `python3 -m http.server`, then open `/app/`),
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
 release go on `bugfix/` branches with PRs into the `release/` branch. Versions are
-`major.minor.iterative`, shown in the page footer and in [CHANGELOG.md](CHANGELOG.md): major and minor are bumped only
-on request; the iterative number is bumped with every change. The release steps (an efficiency review before cutting the
+`major.minor.iterative`, optionally with a pre-release suffix such as `-beta`, shown in the page footer and in
+[CHANGELOG.md](CHANGELOG.md): major, minor and the suffix change only on request; the iterative number is bumped with
+every change, and a suffix stays on until it is dropped (1.1.0-beta, 1.1.1-beta, …). Once dropped, a suffix comes
+back only for a major rewrite of what the app does or how it works. The release steps (an efficiency review before cutting the
 release branch, a blind review after) are in [RELEASING.md](RELEASING.md).

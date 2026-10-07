@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="note" width="100mm" height="50mm" viewBox="0 0 100 50">
-  <!-- No <style>: class names that match the app's own UI classes must not resize or recolour anything (#63).
+  <!-- No <style>: class names that match the app's own UI classes must not resize or recolor anything (#63).
        Expect a 100 × 50 mm part; the outline red, the circle and the square black (currentColor, root class="note"). -->
   <rect class="icon" x="0.1" y="0.1" width="99.8" height="49.8" fill="none" stroke="#ff0000" stroke-width="0.2"/>
   <circle class="dot" cx="25" cy="25" r="10" fill="none" stroke="currentColor" stroke-width="0.2"/>
