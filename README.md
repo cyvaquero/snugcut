@@ -182,7 +182,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use.
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the lock icon is open or closed to
-  match, and the holes icon shows an empty or a filled hole.
+  match, the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
+  behind the parts' own colors, so they stay visible in dark themes.
 - **Contrast**: text meets WCAG AA in both themes; the borders of fields and buttons and the guide lines on the plate
   previews are at least 3:1.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a

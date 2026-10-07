@@ -147,6 +147,9 @@ footer a{color:var(--accent)}
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
   .icon[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-4px}
   .icon.nohole{color:GrayText;border-color:GrayText;opacity:1}
+  /* the parts are drawn in their own colors inside <img>, so keep the tan plate behind them: forced colors turned it
+     into Canvas, black on black in dark themes (#157) */
+  .part img,.sheet{forced-color-adjust:none;outline:1px solid CanvasText}
 }
 </style>
 
@@ -253,7 +256,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.52-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.53-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>

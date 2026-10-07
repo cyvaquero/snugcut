@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.53-beta
+
+- Part thumbnails and plate previews stay visible in Windows high contrast (forced colors) with a dark theme (#157):
+  they keep their tan plate behind the parts' lines, with an outline in the system text color. Before, the plate
+  turned black and the black part lines vanished.
+
 ## 1.1.52-beta
 
 - When a search redraws the plates, focus stays on the **Parts on this plate** summary it was on, and the part lists
