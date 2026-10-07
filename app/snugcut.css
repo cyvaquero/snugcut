@@ -92,6 +92,8 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plate .m{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .sheet{position:relative;width:100%;background:var(--plate);box-shadow:inset 0 0 0 1px var(--plate-edge);border-radius:2px;overflow:hidden}
 .sheet img,.sheet svg{position:absolute;inset:0;width:100%;height:100%}
+.plist summary{font-size:13px;color:var(--muted);cursor:pointer}
+.plist ul{margin:6px 0 0;padding-left:18px;font-size:13px}
 .bar{height:5px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}

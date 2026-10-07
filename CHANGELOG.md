@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.15-beta
+
+- Plate previews have a text alternative (#96): the image is described as "Plate 1 of 2: 15 parts, 75% fill" and points
+  (`aria-describedby`) to a new "Parts on this plate" list under each plate, grouped by file with counts and rotations
+  ("l-bracket.svg × 2 (2 rotated 180°)"). README updated.
+
 ## 1.1.14-beta
 
 - Keyboard focus is no longer dropped to the page (#95):

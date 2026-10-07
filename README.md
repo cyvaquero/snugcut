@@ -152,8 +152,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
 - **Focus** stays in place when the parts list or the plates are redrawn. Removing a part moves it to the next part,
   and Search more and Stop hand it to each other.
+- **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% fill") and have a "Parts on this plate" list
+  with counts and rotations, linked to the image.
 - **Known gaps**, tracked as issues:
-  - plate previews have no text description (#96);
   - invalid entries aren't flagged (#97);
   - toggles don't show their state in Windows high-contrast mode (#98);
   - low-contrast field borders and preview guide lines (#99, #105);
