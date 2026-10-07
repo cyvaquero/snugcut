@@ -1,17 +1,33 @@
 # SnugCut
 
-Client-side SVG/DXF nesting for laser, vinyl, CNC and plasma cutting (true shape + bounding box) as **one self-contained HTML file with inline
-JavaScript**, like the original reference apps it replaced.
+Client-side SVG/DXF nesting for laser, vinyl, CNC and plasma cutting (true shape + bounding box), shipped as **one
+self-contained HTML file with inline JavaScript** (`snugcut.html`), like the original reference apps it replaced.
 The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
+
+## Layout
+
+- `lib/snugcut.js`: the library (import, outlines, nesting, kerf compensation, SVG/DXF export), no UI. ES module.
+- `app/index.html`, `app/snugcut.css`, `app/app.js`: the app split into page, styles and UI code. `app.js` is an ES
+  module that imports the library. Served over HTTP only: `file://` (modules don't load) and Node are out of scope.
+- `snugcut.html`: **generated** from `app/` and `lib/` by `python3 tools/build.py`. Never edit it by hand. Edit the
+  sources, run the script, and commit the sources and the regenerated `snugcut.html` together;
+  `python3 tools/build.py --check` fails when it is out of date.
 
 ## Rules
 
-- **No Node app**: no npm, package.json, TypeScript, bundler or build step. Libraries come in by `<script>` tag, as in
-  the original reference apps (clipper-lib 6.4.2, jszip). Any new or changed library/CDN URL must also be added to the
-  Content-Security-Policy `<meta>` in `snugcut.html`, or the browser will block it.
+- **No Node app**: no npm, package.json, TypeScript or bundler. The only build step is `tools/build.py` (Python 3,
+  standard library only), which inlines `app/` and `lib/` into `snugcut.html`; keep it small and dependency-free.
+  Libraries come in by `<script>` tag, as in the original reference apps (clipper-lib 6.4.2, jszip 3.10.1), with
+  Subresource Integrity.
+- **CSP**: `app/index.html` carries its own Content-Security-Policy `<meta>`, as strict as `snugcut.html`'s plus
+  `'self'` for its own module and stylesheet. Any new or changed library/CDN URL goes into both: edit the CSP in
+  `app/index.html`, and the build writes it into `snugcut.html` (minus `'self'`). Otherwise the browser blocks it.
+- **Exports must not change by accident**: a structural or refactoring change must leave SVG and DXF exports from
+  `snugcut.html` byte-identical. Run the fixture regression (every fixture, SVG and DXF, compensation off and on) and
+  report it.
 - **Git-flow**: `main` + `develop`; `feature/` and `bugfix/` branches off `develop`, PRs into `develop`. Fixes during a
   release go on `bugfix/` branches with PRs into the `release/` branch.
-- **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer of `snugcut.html` and `CHANGELOG.md`:
+- **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer (`app/index.html`, built into `snugcut.html`) and `CHANGELOG.md`:
   - major: only bumped when the user explicitly says so; zeroes minor and iterative.
   - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.
   - iterative: bump automatically with every change.

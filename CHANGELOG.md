@@ -2,6 +2,32 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.1.0-beta
+
+- Release for integration in other projects. Minor version bumped to 1.1 on request; iterative reset to 0.
+- Same features as 1.0.11-beta: the library (`lib/snugcut.js`) and app (`app/`) as ES modules, with `snugcut.html`
+  generated from them by `tools/build.py`.
+
+## 1.0.11-beta
+
+- The source is split into a library and an app, and `snugcut.html` is generated from them:
+  - `lib/snugcut.js`: the library (SVG/DXF import, outlines, nesting, kerf compensation, SVG/DXF export), no UI;
+  - `app/index.html`, `app/snugcut.css`, `app/app.js`: the app, with `app.js` importing the library. All are ES
+    modules; the split app runs when served over HTTP, not from `file://`.
+  - `tools/build.py` (Python 3, standard library only) inlines them into `snugcut.html`, which stays one file you can
+    double-click. `--check` reports when it is out of date.
+- `app/index.html` has its own Content-Security-Policy, as strict as `snugcut.html`'s plus `'self'` for its module and
+  stylesheet; the build writes it into `snugcut.html` without `'self'`.
+- No change in behaviour: SVG and DXF exports from `snugcut.html` are byte-identical to 1.0.10-beta for every fixture
+  (compensation off and on) and for full nests of the sample parts.
+- `CLAUDE.md`, README and `RELEASING.md` describe the new layout; `CLAUDE.md`'s "no build step" rule now allows
+  `tools/build.py`.
+
+## 1.0.10-beta
+
+- Shorter wording for the warning to turn off kerf offset in the cutter's software, in the README and in the app's
+  kerf-compensation notice, which now match.
+
 ## 1.0.9-beta
 
 - Docs brought up to date for the release:
