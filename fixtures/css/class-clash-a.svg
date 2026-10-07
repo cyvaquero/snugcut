@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="30mm" viewBox="0 0 40 30">
+  <style>.cut { fill: none; stroke: #ff0000; stroke-width: 0.2 } .lbl{fill:#00f}</style>
+  <rect class="cut" x="1" y="1" width="38" height="28"/>
+  <text class="lbl" x="5" y="15" font-size="6">A</text>
+</svg>

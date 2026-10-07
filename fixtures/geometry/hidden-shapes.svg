@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="30mm" viewBox="0 0 40 30">
+  <!-- Hidden-shape test (#17): only the red 40 x 30 frame and the small blue square are visible, so only they are
+       measured, nested and cut. Everything else is hidden in a different way and must be left out (part size 40 x 30 mm). -->
+  <rect x="0" y="0" width="40" height="30" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+  <circle cx="100" cy="15" r="10" fill="none" stroke="#ff0000" stroke-width="0.1" visibility="hidden"/>
+  <rect x="0" y="60" width="40" height="10" fill="none" stroke="#ff0000" stroke-width="0.1" opacity="0"/>
+  <rect x="-80" y="0" width="20" height="20" fill="none" stroke="none"/>
+  <rect x="-80" y="40" width="20" height="20" fill="rgba(255,0,0,0)" stroke="#ff0000" stroke-width="0"/>
+  <g opacity="0"><path d="M60 -40h20v20h-20z" fill="none" stroke="#ff0000" stroke-width="0.1"/></g>
+  <g style="display:none"><circle cx="-50" cy="-50" r="5" fill="#000"/></g>
+  <g style="visibility:hidden"><rect x="0" y="-70" width="10" height="10" fill="none" stroke="#00ff00" stroke-width="0.1"/>
+    <rect x="5" y="5" width="5" height="5" fill="none" stroke="#0000ff" stroke-width="0.1" visibility="visible"/></g>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="70mm" height="50mm" viewBox="0 0 70 50">
+  <g transform="translate(12 6) rotate(15)">
+    <g transform="scale(1.5 1)">
+      <rect x="0" y="0" width="20" height="12" rx="2" fill="none" stroke="#000" stroke-width="0.2"/>
+    </g>
+  </g>
+  <g transform="matrix(1 0 0 1 50 32)">
+    <circle r="8" fill="none" stroke="#c00" stroke-width="0.3"/>
+    <ellipse cx="0" cy="0" rx="4" ry="2" transform="rotate(30)" fill="none" stroke="#c00" stroke-width="0.3"/>
+  </g>
+  <polyline points="5,45 20,40 35,46" fill="none" stroke="#000" stroke-width="0.2"/>
+</svg>

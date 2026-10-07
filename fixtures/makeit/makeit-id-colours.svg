@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="130mm" height="45mm" viewBox="0 0 130 45">
+  <!-- MakeIT test for #13: ids that read as hex colours. Every square is drawn black; red means the colour survived
+       id prefixing. Before 0.1.17, cases 1-3 came out black (stroke:#f00 became the invalid stroke:#p7_f00). -->
+  <style>
+    #f00 { stroke: #f00 }
+    #ff0000 { stroke: #ff0000 }
+    .c3 { stroke: #f00 }
+    #frame { stroke: red }
+  </style>
+  <g font-family="sans-serif" font-size="5" fill="#000000" stroke="none">
+    <text x="5" y="7">1 #f00</text><text x="30" y="7">2 #ff0000</text><text x="55" y="7">3 other rule</text>
+    <text x="80" y="7">ctrl red</text><text x="105" y="7">ref black</text>
+  </g>
+  <g fill="none" stroke-width="0.5">
+    <rect id="f00" x="5" y="10" width="20" height="20" stroke="#000000"/>
+    <rect id="ff0000" x="30" y="10" width="20" height="20" stroke="#000000"/>
+    <rect class="c3" x="55" y="10" width="20" height="20" stroke="#000000"/>
+    <rect id="frame" x="80" y="10" width="20" height="20" stroke="#000000"/>
+    <rect x="105" y="10" width="20" height="20" stroke="#000000"/>
+  </g>
+</svg>
