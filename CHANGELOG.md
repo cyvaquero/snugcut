@@ -4,6 +4,19 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.45-beta
+
+- Faster nesting search, with identical layouts and exports (efficiency review):
+  - The no-fit polygon cache no longer empties itself on big jobs (#145): it holds up to 80,000 pairs, drops only the
+    oldest quarter when full, and stores each polygon as one flat array (about half the memory). On 112 mixed parts a
+    warm pass takes 3.4 s instead of 9.6 s.
+  - No-fit polygons of convex pieces are summed edge by edge instead of hulling every vertex pair (#147): a cold pack
+    of every fixture takes 530 ms instead of 724 ms.
+  - In an 8 s search: sample parts 214 layouts tried (210 before), every fixture 70 (65), every fixture with holes on
+    59 (36).
+- The page no longer freezes for up to a second during a search with fine rotation steps or parts in holes (#148): the
+  search also pauses between rotations. Longest freeze 69 ms instead of 1.2 s.
+
 ## 1.1.44-beta
 
 - The holes, lock and remove buttons in the parts list line up with the quantity input instead of sitting 6.5 px
