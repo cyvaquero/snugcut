@@ -1,0 +1,23 @@
+# Issues opened by someone without write access get "user-submitted" and "unreviewed" until the maintainer has
+# reviewed them and given direction (then remove "unreviewed"). Issues from the owner or collaborators, including
+# ones filed with the owner's gh login, are left alone. Runs from the default branch (main).
+name: Label user-submitted issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add user-submitted and unreviewed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: gh issue edit "$NUMBER" --repo "$REPO" --add-label user-submitted --add-label unreviewed
