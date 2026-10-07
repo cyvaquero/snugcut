@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.8-beta
+
+- The two CDN libraries (clipper-lib 6.4.2, jszip 3.10.1) load with Subresource Integrity (`integrity="sha384-…"`,
+  `crossorigin="anonymous"`), so a changed or tampered CDN file is blocked instead of run (#70). A blocked clipper-lib
+  shows the existing "geometry library didn't load" message; a blocked jszip only hides the zip download.
+- README: how to recompute the hashes when a library version changes.
+
 ## 1.0.7-beta
 
 - Parts kept as original markup (text, images, effects) were kerf-compensated in DXF exports but not in SVG. Both

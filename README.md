@@ -109,7 +109,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 Like the original reference apps, the page loads two libraries by script tag: `clipper-lib@6.4.2` (polygon clipping) and
 `jszip` (zip download), plus Google Fonts. It needs network access for those on first load. A
 Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
-else.
+else. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
+changed; when bumping a library version, update its URL in the tag and the CSP and recompute its hash with
+`curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A` (the `integrity` value is `sha384-` plus that).
 
 ## Workflow
 
