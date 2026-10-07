@@ -6,7 +6,7 @@ a major rewrite of what the app does or how it works.
 
 ## 1.2.1-beta
 
-- SnugCut is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0-only) (#196): `LICENSE` holds the
+- SnugCut is licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later) (#196): `LICENSE` holds the
   license text, the sources carry SPDX identifiers and a copyright notice, the README has a License section (including
   the libraries' own licenses), and the footer links to the license.
 

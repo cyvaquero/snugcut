@@ -266,7 +266,8 @@ release branch, a blind review after) are in [RELEASING.md](RELEASING.md).
 
 Copyright (C) 2026 Guy Heckman.
 
-SnugCut is free software under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only). You may use it
+SnugCut is free software under the [GNU Affero General Public License](LICENSE), version 3 or (at your option)
+any later version (AGPL-3.0-or-later). You may use it
 for anything, including commercial work such as cutting parts you sell, and you may copy, modify and share it. If you
 distribute a modified version, or let people use one over a network (for example as part of a hosted service), you
 must make its complete source code available to them under the same license.
