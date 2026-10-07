@@ -19,10 +19,19 @@ const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
 const fmt = (mm, d) => (+toDisp(mm).toFixed(d ?? (S.unit === "in" ? 3 : 1))).toString();
 const LEN = ["plateW","plateH","kerf","gap","margin"];
+const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:"Extra gap", margin:"Edge margin"};
+// field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
+// and which value is still in use; both go as soon as the value is valid
+function fieldErr(input, msg){
+  let e = document.getElementById(input.id + "-err");
+  if (!msg) { if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
+  e.textContent = msg; input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", e.id);
+}
 function fillInputs(){
   for (const k of LEN) {
     const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
-    $(k).value = +toDisp(S[k]).toFixed(dec);
+    $(k).value = +toDisp(S[k]).toFixed(dec); fieldErr($(k));
     $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
   }
   $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; $("compWarn").hidden = !S.comp; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
@@ -40,8 +49,10 @@ function setUnit(u){
 $("u-mm").onclick = () => setUnit("mm");
 $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
-  const v = parseFloat($(k).value);
-  if (!isNaN(v) && v >= 0) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
+  const v = parseFloat($(k).value), plate = k === "plateW" || k === "plateH";
+  const bad = $(k).value.trim() === "" || isNaN(v) ? "Enter a number" : plate && v <= 0 ? `${LEN_NAME[k]} must be more than 0` : v < 0 ? `${LEN_NAME[k]} can't be negative` : "";
+  fieldErr($(k), bad && `${bad}; still using ${fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined)} ${S.unit}.`);
+  if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
@@ -65,7 +76,9 @@ function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx"
 const ext = () => S.format === "dxf" ? "dxf" : "svg";
 function kerfCalc(){
   const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
-  if (isNaN(d) || isNaN(m) || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
+  fieldErr($("kDesign"), !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
+  fieldErr($("kMeasured"), !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
+  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
   const k = fromDisp(d - m);
   $("kOut").textContent = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`; $("kUse").disabled = false; return k;
 }
@@ -164,6 +177,8 @@ function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout
 
 /* ---------- parts list ---------- */
 const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
+// open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
+const ICON_UNLOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
 const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
 function renderParts(){
   // the list is rebuilt: put focus back on the same control of the same part (#95)
@@ -175,12 +190,16 @@ function renderParts(){
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div style="min-width:0"><div class="nm" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}${ok?"":" · too big"}</div></div>
-      <input type="number" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
-      <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+      <input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
+      <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
-    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); } };
+    q.oninput = () => {
+      const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
+      fieldErr(q, ok ? "" : `Enter a whole number, 0 or more; still using ${p.qty}.`);
+      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
+    };
     const [lk, rm] = row.querySelectorAll(".acts button");
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -259,10 +278,19 @@ function drawLayout(){
     const fill = Math.round(100 * pl.area / plateA);
     const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" opacity=".65"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--plate-edge)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
+    // text alternative (#96): the image says what's on the plate, and points to a list of the parts on it
+    const alt = `Plate ${i+1} of ${L.plates.length}: ${pl.items.length} part${pl.items.length === 1 ? "" : "s"}, ${fill}% fill`;
+    const groups = new Map();
+    for (const it of pl.items) {
+      const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
+      g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
+    }
+    const list = [...groups].map(([p, g]) => `<li>${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate";
     card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" data-i="${i}" class="btn small">Download ${ext().toUpperCase()}</button></div>
-      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="Plate ${i+1} layout" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
-      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>`;
+      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="plist-${i}" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
+      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
+      <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });

@@ -4,6 +4,38 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.18-beta
+
+- Fields, selects, icon buttons, the drop zone and the toggle groups have borders at least 3:1 against their
+  backgrounds in both themes (#99): a new `--field` color (light `#7e8b99`, dark `#5d6b7b`). Measured 3.01–3.48:1;
+  it was 1.3–1.4:1 with `--line`, which stays for dividers. README updated.
+
+## 1.1.17-beta
+
+- In Windows high-contrast (forced colors) mode, the pressed state of the mode and unit toggles and the orientation
+  lock is now visible: pressed toggles use the system highlight color, and a locked part's button gets a highlight
+  outline (#98). The lock icon also shows an open shackle when unlocked, so its state never depends on color alone.
+  README updated.
+
+## 1.1.16-beta
+
+- Invalid entries are no longer ignored, truncated or misreported silently (#97). The field is marked
+  `aria-invalid` and a message under it (its description) says what's wrong and which value is still in use:
+  - "Plate width must be more than 0; still using 300 mm." (a plate size of 0 is refused, instead of being reported
+    as a margin problem);
+  - "Kerf can't be negative …", "Enter a number …";
+  - quantities must be whole numbers: 2.5 or -3 get "Enter a whole number, 0 or more; still using 8." instead of
+    becoming 2 or being ignored;
+  - kerf calculator: "Measured must be smaller than designed: the cut takes material away.", and both values must be
+    more than 0.
+- The message goes as soon as the value is valid, or when the units are switched. README updated.
+
+## 1.1.15-beta
+
+- Plate previews have a text alternative (#96): the image is described as "Plate 1 of 2: 15 parts, 75% fill" and points
+  (`aria-describedby`) to a new "Parts on this plate" list under each plate, grouped by file with counts and rotations
+  ("l-bracket.svg × 2 (2 rotated 180°)"). README updated.
+
 ## 1.1.14-beta
 
 - Keyboard focus is no longer dropped to the page (#95):

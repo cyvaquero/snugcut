@@ -11,9 +11,10 @@
 <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js" integrity="sha384-oV9/r5hoq7qHFHfbghYwt50E2fe8J20vXRW0eIGQl20k40zMEAhSXMCh9ANASVB9" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <style>
-/* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens. */
+/* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens.
+   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99). */
 :root{
-  --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2;
+  --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
   --accent:#2d55f0; --accent-soft:#e3e9ff; --accent-fg:#ffffff;
   --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --warn-soft:#fff1e2; --ok:#1d7349;
   --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
@@ -21,11 +22,11 @@
   --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f;
+  --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f; --field:#5d6b7b;
   --accent:#7390ff; --accent-soft:#1d2747; --accent-fg:#0b1020;
   --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f;
+  --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f; --field:#5d6b7b;
   --accent:#7390ff; --accent-soft:#1d2747; --accent-fg:#0b1020;
   --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}
 
@@ -44,16 +45,18 @@ header ul{margin:4px 0 0;padding-left:20px;color:var(--muted);max-width:72ch}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font:500 13px/1.2 var(--f-body);color:var(--muted)}
-input[type=number],input[type=text],select{width:100%;font:500 15px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+input[type=number],input[type=text],select{width:100%;font:500 15px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg);background:var(--sunk);border:1px solid var(--field);border-radius:6px;padding:7px 9px}
 select{font-family:var(--f-body);font-size:14px}
 input:focus-visible,select:focus-visible,button:focus-visible,.drop:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.unitsw{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.unitsw{display:inline-flex;border:1px solid var(--field);border-radius:6px;overflow:hidden}
 .unitsw button{font:600 12px var(--f-mono);background:transparent;color:var(--muted);border:0;padding:4px 10px;cursor:pointer}
 .unitsw button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
 .kerf{background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .kerf label{color:var(--fg);font-weight:600}
 .kerf input{font-size:17px;background:var(--surface)}
 .hint{font-size:13px;color:var(--muted);margin:0}
+.ferr{font-size:13px;color:var(--warn);margin:0}
+.part .ferr{grid-column:1/-1}
 details summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:500}
 details .row{margin-top:8px}
 .check{display:flex;gap:8px;align-items:center;font-size:14px}
@@ -62,7 +65,7 @@ button.btn{font:600 14px var(--f-body);border-radius:6px;padding:7px 12px;cursor
 button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 button.btn.small{font-size:13px;padding:4px 9px}
 button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
-.drop{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
+.drop{border:1.5px dashed var(--field);border-radius:8px;padding:16px;text-align:center;color:var(--muted);cursor:pointer;font-size:14px}
 .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--fg)}
 .drop b{color:var(--accent)}
 .parts{display:flex;flex-direction:column;gap:6px;max-height:440px;overflow:auto}
@@ -73,7 +76,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .part .sz.bad{color:var(--warn)}
 .part input[type=number]{padding:5px 6px;font-size:14px}
 .part .acts{display:flex;gap:4px}
-.icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
+.icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 .icon svg{width:15px;height:15px}
 .badge{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
@@ -105,18 +108,25 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plate .m{font:12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .sheet{position:relative;width:100%;background:var(--plate);box-shadow:inset 0 0 0 1px var(--plate-edge);border-radius:2px;overflow:hidden}
 .sheet img,.sheet svg{position:absolute;inset:0;width:100%;height:100%}
+.plist summary{font-size:13px;color:var(--muted);cursor:pointer}
+.plist ul{margin:6px 0 0;padding-left:18px;font-size:13px}
 .bar{height:5px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}
 .note{font-size:13px;color:var(--muted)}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .fatal{padding:16px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
-.modesw{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}
+.modesw{display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}
 .modesw button{font:600 14px var(--f-body);background:transparent;color:var(--muted);border:0;padding:7px 16px;cursor:pointer}
 .modesw button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
 body[data-mode="bbox"] [data-only="shape"],body[data-mode="shape"] [data-only="bbox"]{display:none!important}
 footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 footer a{color:var(--accent)}
+/* Windows High Contrast / forced colors: pressed toggles keep a visible state (#98) */
+@media (forced-colors: active){
+  .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
+  .icon[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-4px}
+}
 </style>
 
 <div class="wrap">
@@ -220,7 +230,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.14-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.18-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1601,10 +1611,19 @@ const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
 const fmt = (mm, d) => (+toDisp(mm).toFixed(d ?? (S.unit === "in" ? 3 : 1))).toString();
 const LEN = ["plateW","plateH","kerf","gap","margin"];
+const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:"Extra gap", margin:"Edge margin"};
+// field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
+// and which value is still in use; both go as soon as the value is valid
+function fieldErr(input, msg){
+  let e = document.getElementById(input.id + "-err");
+  if (!msg) { if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
+  e.textContent = msg; input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", e.id);
+}
 function fillInputs(){
   for (const k of LEN) {
     const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
-    $(k).value = +toDisp(S[k]).toFixed(dec);
+    $(k).value = +toDisp(S[k]).toFixed(dec); fieldErr($(k));
     $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
   }
   $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; $("compWarn").hidden = !S.comp; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
@@ -1622,8 +1641,10 @@ function setUnit(u){
 $("u-mm").onclick = () => setUnit("mm");
 $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
-  const v = parseFloat($(k).value);
-  if (!isNaN(v) && v >= 0) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
+  const v = parseFloat($(k).value), plate = k === "plateW" || k === "plateH";
+  const bad = $(k).value.trim() === "" || isNaN(v) ? "Enter a number" : plate && v <= 0 ? `${LEN_NAME[k]} must be more than 0` : v < 0 ? `${LEN_NAME[k]} can't be negative` : "";
+  fieldErr($(k), bad && `${bad}; still using ${fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined)} ${S.unit}.`);
+  if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
@@ -1647,7 +1668,9 @@ function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx"
 const ext = () => S.format === "dxf" ? "dxf" : "svg";
 function kerfCalc(){
   const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
-  if (isNaN(d) || isNaN(m) || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
+  fieldErr($("kDesign"), !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
+  fieldErr($("kMeasured"), !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
+  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
   const k = fromDisp(d - m);
   $("kOut").textContent = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`; $("kUse").disabled = false; return k;
 }
@@ -1746,6 +1769,8 @@ function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout
 
 /* ---------- parts list ---------- */
 const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
+// open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
+const ICON_UNLOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
 const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
 function renderParts(){
   // the list is rebuilt: put focus back on the same control of the same part (#95)
@@ -1757,12 +1782,16 @@ function renderParts(){
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div style="min-width:0"><div class="nm" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}${ok?"":" · too big"}</div></div>
-      <input type="number" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
-      <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${ICON_LOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+      <input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-label="Quantity of ${esc(p.name)}">
+      <div class="acts"><button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
-    q.oninput = () => { const v = parseInt(q.value, 10); if (v >= 0) { p.qty = v; updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); } };
+    q.oninput = () => {
+      const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
+      fieldErr(q, ok ? "" : `Enter a whole number, 0 or more; still using ${p.qty}.`);
+      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
+    };
     const [lk, rm] = row.querySelectorAll(".acts button");
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -1841,10 +1870,19 @@ function drawLayout(){
     const fill = Math.round(100 * pl.area / plateA);
     const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" opacity=".65"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--plate-edge)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
+    // text alternative (#96): the image says what's on the plate, and points to a list of the parts on it
+    const alt = `Plate ${i+1} of ${L.plates.length}: ${pl.items.length} part${pl.items.length === 1 ? "" : "s"}, ${fill}% fill`;
+    const groups = new Map();
+    for (const it of pl.items) {
+      const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
+      g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
+    }
+    const list = [...groups].map(([p, g]) => `<li>${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate";
     card.innerHTML = `<div class="hd"><div><div class="t">Plate ${i+1} of ${L.plates.length}</div><div class="m">${pl.items.length} parts · ${fill}% fill · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${S.unit}</div></div><button type="button" data-i="${i}" class="btn small">Download ${ext().toUpperCase()}</button></div>
-      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="Plate ${i+1} layout" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
-      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>`;
+      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="plist-${i}" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
+      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
+      <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });
