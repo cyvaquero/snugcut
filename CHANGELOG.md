@@ -2,6 +2,13 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.7-beta
+
+- Parts kept as original markup (text, images, effects) were kerf-compensated in DXF exports but not in SVG. Both
+  formats now export them as drawn, with the same notice, as the README says (#68).
+- With compensation on, nesting no longer reserves a compensation allowance around those parts, since they aren't
+  compensated: they get exactly the set spacing.
+
 ## 1.0.6-beta
 
 - Clicking **Stop** before the first layout after a change was ready threw an error, left the status stuck at

@@ -213,7 +213,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.0.7-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -1157,11 +1157,12 @@ function kerfPaths(p, gr, M, notes){
     });
   });
 }
+const markupNote = (p, notes) => { if (kerfC() && !p.precomp) notes.add(`${p.name} has text, images or effects, so its kerf can't be compensated; it is exported as drawn.`); };
 function partMarkup(p, M, id, fallbackTransform, notes){
   // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
   // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
   if (!p.flat) {
-    if (kerfC(p) && notes) notes.add(`${p.name} has text, images or effects, so its kerf can't be compensated; it is exported as drawn.`);
+    if (notes) markupNote(p, notes);
     return `<g id="${id}" transform="${fallbackTransform}"><g ${p.rootAttrs}>${uniquifyIds(p.inner, id + "_")}</g></g>`;
   }
   const [a, b, c, d, e, f] = M, sc = Math.sqrt(Math.abs(a*d - b*c));
@@ -1341,7 +1342,9 @@ function nfp(A, B){
 }
 
 /* ---------- placement ---------- */
-const kerfC = p => S.comp && !(p && p.precomp) ? S.kerf / 2 : 0;   // how far compensated cuts move out from the drawn outline
+// how far compensated cuts move out from the drawn outline; 0 for parts kept as original markup (text, images, effects),
+// which both exports write as drawn, so nesting gives them no compensation allowance either. kerfC() = compensation on.
+const kerfC = p => S.comp && !(p && (p.precomp || !p.flat)) ? S.kerf / 2 : 0;
 function binFrame(){
   const half = (S.kerf + S.gap) / 2, tol = S.prec;   // compensated parts: the envelope's extra half kerf keeps the cut inside the margin
   // envelopes extend half-spacing + tol beyond the part; let that overhang the margin line
@@ -1725,7 +1728,7 @@ function plateDXF(plate){
   for (const it of cutSequence(plate.items)) {
     const p = it.part, flat = p.flat || p.loose;
     if (!flat) { notes.add(`${p.name} has nothing that can be written to DXF.`); continue; }
-    if (!p.flat) for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`);
+    if (!p.flat) { markupNote(p, notes); for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`); }   // written as drawn, like the SVG
     const [a, b, c, d, e, g] = placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), sc = Math.sqrt(Math.abs(a*d - b*c));
     const T = (x, y) => [a*x + c*y + e, H - (b*x + d*y + g)];
     for (const gr of cutGroups(p, flat, sc, p.fromDXF)) {

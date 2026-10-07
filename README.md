@@ -32,7 +32,7 @@ stay as drawn, and nesting spacing and margins grow to match. Read this before u
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
   is recognised and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
-  narrower than the kerf are exported as drawn, with a notice.
+  narrower than the kerf are exported as drawn (in SVG and DXF), with a notice.
 
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
