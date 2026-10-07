@@ -34,7 +34,7 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
     PR keep its version).
   - pre-release suffix: a `-beta` (or similar) suffix follows the number only when the user asks for it. It stays on
     every later version, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta…), until the user says to
-    drop it.
+    drop it. Once dropped, a suffix comes back only for a major rewrite of what the app does or how it works.
 - **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
   automatically. Before cutting it, ask whether to run a code efficiency review and optimization first. After cutting
   it, run the blind review prompt in that file.

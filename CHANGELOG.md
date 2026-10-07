@@ -1,7 +1,8 @@
 # Changelog
 
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
-only on request; the iterative number increments with every change.
+only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
+a major rewrite of what the app does or how it works.
 
 ## 1.1.11-beta
 
@@ -65,7 +66,8 @@ only on request; the iterative number increments with every change.
 ## 1.1.2-beta
 
 - Versioning: the scheme now covers a pre-release suffix such as `-beta`. It is added and dropped only on request,
-  stays on later versions, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta). Described in `CLAUDE.md`,
+  stays on later versions, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta). Once dropped, it comes
+  back only for a major rewrite. Described in `CLAUDE.md`,
   the README and the CHANGELOG preamble; the 1.0.0-beta entry now says "first beta release", not "release candidate"
   (#79).
 

@@ -206,5 +206,6 @@ git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` wi
 release go on `bugfix/` branches with PRs into the `release/` branch. Versions are
 `major.minor.iterative`, optionally with a pre-release suffix such as `-beta`, shown in the page footer and in
 [CHANGELOG.md](CHANGELOG.md): major, minor and the suffix change only on request; the iterative number is bumped with
-every change, and a suffix stays on until it is dropped (1.1.0-beta, 1.1.1-beta, …). The release steps (an efficiency review before cutting the
+every change, and a suffix stays on until it is dropped (1.1.0-beta, 1.1.1-beta, …). Once dropped, a suffix comes
+back only for a major rewrite of what the app does or how it works. The release steps (an efficiency review before cutting the
 release branch, a blind review after) are in [RELEASING.md](RELEASING.md).
