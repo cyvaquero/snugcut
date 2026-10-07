@@ -3,6 +3,11 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.4-beta
+
+- README, test cuts: "set Rotation: None" only works in True shape mode. The guide now also says to untick "Allow
+  90° rotation" in Bounding box mode, or to use each piece's Lock orientation button (#81).
+
 ## 1.1.3-beta
 
 - DXF import: entities on frozen, off or non-plotting layers or the Defpoints layer were left out silently, although

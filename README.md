@@ -52,7 +52,8 @@ shapes become outlines, and a notice names anything that was left out.
 `fixtures/test-cuts/` has small pieces for dialling in the kerf and the fit before cutting a real job. Red `#ff0000`
 is cut and blue `#0000ff` is score; set any black filled marks to engrave or turn them off. Cut each test from the
 material and with the speed and power you will use, because the kerf changes with all three. Set "Edge margin" and
-"Extra gap" as usual, and set **Rotation: None** so the pieces stay the way they are drawn.
+"Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), untick **Allow
+90° rotation** (Bounding box), or press each piece's **Lock orientation** button in the parts list.
 
 | File | Size | What it tells you |
 |---|---|---|
