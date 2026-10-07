@@ -98,7 +98,7 @@ async function run(ms, fresh){
   try {
     if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
-      if (F.R <= F.L || F.B <= F.T) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
+      if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
       for (const p of parts) {
         if (!p.qty) continue;
         if (!fitsPlate(p, F)) { oversize.push(p); continue; }
