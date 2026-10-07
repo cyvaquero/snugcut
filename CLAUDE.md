@@ -9,7 +9,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **No Node app**: no npm, package.json, TypeScript, bundler or build step. Libraries come in by `<script>` tag, as in
   the original reference apps (clipper-lib 6.4.2, jszip). Any new or changed library/CDN URL must also be added to the
   Content-Security-Policy `<meta>` in `snugcut.html`, or the browser will block it.
-- **Git-flow**: `main` + `develop`; feature branches off `develop`; PRs into `develop`.
+- **Git-flow**: `main` + `develop`; `feature/` and `bugfix/` branches off `develop`, PRs into `develop`. Fixes during a
+  release go on `bugfix/` branches with PRs into the `release/` branch.
 - **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer of `snugcut.html` and `CHANGELOG.md`:
   - major: only bumped when the user explicitly says so; zeroes minor and iterative.
   - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.

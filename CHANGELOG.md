@@ -2,6 +2,14 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.0.9-beta
+
+- Docs brought up to date for the release:
+  - README: out-of-date plates are dimmed and can't be downloaded (#67); how SVG sizes and a `viewBox` with another
+    aspect ratio are scaled (#65); nesting doesn't add the compensation allowance around parts exported as drawn
+    (#68); the jszip version.
+  - README and `CLAUDE.md`: git-flow wording covers `bugfix/` branches and fixes during a release.
+
 ## 1.0.8-beta
 
 - The two CDN libraries (clipper-lib 6.4.2, jszip 3.10.1) load with Subresource Integrity (`integrity="sha384-…"`,
