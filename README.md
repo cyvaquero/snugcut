@@ -156,8 +156,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   with counts and rotations, linked to the image.
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use.
+- **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, and the lock icon is open or closed
+  to match.
 - **Known gaps**, tracked as issues:
-  - toggles don't show their state in Windows high-contrast mode (#98);
   - low-contrast field borders and preview guide lines (#99, #105);
   - part names get cut off at 320 px width or 400% zoom (#100);
   - names, labels and page structure (#101, #102, #103).

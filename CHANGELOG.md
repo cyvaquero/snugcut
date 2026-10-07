@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.17-beta
+
+- In Windows high-contrast (forced colors) mode, the pressed state of the mode and unit toggles and the orientation
+  lock is now visible: pressed toggles use the system highlight color, and a locked part's button gets a highlight
+  outline (#98). The lock icon also shows an open shackle when unlocked, so its state never depends on color alone.
+  README updated.
+
 ## 1.1.16-beta
 
 - Invalid entries are no longer ignored, truncated or misreported silently (#97). The field is marked
