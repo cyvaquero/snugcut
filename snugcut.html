@@ -245,7 +245,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.23-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.25-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1295,7 +1295,10 @@ function shape(p, ang){
   const r = ang * Math.PI / 180, co = Math.cos(r), si = Math.sin(r);
   const rot = q => ang === 0 ? q : q.map(v => ({X:Math.round(v.X*co - v.Y*si), Y:Math.round(v.X*si + v.Y*co)}));
   const paths = env.paths.map(rot);
-  s = {key:`${p.uid}:${ang}:${geoVer}`, part:p, ang, paths, pieces:env.pieces.map(rot), convex:env.convex, area:env.area, ...bounds(paths)};
+  // bounds of the part's real cut outline (moved out by the kerf when compensated): what has to stay inside the margins
+  const tb = bounds(p.outers.map(rot)), k = kerfC(p) * SC;
+  const cut = {minX:tb.minX - k, minY:tb.minY - k, maxX:tb.maxX + k, maxY:tb.maxY + k};
+  s = {key:`${p.uid}:${ang}:${geoVer}`, part:p, ang, paths, pieces:env.pieces.map(rot), convex:env.convex, area:env.area, cut, ...bounds(paths)};
   p.shapes.set(ang, s);
   return s;
 }
@@ -1323,12 +1326,16 @@ function nfp(A, B){
 // which both exports write as drawn, so nesting gives them no compensation allowance either. kerfC() = compensation on.
 const kerfC = p => S.comp && !(p && (p.precomp || !p.flat)) ? S.kerf / 2 : 0;
 function binFrame(){
-  const half = (S.kerf + S.gap) / 2, tol = S.prec;   // compensated parts: the envelope's extra half kerf keeps the cut inside the margin
-  // envelopes extend half-spacing + tol beyond the part; let that overhang the margin line
-  return {L:(S.margin - half - tol) * SC, T:(S.margin - half - tol) * SC, R:(S.plateW - S.margin + half + tol) * SC, B:(S.plateH - S.margin + half + tol) * SC};
+  // mL…mB: the margin lines, which each part's real cut outline must stay inside (#72). L…B: the same box grown by the
+  // envelope's nominal overhang (half spacing + precision), used only to estimate how many plates are needed.
+  const half = (S.kerf + S.gap) / 2, tol = S.prec;
+  return {L:(S.margin - half - tol) * SC, T:(S.margin - half - tol) * SC, R:(S.plateW - S.margin + half + tol) * SC, B:(S.plateH - S.margin + half + tol) * SC,
+    mL:S.margin * SC, mT:S.margin * SC, mR:(S.plateW - S.margin) * SC, mB:(S.plateH - S.margin) * SC};
 }
 function bestPos(bin, Bs, F){
-  let xMin = F.L - Bs.minX, xMax = F.R - Bs.maxX, yMin = F.T - Bs.minY, yMax = F.B - Bs.maxY;
+  // the margins are checked against the real cut outline, not the envelope: simplification can leave the envelope up
+  // to 0.95 × the precision inside the outline, which let cuts reach into the margin (#72)
+  let xMin = F.mL - Bs.cut.minX, xMax = F.mR - Bs.cut.maxX, yMin = F.mT - Bs.cut.minY, yMax = F.mB - Bs.cut.maxY;
   if (xMin > xMax || yMin > yMax) return null;
   if (xMax - xMin < 2) xMax = xMin + 2;
   if (yMax - yMin < 2) yMax = yMin + 2;
@@ -1492,7 +1499,7 @@ function rectFits(p){
 function mulberry(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 function fitsPlate(p, F){
-  return angleList(p).some(a => { const s = shape(p, a); return F.R - F.L >= s.maxX - s.minX && F.B - F.T >= s.maxY - s.minY; });
+  return angleList(p).some(a => { const s = shape(p, a); return F.mR - F.mL >= s.cut.maxX - s.cut.minX && F.mB - F.mT >= s.cut.maxY - s.cut.minY; });
 }
 /* ---------- output ---------- */
 function cutSequence(items){
@@ -1705,7 +1712,7 @@ async function run(ms, fresh){
   try {
     if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
-      if (F.R <= F.L || F.B <= F.T) { layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }
+      if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
       for (const p of parts) {
         if (!p.qty) continue;
         if (!fitsPlate(p, F)) { oversize.push(p); continue; }

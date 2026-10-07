@@ -4,6 +4,26 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.1.25-beta
+
+- True shape: cuts no longer reach into the edge margin (#72). The margin was checked against each part's simplified
+  envelope, which can sit up to 0.95 × the outline precision inside the real outline. A 78 mm circle's cut ended 0.11 mm
+  inside the margin, a 2:1 ellipse 0.15 mm. The margin is now checked against the real cut outline (moved out by the
+  kerf when compensated). Measured: every cut ends on or inside the margin line.
+- Spacing between parts is unchanged: smallest gaps measured 1.24 mm or more where 1.1 mm is required.
+- Side effects:
+  - parts that fit the margins exactly still fit, and parts can now use the space the old estimate gave away (a
+    toothed part moved 3.8 mm closer to the edge), so True-shape layouts can differ from before;
+  - "no usable area" is reported as soon as the margins meet;
+  - Bounding box layouts and single-part exports are unchanged.
+
+## 1.1.24-beta
+
+- "Search 30 s more" can't continue an old search after the edge margin or plate size leaves no usable area: that
+  case now drops the search, so the button is unavailable and no layout with the old margin can appear (#71). Since
+  1.0.6-beta (#67) every settings change already dropped the old search, so this no longer reproduced; the fix makes
+  the no-area case safe on its own.
+
 ## 1.1.23-beta
 
 - The guide lines on the plate previews reach 3:1 against the tan plate in both themes (#105). Part outlines use
