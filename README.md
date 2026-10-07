@@ -24,7 +24,7 @@ ratios differ, the drawing is scaled the way browsers scale it (`preserveAspectR
 
 DXF files (ASCII, any version) are read directly: lines, arcs, circles, ellipses, (LW)polylines with bulges,
 splines and block inserts (scaled, rotated, mirrored, arrays) from model space, in the drawing's units (`$INSUNITS`;
-unitless files are read as mm). Each DXF colour becomes a stroke colour. Text, hatches and dimensions are skipped
+unitless files are read as mm). Each DXF color becomes a stroke color. Text, hatches and dimensions are skipped
 with a notice, and so is anything on a frozen, off or non-plotting layer or the Defpoints layer. Paper space and
 invisible entities are left out without a notice.
 
@@ -42,18 +42,18 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
-  is recognised and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
+  is recognized and not compensated a second time. Parts kept as original markup (text, images, effects) and holes
   narrower than the kerf are exported as drawn (in SVG and DXF), with a notice.
 
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
-(polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per colour (named by its hex
+(polyline bulges), and other curves are flattened to within 0.01 mm. There is one layer per color (named by its hex
 value), or per source layer for parts imported from DXF. Text, images and fills can't be written to DXF: filled
 shapes become outlines, and a notice names anything that was left out.
 
 ## Test cuts
 
-`fixtures/test-cuts/` has small pieces for dialling in the kerf and the fit before cutting a real job. Red `#ff0000`
+`fixtures/test-cuts/` has small pieces for dialing in the kerf and the fit before cutting a real job. Red `#ff0000`
 is cut and blue `#0000ff` is score; set any black filled marks to engrave or turn them off. Cut each test from the
 material and with the speed and power you will use, because the kerf changes with all three. Set "Edge margin" and
 "Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), untick **Allow

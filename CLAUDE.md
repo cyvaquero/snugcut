@@ -36,8 +36,10 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
     every later version, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta…), until the user says to
     drop it.
 - **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
-  automatically. Before cutting it, ask whether to run a code efficiency review and optimisation first. After cutting
+  automatically. Before cutting it, ask whether to run a code efficiency review and optimization first. After cutting
   it, run the blind review prompt in that file.
+- **American English** in all text: UI, docs, CHANGELOG, code comments, fixture names and comments (color, behavior,
+  recognize, millimeters, …). HTML/ARIA names keep their spec spelling (`aria-labelledby`).
 - All internal lengths are mm.
 - Sandboxed sessions may not be able to read `~/.gitconfig`: run git with `GIT_CONFIG_GLOBAL` set to a file holding only
   the gh credential helper. The commit identity lives in this clone's `.git/config` (GitHub no-reply address).

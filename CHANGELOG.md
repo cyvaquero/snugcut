@@ -3,6 +3,16 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.7-beta
+
+- The project uses **American English**. #87 had it backwards: "neighboring" was right, and the British spellings
+  were the defect. Swept the whole project: color(s), recolor, behavior, gray, labeled, neighbors, recognized,
+  organized, optimization, millimeters, dialing, defense, sanitizer, summarize. That covers UI messages, the README,
+  the CHANGELOG, `CLAUDE.md`, `RELEASING.md`, code comments and fixture comments (#87).
+- Fixtures renamed: `dxf/dxf-same-color-layers.dxf` and `makeit/makeit-id-colors.svg`.
+- `CLAUDE.md` states the rule. The blind-review prompt in `RELEASING.md` now treats British spellings as findings.
+  `aria-labelledby` keeps its spec spelling.
+
 ## 1.1.6-beta
 
 - Outline precision options are labeled "Standard (0.25 mm)" and "Fine (0.1 mm)" instead of "±0.25 mm" / "±0.1 mm":
@@ -53,7 +63,7 @@ only on request; the iterative number increments with every change.
     double-click. `--check` reports when it is out of date.
 - `app/index.html` has its own Content-Security-Policy, as strict as `snugcut.html`'s plus `'self'` for its module and
   stylesheet; the build writes it into `snugcut.html` without `'self'`.
-- No change in behaviour: SVG and DXF exports from `snugcut.html` are byte-identical to 1.0.10-beta for every fixture
+- No change in behavior: SVG and DXF exports from `snugcut.html` are byte-identical to 1.0.10-beta for every fixture
   (compensation off and on) and for full nests of the sample parts.
 - `CLAUDE.md`, README and `RELEASING.md` describe the new layout; `CLAUDE.md`'s "no build step" rule now allows
   `tools/build.py`.
@@ -98,10 +108,10 @@ only on request; the iterative number increments with every change.
 ## 1.0.5-beta
 
 - DXF export of parts imported from DXF keeps one output layer per source layer, as the export header promises, even
-  when layers share a colour (e.g. CUT and SCORE both colour 7). Open lines are no longer joined across layers (#66).
+  when layers share a color (e.g. CUT and SCORE both color 7). Open lines are no longer joined across layers (#66).
 - The DXF LAYER table no longer lists layer `0` twice when the source uses it, and its count matches its records.
 - SVG export is unchanged: DXF-imported parts still export with one path per line style.
-- Fixture: `dxf/dxf-same-colour-layers.dxf`.
+- Fixture: `dxf/dxf-same-color-layers.dxf`.
 
 ## 1.0.4-beta
 
@@ -117,7 +127,7 @@ only on request; the iterative number increments with every change.
 ## 1.0.3-beta
 
 - New `RELEASING.md` with the release procedure:
-  - ask about an efficiency review and optimisation before cutting a release branch;
+  - ask about an efficiency review and optimization before cutting a release branch;
   - cut the branch and bump the version, only when the maintainer says so;
   - run the blind review (correctness, documentation, security, accessibility) and file the findings as issues;
   - fix on `bugfix/` branches, then finish the release only with the maintainer's approval.
@@ -130,7 +140,7 @@ only on request; the iterative number increments with every change.
   exported as drawn:
   - red outlines set on the root exported as black filled areas, and skipped kerf compensation;
   - a file whose only stroke was on the root was rejected as having no visible shapes;
-  - text sized on the root was measured at 16 px, then exported at its real size and ran into its neighbours.
+  - text sized on the root was measured at 16 px, then exported at its real size and ran into its neighbors.
 - Files without presentation attributes on the root export exactly as before.
 - Fixtures: `geometry/root-attrs-stroke.svg`, `root-attrs-stroke-only.svg`, `root-attrs-font-size.svg`.
 
@@ -138,7 +148,7 @@ only on request; the iterative number increments with every change.
 
 - Class names in a file without a `<style>` block no longer pick up the app's own CSS while the part is measured
   (#63). A shape with `class="icon"` was measured as 28 × 28 mm (`dot` 8 × 8, `bar` 5 high), so nested copies
-  overlapped on the plate; `note`, `hint` and `icon` turned `currentColor` into the UI grey `#93a0ae`.
+  overlapped on the plate; `note`, `hint` and `icon` turned `currentColor` into the UI gray `#93a0ae`.
 - The class names are prefixed only while measuring; the exported markup keeps them as drawn.
 - Fixture: `css/ui-class-names.svg`.
 
@@ -158,7 +168,7 @@ only on request; the iterative number increments with every change.
     GitHub redirects the old URLs.
   - Settings move from the `platenester.settings` key to `snugcut.settings`. Saved settings (kerf, prefix, format, …)
     carry over on first load, and the old key is removed.
-  - Files compensated by Plate Nester are still recognised, because the marker check doesn't depend on the name.
+  - Files compensated by Plate Nester are still recognized, because the marker check doesn't depend on the name.
   - Entries below keep the old name, as historical record.
 
 ## 0.1.32
@@ -190,7 +200,7 @@ only on request; the iterative number increments with every change.
   - `slot-gauge-3mm.svg`: open slots 2.8 / 2.9 / 3.0 / 3.1 / 3.2 mm wide, marked by 1–5 score ticks, to check
     material thickness and fit as cut.
   - No app changes.
-- `fixtures/` is organised into subfolders: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/` and `test-cuts/`,
+- `fixtures/` is organized into subfolders: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/` and `test-cuts/`,
   described in `fixtures/README.md`. File names are unchanged, so paths in older entries and issues refer to
   `fixtures/<folder>/<name>`.
 - README: a new **Test cuts** section. For each piece in `fixtures/test-cuts/`: how to cut it, what to measure, and
@@ -212,7 +222,7 @@ only on request; the iterative number increments with every change.
     - While the option is on, a warning in the panel says to turn off kerf offset in the cutter's software and
       explains the consequences (a full kerf too big or too small).
     - Every download repeats the reminder.
-    - Compensated files carry a marker (SVG comment, DXF `999` comment). Such a file added again is recognised
+    - Compensated files carry a marker (SVG comment, DXF `999` comment). Such a file added again is recognized
       and not compensated a second time.
   - Acceptance check with kerf 0.1: 20 mm square → 20.1, 10 mm square hole → 9.9, Ø6 hole → Ø5.9 (radius within
     0.002 mm). The score line and the filled mark are unchanged. New fixture `fixtures/kerf-test.svg`.
@@ -226,7 +236,7 @@ only on request; the iterative number increments with every change.
     every call. The old sampling is kept only as a fallback for path data that can't be parsed.
   - Subpaths are now read exactly. Before, they were guessed from jumps between samples, and each path was capped
     at 6,000 samples in total, which also blurred small holes in long paths.
-  - The DXF reader writes one `<path>` per entity instead of one per layer and colour.
+  - The DXF reader writes one `<path>` per entity instead of one per layer and color.
   - Nesting outlines are unchanged within 0.03 % for all fixtures (circles slightly more accurate), and the sample
     layout is the same. Outlines drawn as separate DXF LINEs now get the 0.05 mm allowance that separate SVG
     `<line>`s always had. SVG and DXF-part exports are byte-for-byte unchanged.
@@ -241,7 +251,7 @@ only on request; the iterative number increments with every change.
     grouping and ordering moved into `cutGroups`, which both exports share.
   - Circular arcs become polyline bulges, so circles and rounded corners stay true arcs; ellipses, splines and other
     curves are flattened to within 0.01 mm.
-  - One layer per colour, named by its hex value, with the nearest ACI colour. Parts imported from DXF keep their
+  - One layer per color, named by its hex value, with the nearest ACI color. Parts imported from DXF keep their
     source layer names. "Plate outline in export" adds a `PLATE` layer.
   - Parts kept as original markup in SVG (text, images, `<use>`, clipping, gradients) are written from the shapes
     that can be: a second, loose `extractFlat` pass at import. A notice names what was left out (text, images, …),
@@ -261,11 +271,11 @@ only on request; the iterative number increments with every change.
   are unchanged.
   - Entities: LINE, ARC, CIRCLE, ELLIPSE, LWPOLYLINE and POLYLINE (bulges → arcs), SPLINE (control points and knots,
     rational too; fit-point-only splines as a smooth cubic through the points), and INSERT (base point, scale,
-    rotation, mirroring, MINSERT arrays, nested blocks, BYBLOCK colour and layer 0 inheritance).
+    rotation, mirroring, MINSERT arrays, nested blocks, BYBLOCK color and layer 0 inheritance).
   - 2D entities with extrusion (0,0,−1) are mirrored as in CAD.
   - Units from `$INSUNITS`; files without units are read as mm, with a notice. Model space only; paper space,
     invisible entities, and frozen, off, non-plotting and Defpoints layers are skipped.
-  - Colours: AutoCAD Color Index (7 → black) or true colour, BYLAYER/BYBLOCK resolved, one `<g>` per DXF layer.
+  - Colors: AutoCAD Color Index (7 → black) or true color, BYLAYER/BYBLOCK resolved, one `<g>` per DXF layer.
   - Text, hatches, dimensions, points, meshes and other non-outline entities are skipped, with a notice listing
     them. Binary DXF and unreadable files get a clear message.
   - Checked against ezdxf's extents and renderer: identical sizes and matching shapes for all fixtures; a rational
@@ -282,33 +292,33 @@ only on request; the iterative number increments with every change.
 
 ## 0.1.24
 
-- New MakeIT test file for #13, `fixtures/makeit-id-colours.svg`: ids that read as hex colours (`f00`, `ff0000`)
-  used in both selectors and colour values, a rule elsewhere using `#f00`, a red control and a black reference.
-  Every square is drawn black, and red means the colour survived id prefixing. Checked in headless Chrome: 0.1.16
+- New MakeIT test file for #13, `fixtures/makeit-id-colors.svg`: ids that read as hex colors (`f00`, `ff0000`)
+  used in both selectors and color values, a rule elsewhere using `#f00`, a red control and a black reference.
+  Every square is drawn black, and red means the color survived id prefixing. Checked in headless Chrome: 0.1.16
   turns cases 1–3 black, the current build turns them red. No app changes.
 
 ## 0.1.23
 
 - `<line>` elements export with `fill="none"` instead of the default `fill="#000000"` (#46). MakeIT took that fill
-  colour, so lines landed on the black layer whatever their stroke colour. Lines can now also be chained with the
+  color, so lines landed on the black layer whatever their stroke color. Lines can now also be chained with the
   other open segments of the same style, so CAD outlines drawn as separate `<line>`s become one closed path. Files
   without `<line>` export unchanged. New fixture `fixtures/cad-lines.svg`.
 
 ## 0.1.22
 
 - `currentColor` in imported SVGs exports as black again, as in a standalone SVG, instead of the app's theme text
-  colour (#44; `#e4e9ef` in dark mode, `#16202b` in light). The hidden element that parts are measured in now
-  starts from `all:initial` with black text and a light colour scheme, so imported parts no longer inherit the
-  page's colour or fonts. A `color` set in the file still applies. Files without `currentColor` export unchanged.
+  color (#44; `#e4e9ef` in dark mode, `#16202b` in light). The hidden element that parts are measured in now
+  starts from `all:initial` with black text and a light color scheme, so imported parts no longer inherit the
+  page's color or fonts. A `color` set in the file still applies. Files without `currentColor` export unchanged.
   New fixture `fixtures/current-color.svg`.
 
 ## 0.1.21
 
 - Parts kept as original markup no longer carry their `<style>` block into the plate (#38, #42). MakeIT 3.06
   ignores class, universal and descendant selectors but applies element-type rules (`rect {…}`) to the whole plate,
-  so a part styled by `.cls-1` rules imported with the wrong colours and layers, and one file's `rect {…}` could
-  recolour another file's parts. On import (`inlineSheets`), the computed value of every property the rules declare
-  is written onto the elements they match, as presentation attributes where possible (colours as hex, lengths
+  so a part styled by `.cls-1` rules imported with the wrong colors and layers, and one file's `rect {…}` could
+  recolor another file's parts. On import (`inlineSheets`), the computed value of every property the rules declare
+  is written onto the elements they match, as presentation attributes where possible (colors as hex, lengths
   without `px`). Then the rules are removed; only `@font-face`/`@keyframes` are kept. Rules on the root reach its
   children. Rendering is unchanged, checked element by element against 0.1.20. Flattened parts and files without
   `<style>` export unchanged. New fixtures `fixtures/selector-leak-a.svg` and `fixtures/selector-leak-b.svg`.
@@ -337,7 +347,7 @@ only on request; the iterative number increments with every change.
 
 ## 0.1.17
 
-- Ids that read as hex colours (`fff`, `cafe`, `bad`, …) no longer corrupt colours in `<style>` (#13). Id prefixing
+- Ids that read as hex colors (`fff`, `cafe`, `bad`, …) no longer corrupt colors in `<style>` (#13). Id prefixing
   (on import and per instance on export) now rewrites `#id` only in selectors, not in declaration values, strings,
   comments or attribute selectors, so `stroke:#fff` stays `#fff`. Files without such clashes export unchanged.
   New fixture `fixtures/style-ids.svg`.
@@ -361,7 +371,7 @@ only on request; the iterative number increments with every change.
 ## 0.1.14
 
 - Page description covers other cutters (laser, vinyl, CNC, plasma) and materials; the two modes are listed as
-  bullets. The kerf field is labelled "Kerf" instead of "Laser kerf", and its hint says "the cut" rather than "the beam". README and CLAUDE.md reworded to match.
+  bullets. The kerf field is labeled "Kerf" instead of "Laser kerf", and its hint says "the cut" rather than "the beam". README and CLAUDE.md reworded to match.
 
 ## 0.1.13
 
@@ -373,7 +383,7 @@ only on request; the iterative number increments with every change.
 - Fragmented outlines are joined on export (#27): open subpaths of the same line style whose ends meet (within
   0.01 mm) are chained into continuous paths, reversing pieces where needed, and closed with `Z` when they loop back.
   CAD/DXF-style sources that store every segment separately no longer cut one segment at a time, and their holes are
-  now recognised for inside-first ordering (#25). Objects, ids and geometry are unchanged.
+  now recognized for inside-first ordering (#25). Objects, ids and geometry are unchanged.
 
 ## 0.1.11
 

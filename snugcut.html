@@ -214,7 +214,7 @@ footer a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </div>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.1.7-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -411,7 +411,7 @@ function renameSelectors(css, f){
   return out + seg;
 }
 /* ---------- DXF import ----------
-   An ASCII DXF is turned into an SVG part (mm, Y down, plain paths with one stroke colour per DXF colour), which then
+   An ASCII DXF is turned into an SVG part (mm, Y down, plain paths with one stroke color per DXF color), which then
    goes through parseSVG like any other file. Model space only; frozen, off and non-plotting layers are skipped. */
 const DXF_MM = {1:25.4, 2:304.8, 3:1609344, 4:1, 5:10, 6:1000, 7:1e6, 8:2.54e-5, 9:0.0254, 10:914.4, 11:1e-7, 12:1e-6, 13:1e-3, 14:100, 15:1e4, 16:1e5,
   21:304.8006096, 22:25.4000508, 23:914.4018288, 24:1609347.218694};
@@ -469,9 +469,9 @@ function dxfToSVG(text, name){
   for (const b of blocks.values()) b.ents = group(b.ents);
   const unit = DXF_MM[+header.$INSUNITS];
   const k = unit || 1, notes = [];
-  if (!unit) notes.push(`${name} doesn't say what units it's drawn in, so it was read as millimetres.`);
+  if (!unit) notes.push(`${name} doesn't say what units it's drawn in, so it was read as millimeters.`);
 
-  const out = new Map(), skipped = {};                          // layer → colour → path data
+  const out = new Map(), skipped = {};                          // layer → color → path data
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0;
   const mul = (A, B) => [A[0]*B[0] + A[2]*B[1], A[1]*B[0] + A[3]*B[1], A[0]*B[2] + A[2]*B[3], A[1]*B[2] + A[3]*B[3], A[0]*B[4] + A[2]*B[5] + A[4], A[1]*B[4] + A[3]*B[5] + A[5]];
   const fmtN = v => { const r = +v.toFixed(4); return Object.is(r, -0) ? "0" : String(r); };
@@ -636,7 +636,7 @@ function parseSVG(text, name){
   const ser = new XMLSerializer();
   const inner = [...root.childNodes].filter(n => n.nodeType === 1).map(n => ser.serializeToString(n)).join("");
   if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;opacity:0;pointer-events:none"; document.body.appendChild(host); }
-  // all:initial + black: parts must not inherit the page's theme colour or fonts (currentColor would export as the UI text colour, #44).
+  // all:initial + black: parts must not inherit the page's theme color or fonts (currentColor would export as the UI text color, #44).
   // Hidden with opacity, which isn't inherited: visibility:hidden would make every part's own visibility unreadable (#17).
   const g = document.createElementNS(SVGNS, "g");
   if (sheets.length && root.hasAttribute("class")) g.setAttribute("class", root.getAttribute("class"));   // so rules on the root's classes match
@@ -644,7 +644,7 @@ function parseSVG(text, name){
   for (const a of KEEP_ATTRS) if (a !== "class" && root.hasAttribute(a)) g.setAttribute(a, root.getAttribute(a));
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
   // Without a <style> the file's class names do nothing, but in the measuring host the page's own rules (.icon, .dot,
-  // .note, …) would match them and resize or recolour the shapes (#63). Prefix them while measuring; mark(false) puts
+  // .note, …) would match them and resize or recolor the shapes (#63). Prefix them while measuring; mark(false) puts
   // the drawn names back for the exported markup.
   const bare = sheets.length ? [] : [...g.querySelectorAll("[class]")].map(el => [el, el.getAttribute("class")]);
   const mark = on => { for (const [el, c] of bare) el.setAttribute("class", on ? c.split(/\s+/).filter(Boolean).map(n => pfx + n).join(" ") : c); };
@@ -875,7 +875,7 @@ function extractFlat(g, loose){
     let fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);     // a line is never filled
     if (fill === undefined || stroke === undefined) {
       if (!loose) return null;
-      skipped.add("gradient and pattern colours (exported black)");
+      skipped.add("gradient and pattern colors (exported black)");
       if (fill === undefined) fill = "#000000"; if (stroke === undefined) stroke = "#000000";
     }
     if (fill === "none" && stroke === "none") continue;
@@ -1492,7 +1492,7 @@ function plateSVG(plate, opts = {}){
 /* ---------- DXF export (R12 ASCII, mm, origin bottom-left) ----------
    The same cut paths, order and joined outlines as the SVG export. Circular arcs (as written by arcToCubics and the
    DXF reader) become polyline bulges, so circles and rounded corners stay true arcs; other curves are flattened to
-   within 0.01 mm. One layer per colour, or per source layer for parts imported from DXF. */
+   within 0.01 mm. One layer per color, or per source layer for parts imported from DXF. */
 const aciCache = new Map();
 function aciNear(hex){
   if (!aciCache.has(hex)) {
