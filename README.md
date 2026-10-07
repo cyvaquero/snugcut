@@ -83,7 +83,8 @@ material and with the speed and power you will use, because the kerf changes wit
 Cut both pieces on one plate, lay them flat and push A's three 6 mm fingers into B's gaps. The fit depends only on
 the kerf, not on the material thickness.
 
-- **Compensation off:** about one kerf of play is expected.
+- **Compensation off:** about two kerfs of play in total is expected: each finger comes out half a kerf narrower on
+  each side, and each gap half a kerf wider.
 - **Compensation on, too tight:** lower the kerf a little.
 - **Compensation on, too loose:** raise it.
 

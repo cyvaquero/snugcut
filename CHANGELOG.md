@@ -2,6 +2,11 @@
 
 Format `major.minor.iterative`. Major/minor change only on request; the iterative number increments with every change.
 
+## 1.1.1-beta
+
+- README, finger-joint test cut: without compensation the joint has about **two** kerfs of play in total, not one
+  (fingers come out a kerf narrower and gaps a kerf wider) (#69).
+
 ## 1.1.0-beta
 
 - Release for integration in other projects. Minor version bumped to 1.1 on request; iterative reset to 0.
