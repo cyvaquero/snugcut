@@ -3,6 +3,12 @@
 Format `major.minor.iterative`, with an optional pre-release suffix such as `-beta`. Major, minor and the suffix change
 only on request; the iterative number increments with every change.
 
+## 1.1.11-beta
+
+- README, Accessibility: the target is WCAG 2.1 AA plus Section 508's documentation (602) and forced-colors (302.2)
+  requirements. It also explains how the two standards relate: 508 points to WCAG 2.0 AA, 2.1 adds a few criteria,
+  and nothing conflicts. It says the target isn't met yet (#106).
+
 ## 1.1.10-beta
 
 - README: a new Accessibility section covers keyboard use, the light/dark theme and reduced motion, and lists the known
