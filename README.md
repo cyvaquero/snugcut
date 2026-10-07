@@ -193,11 +193,17 @@ Like the original reference apps, the page loads two libraries by script tag, `c
 fonts.googleapis.com, fonts.gstatic.com) **each time the page loads**, unless the browser has them cached. Those
 requests show the CDNs your IP address and that the page was opened; your files never leave the browser. Without
 clipper-lib the page can't nest and says so; without jszip only "Download all (.zip)" is missing, and each plate can
-still be downloaded on its own; without the fonts the page falls back to system fonts. A
-Content-Security-Policy in the page allows only those URLs, so an imported SVG can't make the browser load anything
-else, and it allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both script tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have
-changed; when bumping a library version, update its URL in the tag and the CSP and recompute its hash with
-`curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A` (the `integrity` value is `sha384-` plus that).
+still be downloaded on its own; without the fonts the page falls back to system fonts.
+
+A Content-Security-Policy allows only those URLs, so an imported SVG can't make the browser load anything else, and it
+allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both library script
+tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have changed.
+
+The script tags and the CSP are kept in `app/index.html`; don't edit them in `snugcut.html`, which is generated. To
+bump a library version, change its URL in the script tag and in the CSP, set its `integrity` to `sha384-` plus the
+output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, and run `python3 tools/build.py`. The
+build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
+allows its own files with `'self'` instead).
 
 ## Workflow
 
