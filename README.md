@@ -187,30 +187,38 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   motion is requested.
 - **Screen readers**: the result of each run, confirmations and errors are announced. Warnings and errors also stay in
   the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
-- **Focus** stays in place when the parts list or the plates are redrawn. Removing a part moves it to the next part,
-  and Search more and Stop hand it to each other.
+  Field errors, the kerf compensation warning and the kerf measured from a test cut are announced once typing pauses.
+- **Focus** stays in place when the parts list or the plates are redrawn, and open "Parts on this plate" lists stay
+  open. Removing a part moves it to the next part, and Search more and Stop hand it to each other.
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
-  with counts and rotations, linked to the image.
+  with counts and rotations. The image is described by the same list whether it is open or closed.
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
-  value is still in use.
+  value is still in use. The kerf field and the "Compensate kerf on objects" checkbox are also described by their
+  hints.
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the lock icon is open or closed to
   match, the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
   behind the parts' own colors, so they stay visible in dark themes.
-- **Contrast**: text meets WCAG AA in both themes; the borders of fields and buttons and the guide lines on the plate
-  previews are at least 3:1.
+- **Contrast**: text meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
+  the plate edge, the "no holes" icon and the guide lines on the plate previews are at least 3:1. Text buttons have
+  faint borders and are recognized by their labels.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
   visible "Qty" label, and every button has its own name ("Lock orientation of star.svg", "Download SVG, plate 1 of 2").
+  Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
   (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
-- **Known gaps**: none open. Every finding of the 1.0.0-beta accessibility review is fixed (#93–#105). Report
-  problems as a GitHub issue.
+- **Known gaps**: none open. The findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
+  #166–#169, #176, #178) are fixed, as is #204. Target size (#177) isn't required at WCAG 2.1 AA: the mm / in buttons
+  are 22 px tall. Report problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
-documentation (602, this section) and keeping information visible with forced colors (302.2, #98). The review's
+documentation (602, this section) and keeping information visible with forced colors (302.2, #98, #157). The reviews'
 findings are fixed, but conformance hasn't yet been confirmed with screen readers (VoiceOver, NVDA) or a full audit.
 Section 508 points to WCAG 2.0 AA for web content, so meeting WCAG 2.1 AA covers it and adds a few newer criteria
-(status messages, reflow, text spacing, non-text contrast, label in name). The two standards don't conflict anywhere
-in SnugCut; the details are in #106.
+(status messages, reflow, text spacing, non-text contrast, label in name). As web content that meets WCAG 2.0 AA,
+SnugCut falls under the 501.1 exception, so the software provisions in 502 and 503 don't apply separately. The
+authoring-tool provisions (504) are treated as not applicable: the SVG and DXF files SnugCut writes are cutting paths
+for machines in fixed formats, not documents for people to read. The two standards don't conflict anywhere in
+SnugCut; the details are in #106 and #181.
 
 ## Files
 
