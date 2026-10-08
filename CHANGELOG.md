@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.2-beta
+
+- `CLAUDE.md` brought in line with the maintainer's working rules: hotfix and support branches, merge and branch
+  approvals, closing issues by hand outside `main`, a CHANGELOG entry per change, findings filed as issues, QA testers
+  and hardware, no stored user data, mm as the default unit, and the AGPL license header on every source file.
+
 ## 1.2.1-beta
 
 - SnugCut is licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later) (#196): `LICENSE` holds the
