@@ -119,9 +119,10 @@ async function run(ms, fresh){
         if (!p.qty) continue;
         if (!fitsPlate(p, F)) { oversize.push(p); continue; }
         const e = envelope(p);
-        for (let k = 0; k < p.qty; k++) items.push({part:p, envArea:e.area});
+        for (let k = 0; k < p.qty; k++) items.push({part:p, envArea:e.area, netArea:e.area - e.holeArea});
       }
-      const minPlates = items.length ? Math.ceil(items.reduce((s, it) => s + it.envArea, 0) / ((F.R - F.L) * (F.B - F.T)) - 1e-9) : 0;
+      // the area a part takes from the plate leaves out its holes when other parts may nest in them (#165)
+      const minPlates = items.length ? Math.ceil(items.reduce((s, it) => s + it.netArea, 0) / ((F.R - F.L) * (F.B - F.T)) - 1e-9) : 0;
       search = {items, oversize, minPlates, bestOrder:null, bestScore:null, tried:0, F, rnd:mulberry(7)};
       if (!items.length) { layout = {plates:[], oversize, minPlates:0}; renderLayout(); return; }
       const idx = items.map((_, i) => i);

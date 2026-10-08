@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.7-beta
+
+- **Area minimum** leaves out the holes that other parts may nest in, so it no longer shows more plates than the layout
+  uses, and the "A longer search may save a plate" hint can appear for such jobs (#165).
+
 ## 1.2.6-beta
 
 - SVG files with many unterminated CSS comments load at normal speed: a 235 KB file that took 2.5 s to load now takes
