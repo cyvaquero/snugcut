@@ -56,6 +56,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   automatically, and the maintainer names the version. Before cutting it, ask whether to run a code efficiency review
   and optimization first. After cutting it, run the blind review prompt in that file. Finishing a release (merge into
   `main`, tag `<version>` (no `v` prefix), merge back into `develop`) needs the maintainer's approval.
+  A major or minor release consolidates `CHANGELOG.md` as described in
+  [CHANGELOG consolidation at release](#changelog-consolidation-at-release).
 - **Findings become issues**: every code-review, bug, security, documentation and accessibility finding is filed as a
   GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md) (plain title; a type
   label, `code-review` when it came from a review, and one `severity:*` label; Severity, CVE and CWE lines; Repro, Root
@@ -78,3 +80,52 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **Git identity**: commit as the GitHub no-reply address only, never a personal email (the repo is public). The
   identity lives in this clone's `.git/config`. Sandboxed sessions may not be able to read `~/.gitconfig`: run git with
   `GIT_CONFIG_GLOBAL` set to a file holding only the gh credential helper.
+
+## CHANGELOG consolidation at release
+
+When a release bumps the major or minor version, squash the iterative entries
+it covers into that version's section. The individual `x.y.N` headings are
+removed from the file; git history keeps them.
+
+Scope:
+- The squash covers every iterative entry from the previous major or minor
+  heading down to (not including) this one.
+- A bump with no feature content of its own still consolidates the range below
+  it. "Same features as <previous>" is not a reason to skip it.
+- Never touch a section at or below an already-consolidated heading.
+
+Backfill:
+- Before consolidating the current release, walk the file for earlier major or
+  minor headings whose range still has loose `x.y.N` entries under it. Squash
+  each, same rules, oldest first.
+- A heading is already consolidated when no `x.y.N` headings remain between it
+  and the next major or minor heading below. Don't re-process those.
+- Report what you backfilled, separately from the current release.
+
+How to squash:
+- Group under Keep a Changelog headings in this order: Added, Changed,
+  Deprecated, Removed, Fixed, Security. Omit empty groups.
+- One bullet per user-visible outcome, not per iterative entry or per PR.
+  Several entries that moved one feature forward collapse into the single
+  sentence describing where it landed.
+- Carry every issue number forward. A merged bullet cites all of them:
+  `(#12, #19, #23)`. Losing a reference is a defect.
+- Write the end state, not the journey. An add-then-fix pair inside the range
+  becomes the end state alone, since no user saw the intermediate.
+- Every security entry in the range gets a bullet. Security is not subject to
+  the merging and dropping rules above — under-reporting hardening in a public
+  repo is a defect.
+- Drop entries with no user-facing effect (test fixtures with no app change,
+  internal reorganization, docs-only corrections) unless they changed behavior,
+  defaults, or output.
+- Preserve the exact wording of any entry that already reads as a release-level
+  statement rather than rewriting it for style.
+- Keep measured figures (timings, percentages, dimensions) where the entry gave
+  them; they're the evidence the change was verified.
+
+Constraints:
+- Do not renumber, re-date, or reorder released sections.
+- Do not invent entries. If a referenced issue number has no matching iterative
+  entry, stop and ask rather than reconstructing from the diff.
+- Report per range: range covered, entries in, bullets out, and anything
+  dropped with the reason.
