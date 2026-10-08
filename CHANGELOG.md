@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.24-beta
+
+- Fixture comments give the sizes the app measures: `root-attrs-stroke-only.svg` imports as 99 × 49 mm, and the box of
+  `rounded-rect.svg` is 99.8 × 59.8 mm (5,968 mm²). No change to the app or its exports (#175).
+
 ## 1.2.23-beta
 
 - The README's accessibility section now matches the app: text-button borders aren't claimed to be 3:1, the plate

@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 100 50" stroke="#ff0000">
-  <!-- Only the root sets a stroke (#64, case B): imports as a 100 × 50 mm part instead of "no visible shapes". -->
+  <!-- Only the root sets a stroke (#64, case B): imports as a 99 × 49 mm part (the path runs 0.5–99.5 by
+       0.5–49.5) instead of "no visible shapes". -->
   <path fill="none" d="M0.5 0.5H99.5V49.5H0.5Z"/>
 </svg>
