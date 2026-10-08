@@ -263,6 +263,12 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
 file.onchange = () => { addFiles(file.files); file.value = ""; };
+// A file says it already has kerf compensation built in only where SnugCut (once Plate Nester) writes that: the comment
+// right after the <svg> tag, or the 999 comment that opens a DXF. The same words anywhere else, such as in a <desc>,
+// don't count (#179).
+const builtInComp = (text, dxf) => (dxf
+  ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
+  : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
@@ -272,7 +278,7 @@ async function addFiles(list){
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await f.text();
-    const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
+    const pre = builtInComp(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
