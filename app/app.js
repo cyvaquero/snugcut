@@ -280,7 +280,7 @@ async function addFiles(list){
     if (pre) { p.precomp = true; notes.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
   } catch(e) { errs.push(e.message); } }
   if (hiddenIn.length) notes.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
-  if (stripped.length) notes.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
+  if (stripped.length) notes.push(`Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from ${stripped.join(", ")}; only what's inside the file is used.`);
   errs.forEach(t => notice(t, true)); notes.forEach(t => notice(t));
   restart();
 }
