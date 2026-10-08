@@ -35,11 +35,16 @@ const fromDisp = v => S.unit === "in" ? v * IN : v;
 const fmt = (mm, d) => (+toDisp(mm).toFixed(d ?? (S.unit === "in" ? 3 : 1))).toString();
 const LEN = ["plateW","plateH","kerf","gap","margin"];
 const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:"Extra gap", margin:"Edge margin"};
+// say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
+const later = new Map();
+function sayLater(key, t){ clearTimeout(later.get(key)); later.delete(key); if (t) later.set(key, setTimeout(() => { later.delete(key); say(t); }, 700)); }
 // field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
-// and which value is still in use; both go as soon as the value is valid
+// and which value is still in use; both go as soon as the value is valid. A new or changed message is also announced,
+// once typing pauses (#166).
 function fieldErr(input, msg){
   let e = document.getElementById(input.id + "-err");
-  if (!msg) { if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!e || e.textContent !== msg) sayLater(input.id, msg);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
   e.textContent = msg; input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", e.id);
 }
@@ -49,7 +54,7 @@ function fillInputs(){
     $(k).value = +toDisp(S[k]).toFixed(dec); fieldErr($(k));
     $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; $("compWarn").hidden = !S.comp; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
@@ -73,7 +78,9 @@ for (const k of LEN) $(k).addEventListener("input", () => {
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
-$("kerfComp").onchange = e => { S.comp = e.target.checked; $("compWarn").hidden = !S.comp; save(); invalidateGeometry(); restart(); };
+// the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
+function showCompWarn(){ $("compWarn").hidden = !S.comp; if (S.comp) $("kerfComp").setAttribute("aria-describedby", "compWarn"); else $("kerfComp").removeAttribute("aria-describedby"); }
+$("kerfComp").onchange = e => { S.comp = e.target.checked; showCompWarn(); if (S.comp) say($("compWarn").querySelector("b").textContent); save(); invalidateGeometry(); restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
 $("rotate").onchange = e => { S.rotate = e.target.checked; save(); restart(); };
@@ -94,9 +101,10 @@ function kerfCalc(){
   const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
   fieldErr($("kDesign"), !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
   fieldErr($("kMeasured"), !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
-  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
-  const k = fromDisp(d - m);
-  $("kOut").textContent = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`; $("kUse").disabled = false; return k;
+  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
+  const k = fromDisp(d - m), t = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`;
+  if (t !== $("kOut").textContent) sayLater("kOut", t);   // announced once typing pauses (#166)
+  $("kOut").textContent = t; $("kUse").disabled = false; return k;
 }
 $("kDesign").oninput = kerfCalc; $("kMeasured").oninput = kerfCalc;
 $("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast("Kerf updated"); } };

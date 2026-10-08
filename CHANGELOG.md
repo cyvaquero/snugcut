@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.17-beta
+
+- Screen readers now announce field errors (such as "Extra gap can't be negative"), the kerf compensation warning when
+  it is turned on, and the kerf measured from a test cut, once each when typing pauses. The warning also describes the
+  checkbox while it shows (#166).
+
 ## 1.2.16-beta
 
 - Kerf compensation is skipped only for files SnugCut itself exported with compensation built in. The marker text
