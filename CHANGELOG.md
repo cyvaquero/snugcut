@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.4-beta
+
+- The blind review prompt in `RELEASING.md` follows the current review procedure (#200): the duplicate check lists 300
+  issues and includes `deferred` ones, issue bodies are written with quoted heredocs, the accessibility review names
+  the Section 508 501.1 web-app exception, and severity is calibrated across reviewers.
+
 ## 1.2.3-beta
 
 - `CLAUDE.md` and `RELEASING.md` now say how to consolidate the CHANGELOG at a major or minor release (#201): squash the
