@@ -15,11 +15,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later
    Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). */
 /* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens.
-   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99). */
+   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99).
+   --plate-edge is at least 3:1 against --surface, the plate card around it (#167). */
 :root{
   --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
   --accent:#2d55f0; --accent-soft:#e3e9ff; --accent-fg:#ffffff;
-  --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
+  --plate:#e8d6b3; --plate-edge:#8f7a52; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
   --guide:#2d55f0; --guide-margin:#7a6644;   /* preview guide lines: at least 3:1 on the tan plate in both themes (#105) */
   --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -260,7 +261,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.18-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.19-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
