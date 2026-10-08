@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.23-beta
+
+- The README's accessibility section now matches the app: text-button borders aren't claimed to be 3:1, the plate
+  description, announcements, hints and icons are described as they work now, the fixed review findings
+  are listed, and it says how Section 508's 501.1 exception and 504 (authoring tools) apply (#169, #181).
+
 ## 1.2.22-beta
 
 - The icons inside the lock, holes, remove and dismiss buttons are hidden from screen readers, which read only the
