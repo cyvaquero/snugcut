@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.9-beta
+
+- A DXF with a spline of a degree CAD programs don't write (above 11) is refused with a message instead of freezing
+  the page: a crafted 208 KB file took 98 s and is now refused in 3 ms (#159).
+
 ## 1.2.8-beta
 
 - DXF parts drawn far from the origin (site or CAD world coordinates) keep the full edge margin in **Bounding box**
