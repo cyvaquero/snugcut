@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-C1Hd7Q8iJjXeFy5Zno56ITIsGF4oLjGPsdy3+cvYsrg=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-44yHmHAb+Q62t8Pa9AJ7CyOzi9YI76qc8U8puu9uUNU=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -260,7 +260,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.12-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.13-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -814,6 +814,17 @@ function parseSVG(text, name){
   } finally { g.remove(); }
   if (!rings.length) throw new Error(`${name} has no cuttable shapes.`);
   p.rings = rings;
+  // getBBox works in single precision: a drawing far from its origin (site or GIS exports) gets a box off by up to a
+  // few tenths of a unit, and Bounding box mode places parts by it (#213). Far out, take the box from the sampled
+  // outlines instead, which are in double precision, when they agree with it to within that error.
+  const far = Math.max(Math.abs(bb.x), Math.abs(bb.y), Math.abs(bb.x + bb.width), Math.abs(bb.y + bb.height));
+  if (far > 1e4) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const r of rings) for (const [x, y] of r.pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const tol = far * 1e-6;
+    if (Math.abs(x0 - bb.x) <= tol && Math.abs(y0 - bb.y) <= tol && Math.abs(x1 - bb.x - bb.width) <= tol && Math.abs(y1 - bb.y - bb.height) <= tol)
+      p.bbox = {x:x0, y:y0, width:Math.max(x1 - x0, 1e-6), height:Math.max(y1 - y0, 1e-6)};
+  }
   p.cx = p.bbox.x + p.bbox.width/2; p.cy = p.bbox.y + p.bbox.height/2;
   measureScale(p);
   if (!p.outers.length) throw new Error(`${name} has no closed outline to nest.`);
