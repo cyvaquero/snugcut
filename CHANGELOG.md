@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.21-beta
+
+- The slashed "no holes" stand-in in the parts list is less faint: 3.6:1 against its background in the light theme and
+  4.1:1 in the dark theme, up from about 2:1 (#176).
+
 ## 1.2.20-beta
 
 - Screen readers get each plate image's list of parts as its description even while "Parts on this plate" is closed

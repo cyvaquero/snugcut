@@ -83,7 +83,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
-.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.4;cursor:default}   /* placeholder: the part has no holes (#141) */
+/* stand-in: the part has no holes (#141). Subdued, but its slashed frame says "no holes", so it keeps 3:1 against its
+   background in both themes (#176) */
+.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.75;cursor:default}
 .icon svg{width:15px;height:15px}
 .badge{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
 .results{display:flex;flex-direction:column;gap:14px;min-width:0}
