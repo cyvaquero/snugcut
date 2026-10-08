@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.11-beta
+
+- SVG files that repeat shapes through nested linked copies (`<use>`) load much faster (a 1 KB file went from 6.1 s
+  to 0.4 s), and a file whose copies would make more than 100,000 elements is refused with a message instead of
+  freezing the page (#158).
+
 ## 1.2.10-beta
 
 - A DXF whose blocks and arrays would draw more than 2,000,000 points is refused with a message instead of freezing
