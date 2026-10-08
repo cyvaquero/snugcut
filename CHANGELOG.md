@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.10-beta
+
+- A DXF whose blocks and arrays would draw more than 2,000,000 points is refused with a message instead of freezing
+  the page or running out of memory: a 39 KB block array that took 10 s (and larger ones that never finished) is now
+  refused in 0.2 s (#160).
+
 ## 1.2.9-beta
 
 - A DXF with a spline of a degree CAD programs don't write (above 11) is refused with a message instead of freezing

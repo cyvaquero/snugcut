@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Vg5D9+ZFimV5xWQ12Djy53JDW/PaDg02e3exRTB/BXY=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-X8ZmRYOEFrVtdIan8WNs4ccEnQaaHq2P72BiEzSGbzA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -260,7 +260,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.9-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.10-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -554,10 +554,11 @@ function dxfToSVG(text, name, opts = {}){
     ? "inches, as its imperial measurement setting suggests" : "millimeters"}. If that's wrong, change it next to the part in the parts list.`);
 
   const out = new Map(), skipped = {};                          // layer → color → path data
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0, work = 0;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0, work = 0, points = 0;
   // a crafted file can't hang the page (#77): block-array cells and entities drawn are counted against a limit, and arc
-  // sweeps are reduced with a modulo instead of a loop that never ends on huge angles
-  const LIMIT = 250000, TAU = 2 * Math.PI;
+  // sweeps are reduced with a modulo instead of a loop that never ends on huge angles. Points written are counted too,
+  // since every array cell repeats its block's whole outline (#160): 2 million take about 2.5 s to read and measure.
+  const LIMIT = 250000, PLIMIT = 2000000, TAU = 2 * Math.PI;
   const tooBig = () => { if (++work > LIMIT) throw new Error(`${name} expands to more than ${LIMIT.toLocaleString("en-US")} items (blocks and arrays), so it wasn't added.`); };
   const sweep = (a, b) => { const s = ((b - a) % TAU + TAU) % TAU; return s > 1e-12 ? s : TAU; };   // end after start, at most one turn
   const mul = (A, B) => [A[0]*B[0] + A[2]*B[1], A[1]*B[0] + A[3]*B[1], A[0]*B[2] + A[2]*B[3], A[1]*B[2] + A[3]*B[3], A[0]*B[4] + A[2]*B[5] + A[4], A[1]*B[4] + A[3]*B[5] + A[5]];
@@ -588,7 +589,8 @@ function dxfToSVG(text, name, opts = {}){
       return;
     }
     const d = [];
-    const P = (x, y) => { const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
+    const P = (x, y) => { if (++points > PLIMIT) throw new Error(`${name} draws more than ${PLIMIT.toLocaleString("en-US")} points (blocks and arrays repeat them), so it wasn't added.`);
+      const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
       x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
     const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
       // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 90° each)
