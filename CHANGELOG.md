@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.13-beta
+
+- SVG paths drawn far from their origin (site or GIS exports) now keep the full edge margin in Bounding box mode:
+  at 5,000,000 units out a part was placed 0.2 mm into it (#213).
+
 ## 1.2.12-beta
 
 - Exported plates no longer carry markup that turns live when other software reads the SVG as HTML: elements that
