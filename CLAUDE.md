@@ -40,8 +40,9 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
     settings need the maintainer's explicit approval in the same conversation. After an approved merge, delete the
     branch locally and on origin.
   - The GitHub default branch is `main`, so only PRs into `main` close issues automatically. Close the others by hand
-    with "Fixed in #PR (vX.Y.Z)".
-- **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer (`app/index.html`, built into `snugcut.html`) and `CHANGELOG.md`:
+    with "Fixed in #PR (X.Y.Z)".
+- **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer (`app/index.html`, built into `snugcut.html`)
+  and `CHANGELOG.md`:
   - major: only bumped when the user explicitly says so; zeroes minor and iterative.
   - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.
   - iterative: bump automatically with every change (once per change, not per commit: follow-up commits on an unmerged

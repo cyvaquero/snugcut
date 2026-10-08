@@ -7,8 +7,9 @@ a major rewrite of what the app does or how it works.
 ## 1.2.2-beta
 
 - `CLAUDE.md` brought in line with the maintainer's working rules (#199): hotfix and support branches, merge and branch
-  approvals, closing issues by hand outside `main`, a CHANGELOG entry per change, findings filed as issues, QA testers
-  and hardware, no stored user data, mm as the default unit, the AGPL license header on every source file, and verifying fixes by running the real code.
+  approvals, closing issues by hand outside `main` ("Fixed in #PR (X.Y.Z)"), release tags without a `v` prefix, a
+  CHANGELOG entry per change, findings filed as issues, QA testers and hardware, no stored user data, mm as the default
+  unit, the AGPL license header on every source file, and verifying fixes by running the real code.
 
 ## 1.2.1-beta
 

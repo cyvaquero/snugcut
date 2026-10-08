@@ -77,5 +77,5 @@ Summarize by severity with links to every new issue, call out the release blocke
   - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
   - delete the release branch, locally and on origin.
-- Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with a pointer to
-  the PR and version.
+- Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with
+  "Fixed in #PR (X.Y.Z)".
