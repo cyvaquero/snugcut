@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AQmfC1dySlc6zYJ8X+X6uiga6YTlzNDztoS923OW1HE=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-MvfAIXoBZ+rNndgN/svBzFKc2VywfcG4rknU7rC4R58=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -181,10 +181,10 @@ footer a,header p a{color:var(--accent)}
         </div>
         <div class="kerf">
           <label for="kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10">
-          <p class="hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
-          <label class="check"><input type="checkbox" id="kerfComp"> Compensate kerf on objects</label>
-          <p class="hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
+          <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
+          <p class="hint" id="kerf-hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
+          <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> Compensate kerf on objects</label>
+          <p class="hint" id="comp-hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
           <div class="msg" id="compWarn" hidden><b>The kerf is now built into your downloads.</b><ul>
             <li><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
             <li>Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
@@ -260,7 +260,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.17-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.18-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2007,15 +2007,21 @@ const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
 const later = new Map();
 function sayLater(key, t){ clearTimeout(later.get(key)); later.delete(key); if (t) later.set(key, setTimeout(() => { later.delete(key); say(t); }, 700)); }
+// add or remove one id in an element's aria-describedby, keeping the others (such as a hint, #204); an error goes first
+function describe(el, id, on, first){
+  const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter(x => x && x !== id);
+  if (on) first ? ids.unshift(id) : ids.push(id);
+  if (ids.length) el.setAttribute("aria-describedby", ids.join(" ")); else el.removeAttribute("aria-describedby");
+}
 // field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
 // and which value is still in use; both go as soon as the value is valid. A new or changed message is also announced,
 // once typing pauses (#166).
 function fieldErr(input, msg){
   let e = document.getElementById(input.id + "-err");
-  if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); describe(input, e.id, false); } return; }
   if (!e || e.textContent !== msg) sayLater(input.id, msg);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
-  e.textContent = msg; input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", e.id);
+  e.textContent = msg; input.setAttribute("aria-invalid", "true"); describe(input, e.id, true, true);
 }
 function fillInputs(){
   for (const k of LEN) {
@@ -2048,7 +2054,7 @@ $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); }
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 // the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
-function showCompWarn(){ $("compWarn").hidden = !S.comp; if (S.comp) $("kerfComp").setAttribute("aria-describedby", "compWarn"); else $("kerfComp").removeAttribute("aria-describedby"); }
+function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }
 $("kerfComp").onchange = e => { S.comp = e.target.checked; showCompWarn(); if (S.comp) say($("compWarn").querySelector("b").textContent); save(); invalidateGeometry(); restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
