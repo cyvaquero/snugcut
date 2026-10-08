@@ -74,7 +74,7 @@ Summarize by severity with links to every new issue, call out the release blocke
 - Fix release blockers on `bugfix/` branches, with PRs into the release branch. Bump the iterative version with each
   fix.
 - Finishing the release needs the maintainer's explicit approval:
-  - merge the release branch into `main` and tag it `v<version>`;
+  - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
   - delete the release branch, locally and on origin.
 - Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with a pointer to

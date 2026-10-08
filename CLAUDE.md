@@ -54,7 +54,7 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
   automatically, and the maintainer names the version. Before cutting it, ask whether to run a code efficiency review
   and optimization first. After cutting it, run the blind review prompt in that file. Finishing a release (merge into
-  `main`, tag `v<version>`, merge back into `develop`) needs the maintainer's approval.
+  `main`, tag `<version>` (no `v` prefix), merge back into `develop`) needs the maintainer's approval.
 - **Findings become issues**: every code-review, bug, security, documentation and accessibility finding is filed as a
   GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md) (plain title; a type
   label, `code-review` when it came from a review, and one `severity:*` label; Severity, CVE and CWE lines; Repro, Root
