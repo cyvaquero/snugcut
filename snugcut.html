@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hcB3eAEXNJA0VGoDdbXBecPtfT1sB7TYtku95ajLsws=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Vg5D9+ZFimV5xWQ12Djy53JDW/PaDg02e3exRTB/BXY=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -260,7 +260,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.8-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.9-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -636,6 +636,9 @@ function dxfToSVG(text, name, opts = {}){
       const p = num(r, 71, 3), K = nums(r, 40), W = nums(r, 41), xs = nums(r, 10), ys = nums(r, 20), C = xs.map((x, j) => [x, ys[j] || 0]);
       const fx = nums(r, 11), fy = nums(r, 21);
       if (C.length > p && K.length === C.length + p + 1) {
+        // CAD programs write degrees up to 11 (3 is usual); de Boor costs O(p²) per point, so a crafted degree of a few
+        // hundred took minutes (#159)
+        if (!(Number.isInteger(p) && p >= 1 && p <= 11)) throw new Error(`${name} has a spline of degree ${p}, but only degrees 1 to 11 can be read, so it wasn't added.`);
         const ev = u => {                                                        // de Boor, rational when weights are given
           let s = p; while (s < C.length - 1 && u >= K[s + 1]) s++;
           const q = []; for (let j = 0; j <= p; j++) { const w = W.length === C.length ? W[s - p + j] : 1; q.push([C[s - p + j][0]*w, C[s - p + j][1]*w, w]); }
