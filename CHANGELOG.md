@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.3-beta
+
+- `CLAUDE.md` and `RELEASING.md` now say how to consolidate the CHANGELOG at a major or minor release (#201): squash the
+  iterative entries into that version's section under Keep a Changelog headings, carry every issue number and security
+  entry forward, and backfill earlier ranges that were never consolidated.
+
 ## 1.2.2-beta
 
 - `CLAUDE.md` brought in line with the maintainer's working rules (#199): hotfix and support branches, merge and branch

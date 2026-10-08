@@ -25,6 +25,8 @@ declined) is not a reason to cut it; wait to be told, including which version to
 - Branch `release/<version>` off an up-to-date `develop`.
 - Set the version in the page footer (`app/index.html`), run `python3 tools/build.py`, and add a `CHANGELOG.md` entry. Major and minor versions change
   only when the maintainer asks.
+- For a major or minor version, consolidate `CHANGELOG.md`: squash the iterative entries the release covers (and backfill
+  earlier unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release).
 - Push the branch.
 
 ## 3. After cutting: blind review
