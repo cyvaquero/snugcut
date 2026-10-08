@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.16-beta
+
+- Kerf compensation is skipped only for files SnugCut itself exported with compensation built in. The marker text
+  anywhere else in a file, such as in a `<desc>` or a later comment, no longer stops a part from being compensated
+  (#179).
+
 ## 1.2.15-beta
 
 - Parts exported with their original markup (such as gradient fills) drawn far from their origin are placed where they
