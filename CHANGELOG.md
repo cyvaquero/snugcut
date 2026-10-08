@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.18-beta
+
+- Screen readers read the kerf hint and the "Compensate kerf on objects" hint when the field or checkbox gets focus;
+  an error on the kerf field is read before its hint (#204).
+
 ## 1.2.17-beta
 
 - Screen readers now announce field errors (such as "Extra gap can't be negative"), the kerf compensation warning when

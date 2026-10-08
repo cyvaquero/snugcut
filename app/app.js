@@ -38,15 +38,21 @@ const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
 const later = new Map();
 function sayLater(key, t){ clearTimeout(later.get(key)); later.delete(key); if (t) later.set(key, setTimeout(() => { later.delete(key); say(t); }, 700)); }
+// add or remove one id in an element's aria-describedby, keeping the others (such as a hint, #204); an error goes first
+function describe(el, id, on, first){
+  const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter(x => x && x !== id);
+  if (on) first ? ids.unshift(id) : ids.push(id);
+  if (ids.length) el.setAttribute("aria-describedby", ids.join(" ")); else el.removeAttribute("aria-describedby");
+}
 // field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
 // and which value is still in use; both go as soon as the value is valid. A new or changed message is also announced,
 // once typing pauses (#166).
 function fieldErr(input, msg){
   let e = document.getElementById(input.id + "-err");
-  if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); describe(input, e.id, false); } return; }
   if (!e || e.textContent !== msg) sayLater(input.id, msg);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
-  e.textContent = msg; input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", e.id);
+  e.textContent = msg; input.setAttribute("aria-invalid", "true"); describe(input, e.id, true, true);
 }
 function fillInputs(){
   for (const k of LEN) {
@@ -79,7 +85,7 @@ $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); }
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 // the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
-function showCompWarn(){ $("compWarn").hidden = !S.comp; if (S.comp) $("kerfComp").setAttribute("aria-describedby", "compWarn"); else $("kerfComp").removeAttribute("aria-describedby"); }
+function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }
 $("kerfComp").onchange = e => { S.comp = e.target.checked; showCompWarn(); if (S.comp) say($("compWarn").querySelector("b").textContent); save(); invalidateGeometry(); restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
