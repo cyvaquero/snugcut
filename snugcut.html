@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LatA0koSQYejy8H6CIBJefeZqPrKmF0b3WKpcrPG33Q=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hcB3eAEXNJA0VGoDdbXBecPtfT1sB7TYtku95ajLsws=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -260,7 +260,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.7-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.8-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -589,32 +589,32 @@ function dxfToSVG(text, name, opts = {}){
     }
     const d = [];
     const P = (x, y) => { const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
-      x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return fmtN(X) + " " + fmtN(Y); };
+      x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
     const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
       // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 90° each)
       const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 2) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
       const pt = t => [cx + ax*Math.cos(t) + bx*Math.sin(t), cy + ay*Math.cos(t) + by*Math.sin(t)];
       const dv = t => [-ax*Math.sin(t) + bx*Math.cos(t), -ay*Math.sin(t) + by*Math.cos(t)];
-      if (move) d.push("M" + P(...pt(ta)));
+      if (move) d.push(["M", P(...pt(ta))]);
       for (let j = 0; j < n; j++) {
         const s = ta + j*dt, e = s + dt, [px, py] = pt(s), [qx, qy] = pt(e), [ux, uy] = dv(s), [vx, vy] = dv(e);
-        d.push("C" + P(px + h*ux, py + h*uy) + " " + P(qx - h*vx, qy - h*vy) + " " + P(qx, qy));
+        d.push(["C", P(px + h*ux, py + h*uy), P(qx - h*vx, qy - h*vy), P(qx, qy)]);
       }
     };
     const bulgeTo = (ax, ay, bx, by, bu) => {
-      if (!bu || (ax === bx && ay === by)) { d.push("L" + P(bx, by)); return; }
+      if (!bu || (ax === bx && ay === by)) { d.push(["L", P(bx, by)]); return; }
       const th = 4 * Math.atan(bu), ch = Math.hypot(bx - ax, by - ay), off = ch / 2 / Math.tan(th / 2), r0 = ch / 2 / Math.sin(th / 2);
       const cx = (ax + bx) / 2 - (by - ay) / ch * off, cy = (ay + by) / 2 + (bx - ax) / ch * off, s = Math.atan2(ay - cy, ax - cx), rr = Math.abs(r0);
       ell(cx, cy, rr, 0, 0, rr, s, s + th, false);
     };
     const poly = (vs, closed) => {                                             // vs: [[x, y, bulge]]
       if (vs.length < 2) return;
-      d.push("M" + P(vs[0][0], vs[0][1]));
+      d.push(["M", P(vs[0][0], vs[0][1])]);
       for (let j = 1; j < vs.length; j++) bulgeTo(vs[j-1][0], vs[j-1][1], vs[j][0], vs[j][1], vs[j-1][2]);
-      if (closed) { const a = vs[vs.length - 1], b = vs[0]; if (a[2] || a[0] !== b[0] || a[1] !== b[1]) bulgeTo(a[0], a[1], b[0], b[1], a[2]); d.push("Z"); }
+      if (closed) { const a = vs[vs.length - 1], b = vs[0]; if (a[2] || a[0] !== b[0] || a[1] !== b[1]) bulgeTo(a[0], a[1], b[0], b[1], a[2]); d.push(["Z"]); }
     };
-    if (t === "LINE") d.push("M" + P(num(r, 10), num(r, 20)) + "L" + P(num(r, 11), num(r, 21)));
-    else if (t === "CIRCLE") { const rr = num(r, 40); if (rr > 0) { ell(num(r, 10), num(r, 20), rr, 0, 0, rr, 0, 2 * Math.PI, true); d.push("Z"); } }
+    if (t === "LINE") d.push(["M", P(num(r, 10), num(r, 20))], ["L", P(num(r, 11), num(r, 21))]);
+    else if (t === "CIRCLE") { const rr = num(r, 40); if (rr > 0) { ell(num(r, 10), num(r, 20), rr, 0, 0, rr, 0, 2 * Math.PI, true); d.push(["Z"]); } }
     else if (t === "ARC") {
       const rr = num(r, 40), a = num(r, 50) * Math.PI / 180 % TAU, b = a + sweep(a, num(r, 51) * Math.PI / 180 % TAU);
       if (rr > 0 && isFinite(a) && isFinite(b)) ell(num(r, 10), num(r, 20), rr, 0, 0, rr, a, b, true);
@@ -623,7 +623,7 @@ function dxfToSVG(text, name, opts = {}){
       const a = num(r, 41) % TAU, b = a + sweep(a, num(r, 42, TAU) % TAU);
       if (!isFinite(a) || !isFinite(b)) return;
       ell(num(r, 10), num(r, 20), ax, ay, -ay * q * sg, ax * q * sg, a, b, true);
-      if (Math.abs(b - a - TAU) < 1e-6) d.push("Z");
+      if (Math.abs(b - a - TAU) < 1e-6) d.push(["Z"]);
     } else if (t === "LWPOLYLINE") {
       const vs = [];
       for (const [c, v] of r.g) { if (c === 10) vs.push([+v || 0, 0, 0]); else if (vs.length && c === 20) vs[vs.length - 1][1] = +v || 0; else if (vs.length && c === 42) vs[vs.length - 1][2] = +v || 0; }
@@ -661,18 +661,18 @@ function dxfToSVG(text, name, opts = {}){
           Mx.push(...sx); My.push(...sy);
         }
         Mx.push(0); My.push(0);
-        d.push("M" + P(Q[0][0], Q[0][1]));
+        d.push(["M", P(Q[0][0], Q[0][1])]);
         for (let j = 0; j < n; j++) {
           const h = hs[j], ux = (Q[j+1][0] - Q[j][0]) / h, uy = (Q[j+1][1] - Q[j][1]) / h;
           const d0x = ux - h * (2*Mx[j] + Mx[j+1]) / 6, d0y = uy - h * (2*My[j] + My[j+1]) / 6, d1x = ux + h * (Mx[j] + 2*Mx[j+1]) / 6, d1y = uy + h * (My[j] + 2*My[j+1]) / 6;
-          d.push("C" + P(Q[j][0] + d0x*h/3, Q[j][1] + d0y*h/3) + " " + P(Q[j+1][0] - d1x*h/3, Q[j+1][1] - d1y*h/3) + " " + P(Q[j+1][0], Q[j+1][1]));
+          d.push(["C", P(Q[j][0] + d0x*h/3, Q[j][1] + d0y*h/3), P(Q[j+1][0] - d1x*h/3, Q[j+1][1] - d1y*h/3), P(Q[j+1][0], Q[j+1][1])]);
         }
-        if ((num(r, 70) & 1) === 1) d.push("Z");
+        if ((num(r, 70) & 1) === 1) d.push(["Z"]);
       }
     } else { if (t !== "VIEWPORT") skipped[t] = (skipped[t] || 0) + 1; return; }
     if (!d.length) return;
     if (!out.has(layer)) out.set(layer, new Map());
-    const byC = out.get(layer); if (!byC.has(color)) byC.set(color, []); byC.get(color).push(d.join(""));   // one path per entity: measured separately, fast
+    const byC = out.get(layer); if (!byC.has(color)) byC.set(color, []); byC.get(color).push(d);   // one path per entity: measured separately, fast
     count++;
   }
   for (const r of group(model)) draw(r, [1, 0, 0, 1, 0, 0], {layer:null, color:null}, 0);
@@ -682,12 +682,17 @@ function dxfToSVG(text, name, opts = {}){
   if (!count) throw new Error(`${name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space`
     + (onHidden ? `; ${onHidden} item${onHidden === 1 ? " is" : "s are"} on frozen, off, non-plotting or Defpoints layers.` : "."));   // #85
   const w = Math.max(x1 - x0, 1e-3), h = Math.max(y1 - y0, 1e-3), used = new Set();
+  // The browser measures in single precision, so a drawing far from the origin (site coordinates) got a bounding box
+  // off by up to a few tenths of a mm (#164). Its coordinates are moved toward the origin by whole meters, which
+  // leaves drawings within a meter of it as they were.
+  const ox = Math.trunc(x0 / 1000) * 1000, oy = Math.trunc(y0 / 1000) * 1000;
+  const fmtD = d => d.map(sg => sg[0] + sg.slice(1).map(([X, Y]) => fmtN(X - ox) + " " + fmtN(Y - oy)).join(" ")).join("");
   let body = "";
   for (const [ln, byC] of out) {
     let id = "layer-" + (ln.replace(/[^A-Za-z0-9_.-]+/g, "_") || "0"); while (used.has(id)) id += "_"; used.add(id);
-    body += `<g id="${esc(id)}">` + [...byC].map(([c, ds]) => `<g stroke="${c}">` + ds.map(dd => `<path d="${dd}"/>`).join("") + `</g>`).join("") + `</g>`;
+    body += `<g id="${esc(id)}">` + [...byC].map(([c, ds]) => `<g stroke="${c}">` + ds.map(dd => `<path d="${fmtD(dd)}"/>`).join("") + `</g>`).join("") + `</g>`;
   }
-  const svg = `<svg xmlns="${SVGNS}" width="${fmtN(w)}mm" height="${fmtN(h)}mm" viewBox="${fmtN(x0)} ${fmtN(y0)} ${fmtN(w)} ${fmtN(h)}">`
+  const svg = `<svg xmlns="${SVGNS}" width="${fmtN(w)}mm" height="${fmtN(h)}mm" viewBox="${fmtN(x0 - ox)} ${fmtN(y0 - oy)} ${fmtN(w)} ${fmtN(h)}">`
     + `<g fill="none" stroke-width="0.1">${body}</g></svg>`;
   return {svg, notes, units};
 }

@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.8-beta
+
+- DXF parts drawn far from the origin (site or CAD world coordinates) keep the full edge margin in **Bounding box**
+  mode: a part 5 km out was placed 0.2 mm into the 3 mm margin, and now sits at 3.000 mm (#164).
+
 ## 1.2.7-beta
 
 - **Area minimum** leaves out the holes that other parts may nest in, so it no longer shows more plates than the layout
