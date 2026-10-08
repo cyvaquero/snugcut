@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.6-beta
+
+- SVG files with many unterminated CSS comments load at normal speed: a 235 KB file that took 2.5 s to load now takes
+  3 ms (#162).
+
 ## 1.2.5-beta
 
 - A `<line>` whose coordinates carry units or percentages (`x2="60mm"`) now nests by its full length, so other parts

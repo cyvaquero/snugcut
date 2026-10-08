@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Gh5f2rBejaSNDGnMTVAKxBtaNaZWBdcJzXTE2Ow1lzg=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Xn89B4uofeTCvjwUPTu/SB9N9S7tmUQdQULRyPkqspw=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -260,7 +260,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.5-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -401,7 +401,11 @@ function isHidden(el, root){
 /* ---------- external references ----------
    The file's nodes are put into this page to be measured, so anything that points off the file (images, <use> of
    other files, @import, url() fonts and paints) would be fetched by the browser. Only #fragment and data: survive. */
-const decodeCSS = s => s.replace(/\/\*[\s\S]*?\*\//g, "")
+// comments removed in one pass; an unterminated one is left in place, so a url() after it is still seen. A regex here
+// rescanned the rest of the text from every "/*" (#162).
+const stripComments = s => { let out = "", i = 0;
+  for (;;) { const a = s.indexOf("/*", i), b = a < 0 ? -1 : s.indexOf("*/", a + 2); if (b < 0) return out + s.slice(i); out += s.slice(i, a); i = b + 2; } };
+const decodeCSS = s => stripComments(s)
   .replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?/gi, (m, h) => { const c = parseInt(h, 16); return String.fromCodePoint(c > 0 && c <= 0x10FFFF ? c : 0xFFFD); })
   .replace(/\\([^\n])/g, "$1");
 // data: URLs are kept only for raster images and fonts. Anything else (an embedded SVG or HTML) can carry its own outside
