@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.15-beta
+
+- Parts exported with their original markup (such as gradient fills) drawn far from their origin are placed where they
+  were nested: at 5,000,000 units out the offset was rounded to whole units, moving the part by up to 1 mm (#217).
+
 ## 1.2.14-beta
 
 - Rects, circles, ellipses, lines, polygons and polylines in SVG files drawn far from their origin are now read as
