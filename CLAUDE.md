@@ -28,6 +28,9 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **Exports must not change by accident**: a structural or refactoring change must leave SVG and DXF exports from
   `snugcut.html` byte-identical. Run the fixture regression (every fixture, SVG and DXF, compensation off and on) and
   report it.
+- **Verify before claiming a fix works**: run the real code (a headless browser or scripts kept outside the repo) and
+  compare before and after; say what was verified and what wasn't. Don't add tooling, dependencies or build steps
+  without asking.
 - **Git-flow**: `main` + `develop`, and only `feature/`, `bugfix/`, `release/`, `hotfix/` and `support/` branches, one
   change per branch and PR.
   - `feature/` and `bugfix/` branch off `develop`, with PRs into `develop`. Fixes during a release go on `bugfix/`
@@ -46,7 +49,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   - pre-release suffix: a `-beta` (or similar) suffix follows the number only when the user asks for it. It stays on
     every later version, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta…), until the user says to
     drop it. Once dropped, a suffix comes back only for a major rewrite of what the app does or how it works.
-  - every change gets a `CHANGELOG.md` entry saying what changed for the user, with its issue numbers.
+  - every change gets a `CHANGELOG.md` entry saying what changed for the user, with its issue numbers. Follow-up fixes
+    on an unmerged PR update that entry instead of adding one.
 - **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
   automatically, and the maintainer names the version. Before cutting it, ask whether to run a code efficiency review
   and optimization first. After cutting it, run the blind review prompt in that file. Finishing a release (merge into
