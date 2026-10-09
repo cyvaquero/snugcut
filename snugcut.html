@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LInN2ynECtqwu6HK6Q6DZ09Jra9pkk3mh9BGfDocboQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Hgkn8dQ7zRhpp1oJXH85gKJwnx5Q/ExZcHpEG97Cbgk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.15-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.16-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2168,12 +2168,15 @@ async function searchParts(st, o){
     st.bestOrder = order; st.bestScore = sc; st.bestBy = by; o.onBest(bins, sc);
   };
   if (st.pending.length) {
-    const firsts = st.pending.splice(0, ws.length);
+    // an order leaves st.pending only once its pack has finished: one stopped by Stop or the time limit is packed
+    // again by Search more, as with one worker (#270)
+    const firsts = st.pending.slice(0, ws.length);
     await Promise.all(firsts.map((order, i) => {
       const sub = {pending:[order], seed:0, bestOrder:null, bestScore:null, tried:0};
+      const settle = () => { const k = st.pending.indexOf(order); if (!sub.pending.length && k >= 0) st.pending.splice(k, 1); };
       // the time limit covers these packs too (#234): once one has given a layout and the time is up, the rest stop
       return inWorker(ws[i], sub, {...o, ms:0, onBest:(bins, sc) => take(sc, i, order, bins), onStep:() => { st.tried++; o.onStep(); },
-        enough:() => !!st.bestScore && !!o.ms && performance.now() - o.t0 >= o.ms}, parts, byUid);
+        enough:() => !!st.bestScore && !!o.ms && performance.now() - o.t0 >= o.ms}, parts, byUid).then(settle, e => { settle(); throw e; });
     }));
     st.bestBy = 0;      // every walker starts from this order
   }

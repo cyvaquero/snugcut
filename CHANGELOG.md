@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.16-beta
+
+- With the worker pool on, a starting layout that Stop (or the time limit) cuts short is packed by "Search 30 s
+  more", as with one worker (#270). It used to be dropped, so Search more went straight to random tries and could
+  miss a better starting layout.
+
 ## 1.3.15-beta
 
 - Markers on a path (arrowheads, dots set with `marker-start`, `marker-mid` or `marker-end`) are no longer lost
