@@ -491,7 +491,7 @@ const SAMPLES = [
 ];
 fillInputs();
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
-startWorker();   // fetched and built while the parts list is drawn (#4)
+startWorker({url: $("clipper-lib").src, integrity: $("clipper-lib").integrity});   // fetched and built while the parts list is drawn (#4)
 renderParts();
 run(SEARCH_MS, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();
