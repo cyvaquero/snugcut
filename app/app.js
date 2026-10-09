@@ -43,6 +43,9 @@ function fill(s, v){
 setMessages((code, v) => Object.hasOwn(STR, "lib." + code) ? t("lib." + code, {...v, limit: v.limit == null ? "" : nf("g", {useGrouping:true}).format(v.limit),
   list: v.skipped ? v.skipped.map(([type, n]) => `${n} ${type.toLowerCase()}`).join(", ") : ""}) : undefined);
 if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${t("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
+// how long a search runs: after each change, and for "Search 30 s more" (whose label is built from MORE_MS) (#290)
+const SEARCH_MS = 4000, MORE_MS = 30000;
+$("more").textContent = t("search.more", {s: MORE_MS / 1000});
 // the longest length a field takes, in mm: the fields refuse more, and a saved value past it is ignored on load (#285)
 const MAX_LEN = 100000;
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
@@ -222,12 +225,14 @@ function runSummary(){
   return out.join(" ");
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
-$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(30000, false); };
+$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(MORE_MS, false); };
 let tmr;
 // a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
 // and the old search can't be continued
 function staleLayout(){ search = null; if (layout) { layout.stale = true; showStale(); } }
-function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
+// a change drops the layout on screen and searches again after a short pause, so typing doesn't start a search per key
+function restartSoon(ms, rerender){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { if (rerender) renderParts(); run(SEARCH_MS, true); }, ms); }
+function restart(){ restartSoon(250, true); }
 
 /* ---------- parts list ---------- */
 // icons are hidden from assistive tech: the buttons they sit in are named by aria-label (#178)
@@ -256,13 +261,13 @@ function renderParts(){
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
       fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
       if (ok) delete p.qtyDraft; else p.qtyDraft = q.value;   // kept, with its error, when the list is rebuilt (#240)
-      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
+      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); restartSoon(350); }
     };
     const du = row.querySelector(".du select");
     if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
-    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
+    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; restartSoon(250); };
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; restartSoon(250); };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -488,5 +493,5 @@ fillInputs();
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 startWorker();   // fetched and built while the parts list is drawn (#4)
 renderParts();
-run(4000, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
+run(SEARCH_MS, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();
