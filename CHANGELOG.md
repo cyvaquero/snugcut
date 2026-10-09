@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.40-beta
+
+- RELEASING.md describes the fixture regression that CLAUDE.md requires for structural changes (#280): which two
+  builds to compare, how each is prepared to run from a file, what is exported (every fixture alone, SVG and DXF,
+  compensation off and on, plus six nests of the sample parts), and the only two differences the comparison ignores.
+
 ## 1.3.39-beta
 
 - The README's accessibility section gives the mm / in buttons' measured height, 24 px, instead of 22 px (#277).
