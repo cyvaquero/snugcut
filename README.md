@@ -228,7 +228,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
 - **Known gaps**: none open. The findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
   #166–#169, #176, #178) are fixed, as is #204. Target size (#177) isn't required at WCAG 2.1 AA: the mm / in buttons
-  are 22 px tall. Report problems as a GitHub issue.
+  are 24 px tall. Report problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
 documentation (602, this section) and keeping information visible with forced colors (302.2, #98, #157). The reviews'

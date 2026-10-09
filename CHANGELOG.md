@@ -4,6 +4,10 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.39-beta
+
+- The README's accessibility section gives the mm / in buttons' measured height, 24 px, instead of 22 px (#277).
+
 ## 1.3.38-beta
 
 - The README's Area minimum definition matches the status line in both modes (#276). In True shape, the holes of
