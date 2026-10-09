@@ -25,11 +25,14 @@ declined) is not a reason to cut it; wait to be told, including which version to
 - Branch `release/<version>` off an up-to-date `develop`.
 - Set the version in the page footer (`app/index.html`), run `python3 tools/build.py`, and add a `CHANGELOG.md` entry. Major and minor versions change
   only when the maintainer asks.
+- For a major or minor version, consolidate `CHANGELOG.md`: squash the iterative entries the release covers (and backfill
+  earlier unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release).
 - Push the branch.
 
 ## 3. After cutting: blind review
 
-Run the blind review below on the release branch. Every verified finding becomes a GitHub issue.
+Run the blind review below on the release branch unless the maintainer says to hold off, and whenever the maintainer
+asks for a review. Every verified finding becomes a GitHub issue.
 
 <details>
 <summary>Blind review prompt (paste into Claude Code on the release branch)</summary>
@@ -37,7 +40,7 @@ Run the blind review below on the release branch. Every verified finding becomes
 Run a full blind review of this repo (SnugCut: `lib/snugcut.js`, `app/`, the generated `snugcut.html`, `tools/build.py`, docs and fixtures) on the current branch, then open GitHub issues for every verified finding.
 
 #### 1. Reviews: blind subagents, run in parallel
-Launch 4 independent subagents in ONE message, in the background. Every subagent:
+Launch 4 independent subagents in ONE message, in the background. Give each the project context (stack, entry points, the verified SVG export format, the "must not change" rules, American English) and nothing about known issues. Every subagent:
 - is strictly READ-ONLY on the repo (no edits, commits, branches or pushes) and puts scratch files in its own folder under the scratchpad;
 - is BLIND: it must not read git history/log/diffs, GitHub issues or PRs (no `gh`), CHANGELOG history of prior fixes, or anything under ~/.claude. It judges the code as it is now;
 - reads ALL of lib/snugcut.js and app/ (and checks that snugcut.html is current with `python3 tools/build.py --check`) and verifies findings concretely where it can: run the real functions in headless Chrome (file:// via CDP; use a scratch copy with local or stubbed libs if needed) or a node script, otherwise trace with specific inputs;
@@ -46,13 +49,14 @@ Launch 4 independent subagents in ONE message, in the background. Every subagent
 The four reviewers:
 1. **Code correctness**: wrong output, crashes, lost parts, units/scale, overlaps in nesting, export geometry, DXF import/export, kerf/gap/margin math, rotation, UI state/race bugs, edge cases. The SVG export format is verified in WeCreat MakeIT and must not change, but wrong values inside it are in scope.
 2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, fixtures/**/README.md and the UI text in app/index.html and app/app.js (labels, hints, messages, footer) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
-3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report issues the CSP or sanitizer already blocks unless the defense is incomplete.
-4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colors, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
+3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report what the CSP or sanitizer fully blocks; name the defense instead.
+4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503 including the 501.1 web-app exception, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colors, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors, and the accessibility documentation. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
 
 #### 2. Verify and deduplicate (you, not a subagent)
 - Check every finding against the code yourself (grep/sed the cited lines) before filing. Drop or correct anything that doesn't hold, and say what you dropped and why.
-- List all existing issues (`gh issue list --state all --limit 200`) and skip or cross-reference duplicates.
+- List all existing issues (`gh issue list --state all --limit 300`) and skip or cross-reference duplicates. The list includes `deferred` issues: match against them too, so parked work isn't filed again as new.
 - Merge findings that describe the same defect across reviewers into one issue. Group trivially related doc gaps only when they share one fix.
+- Calibrate severity across reviewers: wrong output reaching users or other systems (exports, cutters) ranks above cosmetic issues.
 
 #### 3. Open the issues
 Match the format of the existing review issues (read #17 and #46 first). Each body contains:
@@ -62,10 +66,10 @@ Match the format of the existing review issues (read #17 and #46 first). Each bo
 - `## Repro`, `## Root cause` (or `## Evidence` for docs), `## Fix`, and `## Acceptance` where useful, with line numbers
 - for accessibility: the WCAG SC + level and the 508 provision on their own line
 
-Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements). Write the bodies to scratch files with a TSV manifest (id, title, labels), create the issues in severity order with `gh issue create --body-file`, and fill in cross-references between new issues (`#NN`) once their numbers exist.
+Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements). Write the bodies to scratch files with quoted heredocs (`<<'EOF'`), so `$(…)` and backticks in code samples never run, and keep a TSV manifest (id, title, labels). Create the issues from the repo directory in severity order with `gh issue create --body-file <absolute path>`. Use placeholders for links between new issues, then fill them in with `gh issue edit` once their numbers exist.
 
 #### 4. Report
-Summarize by severity with links to every new issue, call out the release blockers, list merged and dropped findings, and list any decisions that need the maintainer. If the WCAG/508 differences matter beyond single findings, open one `accessibility` + `documentation` issue summarizing them.
+Summarize by severity with a `#NN:Exact title` link to every new issue, call out the release blockers, list merged and dropped findings, and list any decisions that need the maintainer. If the WCAG/508 differences matter beyond single findings, open one `accessibility,documentation,code-review,severity:info` issue summarizing them.
 
 </details>
 
@@ -74,8 +78,12 @@ Summarize by severity with links to every new issue, call out the release blocke
 - Fix release blockers on `bugfix/` branches, with PRs into the release branch. Bump the iterative version with each
   fix.
 - Finishing the release needs the maintainer's explicit approval:
-  - merge the release branch into `main` and tag it `v<version>`;
+  - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
   - delete the release branch, locally and on origin.
-- Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with a pointer to
-  the PR and version.
+- Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with
+  "Fixed in #PR (X.Y.Z)".
+- If export QA issues are still open (#49–#52, #132, #133), move them to the new release: set `VERSION` in
+  `tools/qa_workbooks.py`, check each test's expected sizes, colors, layers and notices against the release, run
+  `python3 tools/qa_workbooks.py`, and update the version in each issue (on a `feature/` branch after the release is
+  tagged).

@@ -9,7 +9,8 @@ Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded order search
-  ("Search 30 s more", Stop).
+  ("Search 30 s more", Stop). The search runs in a background worker, so the page stays responsive; the **Worker
+  pool** setting adds up to 3 more, each trying its own orders.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
@@ -81,7 +82,14 @@ are left out; filled shapes become outlines. A notice names anything that was le
 Settings are remembered in this browser (local storage) and restored next time.
 
 - **Nesting mode**: True shape or Bounding box (top right).
+- **Worker pool** (True shape, its own box above Plate & cutting): Off (the default) searches in one background
+  worker; 2, 3 or 4 workers try that many orders at once, so more layouts are tried in the same time. Each extra
+  worker uses more memory, about 100 MB on a job of 120 parts, so on a lower-spec computer (little memory or few
+  processor cores) leave it off; the box says so. Layouts and exports don't depend on it beyond the number of layouts
+  tried.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
+  Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
+  German, for example); exported files always use `.`.
 - **Plate width / height**, **Kerf**, **Extra gap**, **Edge margin**: the sheet, the width the cut removes, extra
   spacing between parts, and the empty border around the sheet. "Measure it from a test cut" works out the kerf from a
   designed and a measured size; cut that test with compensation off and no kerf offset in your cutter's software.
@@ -114,8 +122,14 @@ it, and then that part counts (parts kept as original markup count their holes a
 What happens to imported files:
 
 - Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
-- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. Embedded
+- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. That includes
+  URLs hidden in CSS custom properties: a custom property holding a string, and `var()` inside `image-set()`,
+  `image()` or `cross-fade()`, are removed; custom properties holding colors or lengths keep working. Embedded
   (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
+- A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
+  page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.
+  `:root` rules still apply to the part; rules that need an HTML page around the drawing, such as `body rect`,
+  don't match.
 
 ## Test cuts
 
@@ -187,30 +201,38 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   motion is requested.
 - **Screen readers**: the result of each run, confirmations and errors are announced. Warnings and errors also stay in
   the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
-- **Focus** stays in place when the parts list or the plates are redrawn. Removing a part moves it to the next part,
-  and Search more and Stop hand it to each other.
+  Field errors, the kerf compensation warning and the kerf measured from a test cut are announced once typing pauses.
+- **Focus** stays in place when the parts list or the plates are redrawn, and open "Parts on this plate" lists stay
+  open. Removing a part moves it to the next part, and Search more and Stop hand it to each other.
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
-  with counts and rotations, linked to the image.
+  with counts and rotations. The image is described by the same list whether it is open or closed.
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
-  value is still in use.
+  value is still in use. The kerf field and the "Compensate kerf on objects" checkbox are also described by their
+  hints.
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the lock icon is open or closed to
   match, the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
   behind the parts' own colors, so they stay visible in dark themes.
-- **Contrast**: text meets WCAG AA in both themes; the borders of fields and buttons and the guide lines on the plate
-  previews are at least 3:1.
+- **Contrast**: text meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
+  the plate edge, the "no holes" icon and the guide lines on the plate previews are at least 3:1. Text buttons have
+  faint borders and are recognized by their labels.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
   visible "Qty" label, and every button has its own name ("Lock orientation of star.svg", "Download SVG, plate 1 of 2").
+  Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
   (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
-- **Known gaps**: none open. Every finding of the 1.0.0-beta accessibility review is fixed (#93–#105). Report
-  problems as a GitHub issue.
+- **Known gaps**: none open. The findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
+  #166–#169, #176, #178) are fixed, as is #204. Target size (#177) isn't required at WCAG 2.1 AA: the mm / in buttons
+  are 22 px tall. Report problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
-documentation (602, this section) and keeping information visible with forced colors (302.2, #98). The review's
+documentation (602, this section) and keeping information visible with forced colors (302.2, #98, #157). The reviews'
 findings are fixed, but conformance hasn't yet been confirmed with screen readers (VoiceOver, NVDA) or a full audit.
 Section 508 points to WCAG 2.0 AA for web content, so meeting WCAG 2.1 AA covers it and adds a few newer criteria
-(status messages, reflow, text spacing, non-text contrast, label in name). The two standards don't conflict anywhere
-in SnugCut; the details are in #106.
+(status messages, reflow, text spacing, non-text contrast, label in name). As web content that meets WCAG 2.0 AA,
+SnugCut falls under the 501.1 exception, so the software provisions in 502 and 503 don't apply separately. The
+authoring-tool provisions (504) are treated as not applicable: the SVG and DXF files SnugCut writes are cutting paths
+for machines in fixed formats, not documents for people to read. The two standards don't conflict anywhere in
+SnugCut; the details are in #106 and #181.
 
 ## Files
 
@@ -218,8 +240,10 @@ in SnugCut; the details are in #106.
 | -------------------- | ----------------------------------------------------------------------------- |
 | `snugcut.html`       | the app in one file (HTML, CSS and inline JavaScript), **generated** by `tools/build.py` |
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
-| `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library) |
+| `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
+| `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
+| `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
@@ -236,11 +260,52 @@ A Content-Security-Policy allows only those URLs, so an imported SVG can't make 
 allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both library script
 tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have changed.
 
+The search runs in Web Workers built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
+workers need their own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`
+allows that one URL), which the browser serves from its cache. Each worker uses memory for its own cache of part
+pairs: on 120 mixed parts, four took about 300 MB more than one, which is why the pool is off by default. If no worker can be started (an older browser, or a
+page embedding SnugCut with a stricter CSP), the search runs on the page itself, as before.
+
 The script tags and the CSP are kept in `app/index.html`; don't edit them in `snugcut.html`, which is generated. To
-bump a library version, change its URL in the script tag and in the CSP, set its `integrity` to `sha384-` plus the
+bump a library version, change its URL in the script tag and in the CSP (clipper-lib's in both `script-src` and
+`connect-src`), set its `integrity` to `sha384-` plus the
 output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, and run `python3 tools/build.py`. The
 build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
 allows its own files with `'self'` instead).
+
+## Library messages
+
+`lib/snugcut.js` words every message it shows a person (import errors and notes, export notes) through a code and its
+values, so a caller can supply its own wording. `setMessages(fn)` installs it: `fn(code, vars, english)` returns the
+text, or anything other than a string to keep the English. Without it, the library uses the English in `MESSAGES`. An
+error the library throws keeps the worded text as `.message` and also carries `.code` and `.vars`. Every message has a
+`name` (the file or part name) unless noted. The app words them from its string table (`lib.<code>` in
+`app/strings-en.js`), with the limits formatted for the browser's locale.
+
+| Code | Values | When |
+| --- | --- | --- |
+| `dxf.binary` | | an import is a binary DXF |
+| `dxf.unreadable` | | an import isn't a readable DXF |
+| `dxf.noUnits` | `units` (`"mm"` or `"in"`) | a DXF doesn't declare its units (note) |
+| `dxf.tooManyItems` | `limit` | blocks and arrays expand past the item limit |
+| `dxf.tooManyPoints` | `limit` | blocks and arrays draw past the point limit |
+| `dxf.splineDegree` | `degree` | a spline's degree is outside 1 to 11 |
+| `dxf.hiddenLeftOut` | `count` | items on hidden layers were left out (note) |
+| `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
+| `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
+| `svg.unreadable` | | an import isn't a readable SVG |
+| `svg.tooManyCopies` | `limit` | `<use>` copies past the limit |
+| `svg.nothingVisible` | | an SVG has no visible shapes |
+| `svg.nothingToCut` | | an SVG has no cuttable shapes |
+| `svg.noClosedOutline` | | an SVG has no closed outline |
+| `kerf.holeTooNarrow` | | a hole is narrower than the kerf (export note) |
+| `kerf.markup` | | a part's kerf can't be compensated (export note) |
+| `dxfOut.nothing` | | a part has nothing to write to DXF (export note) |
+| `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
+| `dxfOut.element` | `tag` | `<tag>` elements of a part aren't in the DXF (export note) |
+| `dxfOut.fills` | none | filled areas are written as outlines (export note) |
+
+Exported files themselves (`.` decimals, the `SnugCut v…` and kerf-compensation markers) never change with the wording.
 
 ## Workflow
 

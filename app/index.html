@@ -2,7 +2,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,108 +15,116 @@
 <div class="wrap">
   <header>
     <h1>SnugCut</h1>
-    <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
-    <p>SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener">issue tracker</a>.</p>
+    <p data-t="page.intro">Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
+    <p data-t="page.source">SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener" aria-describedby="newTab">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener" aria-describedby="newTab">issue tracker</a>.</p>
     <ul>
-      <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
-      <li><b>Bounding box</b> packs rectangles fast.</li>
+      <li data-t="page.aboutShape"><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
+      <li data-t="page.aboutBbox"><b>Bounding box</b> packs rectangles fast.</li>
     </ul>
-    <div class="modesw" role="group" aria-label="Nesting mode">
-      <button type="button" id="m-shape" aria-pressed="true">True shape</button><button type="button" id="m-bbox" aria-pressed="false">Bounding box</button>
+    <div class="modesw" role="group" aria-label="Nesting mode" data-t-aria-label="page.modeGroup">
+      <button type="button" id="m-shape" aria-pressed="true" data-t="page.shape">True shape</button><button type="button" id="m-bbox" aria-pressed="false" data-t="page.bbox">Bounding box</button>
     </div>
   </header>
 
   <div class="layout">
     <div class="rail">
+      <section class="panel" aria-labelledby="h-pool" data-only="shape">
+        <div class="panel-hd"><h2 id="h-pool" data-t="page.poolHeading">Worker pool</h2></div>
+        <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search finds better layouts in the same time.</p>
+        <div class="field"><label for="pool" data-t="page.pool">Workers</label>
+          <select id="pool" aria-describedby="pool-about pool-warn"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select></div>
+        <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave the pool off.</p>
+      </section>
       <section class="panel" aria-labelledby="h-plate">
-        <div class="panel-hd"><h2 id="h-plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units">
+        <div class="panel-hd"><h2 id="h-plate" data-t="page.plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units" data-t-aria-label="page.units">
           <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
         <div class="row">
-          <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="number" id="plateW" min="1" step="any"></div>
-          <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
+          <div class="field"><label for="plateW" data-t="page.plateW">Plate width (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateW"></div>
+          <div class="field"><label for="plateH" data-t="page.plateH">Plate height (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateH"></div>
         </div>
         <div class="kerf">
-          <label for="kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10">
-          <p class="hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
-          <label class="check"><input type="checkbox" id="kerfComp"> Compensate kerf on objects</label>
-          <p class="hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
-          <div class="msg" id="compWarn" hidden><b>The kerf is now built into your downloads.</b><ul>
-            <li><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
-            <li>Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
-            <li>Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
-            <li>Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
+          <label for="kerf" data-t="page.kerf">Kerf (<span class="u">mm</span>)</label>
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
+          <p class="hint" id="kerf-hint" data-t="page.kerfHint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
+          <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> <span data-t="page.comp">Compensate kerf on objects</span></label>
+          <p class="hint" id="comp-hint" data-t="page.compHint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
+          <div class="msg" id="compWarn" hidden><b data-t="page.compWarn">The kerf is now built into your downloads.</b><ul>
+            <li data-t="page.compWarn1"><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
+            <li data-t="page.compWarn2">Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
+            <li data-t="page.compWarn3">Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
+            <li data-t="page.compWarn4">Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
           <details>
-            <summary>Measure it from a test cut</summary>
-            <p class="hint" style="margin-top:6px">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
+            <summary data-t="page.measure">Measure it from a test cut</summary>
+            <p class="hint" style="margin-top:6px" data-t="page.measureHint">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
             <div class="row">
-              <div class="field"><label for="kDesign">Designed (<span class="u">mm</span>)</label><input type="number" id="kDesign" step="any"></div>
-              <div class="field"><label for="kMeasured">Measured (<span class="u">mm</span>)</label><input type="number" id="kMeasured" step="any"></div>
+              <div class="field"><label for="kDesign" data-t="page.kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
+              <div class="field"><label for="kMeasured" data-t="page.kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled>Use this</button></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
           </details>
         </div>
         <div class="row">
-          <div class="field"><label for="gap">Extra gap (<span class="u">mm</span>)</label><input type="number" id="gap" min="0" step="any"></div>
-          <div class="field"><label for="margin">Edge margin (<span class="u">mm</span>)</label><input type="number" id="margin" min="0" step="any"></div>
+          <div class="field"><label for="gap" data-t="page.gap">Extra gap (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="gap"></div>
+          <div class="field"><label for="margin" data-t="page.margin">Edge margin (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="margin"></div>
         </div>
         <div class="row" data-only="shape">
-          <div class="field"><label for="rotStep">Rotation</label>
-            <select id="rotStep"><option value="0">None</option><option value="180">180° flips</option><option value="90">90° steps</option><option value="45">45° steps</option><option value="30">30° steps</option><option value="15">15° steps</option></select></div>
-          <div class="field"><label for="prec">Outline precision</label>
-            <select id="prec"><option value="0.25">Standard (0.25 mm)</option><option value="0.1">Fine (0.1 mm)</option></select></div>
+          <div class="field"><label for="rotStep" data-t="page.rotation">Rotation</label>
+            <select id="rotStep"><option value="0" data-t="page.rot0">None</option><option value="180" data-t="page.rot180">180° flips</option><option value="90" data-t="page.rot90">90° steps</option><option value="45" data-t="page.rot45">45° steps</option><option value="30" data-t="page.rot30">30° steps</option><option value="15" data-t="page.rot15">15° steps</option></select></div>
+          <div class="field"><label for="prec" data-t="page.precision">Outline precision</label>
+            <select id="prec"><option value="0.25" data-t="page.precStandard">Standard (0.25 mm)</option><option value="0.1" data-t="page.precFine">Fine (0.1 mm)</option></select></div>
         </div>
         <div class="row">
-          <div class="field"><label for="dpi">Unitless SVG scale</label>
-            <select id="dpi"><option value="96">96 px/in (Inkscape)</option><option value="72">72 px/in (Illustrator)</option><option value="90">90 px/in (old Inkscape)</option></select></div>
+          <div class="field"><label for="dpi" data-t="page.dpi">Unitless SVG scale</label>
+            <select id="dpi"><option value="96" data-t="page.dpi96">96 px/in (Inkscape)</option><option value="72" data-t="page.dpi72">72 px/in (Illustrator)</option><option value="90" data-t="page.dpi90">90 px/in (old Inkscape)</option></select></div>
           <div class="field" style="justify-content:flex-end;gap:8px">
-            <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> Allow 90° rotation</label>
-            <label class="check"><input type="checkbox" id="outline"> Plate outline in export</label>
+            <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> <span data-t="page.rotate">Allow 90° rotation</span></label>
+            <label class="check"><input type="checkbox" id="outline"> <span data-t="page.outline">Plate outline in export</span></label>
           </div>
         </div>
         <div class="row">
-          <div class="field"><label for="prefix">Output file prefix</label>
-            <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" spellcheck="false" autocomplete="off"></div>
-          <div class="field"><label for="format">Export format</label>
+          <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
+            <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label for="format" data-t="page.format">Export format</label>
             <select id="format"><option value="svg">SVG</option><option value="dxf">DXF (R12, mm)</option></select></div>
         </div>
-        <p class="hint">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
+        <p class="hint" data-t="page.downloadsNamed">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
-        <div class="panel-hd"><h2 id="h-parts">Parts</h2><span id="sampleBadge" class="badge">Sample parts</span></div>
-        <div class="drop" id="drop" tabindex="0" role="button">Drop SVG or DXF files here or <b>browse</b></div>
+        <div class="panel-hd"><h2 id="h-parts" data-t="page.parts">Parts</h2><span id="sampleBadge" class="badge" data-t="page.samples">Sample parts</span></div>
+        <div class="drop" id="drop" tabindex="0" role="button" data-t="page.drop">Drop SVG or DXF files here or <b>browse</b></div>
         <input type="file" id="file" accept=".svg,image/svg+xml,.dxf,image/vnd.dxf,application/dxf" multiple hidden>
         <div class="parts" id="parts"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <span class="note" id="partCount"></span>
-          <button type="button" class="btn small" id="clear">Remove all</button>
+          <button type="button" class="btn small" id="clear" data-t="page.removeAll">Remove all</button>
         </div>
       </section>
     </div>
 
     <main class="results" aria-labelledby="h-results">
-      <h2 id="h-results" class="sr-only">Results</h2>
+      <h2 id="h-results" class="sr-only" data-t="page.results">Results</h2>
       <div class="summary">
-        <div class="stat"><span class="v" id="sPlates">–</span><span class="k">Plates</span></div>
-        <div class="stat"><span class="v" id="sMin">–</span><span class="k">Area minimum</span></div>
-        <div class="stat"><span class="v" id="sFill">–</span><span class="k">Average utilization</span></div>
-        <div class="stat"><span class="v" id="sParts">–</span><span class="k">Parts placed</span></div>
+        <div class="stat"><span class="v" id="sPlates">–</span><span class="k" data-t="page.statPlates">Plates</span></div>
+        <div class="stat"><span class="v" id="sMin">–</span><span class="k" data-t="page.statMin">Area minimum</span></div>
+        <div class="stat"><span class="v" id="sFill">–</span><span class="k" data-t="page.statFill">Average utilization</span></div>
+        <div class="stat"><span class="v" id="sParts">–</span><span class="k" data-t="page.statParts">Parts placed</span></div>
         <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK">Efficiency</span></div>
         <div class="sp"></div>
-        <button type="button" class="btn primary" id="dlAll" hidden>Download all (.zip)</button>
+        <button type="button" class="btn primary" id="dlAll" hidden data-t="page.downloadAll">Download all (.zip)</button>
       </div>
       <div class="search" data-only="shape">
         <span class="st" id="status"><span class="dot on"></span>Nesting…</span>
-        <button type="button" class="btn small" id="more">Search 30 s more</button>
-        <button type="button" class="btn small" id="stop" hidden>Stop</button>
+        <button type="button" class="btn small" id="more" data-t="page.more">Search 30 s more</button>
+        <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
       <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.1-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>

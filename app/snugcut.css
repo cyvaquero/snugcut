@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later
    Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). */
 /* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens.
-   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99). */
+   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99).
+   --plate-edge is at least 3:1 against --surface, the plate card around it (#167). */
 :root{
   --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
   --accent:#2d55f0; --accent-soft:#e3e9ff; --accent-fg:#ffffff;
-  --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
+  --plate:#e8d6b3; --plate-edge:#8f7a52; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
   --guide:#2d55f0; --guide-margin:#7a6644;   /* preview guide lines: at least 3:1 on the tan plate in both themes (#105) */
   --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -82,7 +83,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
-.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.4;cursor:default}   /* placeholder: the part has no holes (#141) */
+/* stand-in: the part has no holes (#141). Subdued, but its slashed frame says "no holes", so it keeps 3:1 against its
+   background in both themes (#176) */
+.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.75;cursor:default}
 .icon svg{width:15px;height:15px}
 .badge{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
 .results{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -120,6 +123,8 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .bar i{display:block;height:100%;background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}
 .note{font-size:13px;color:var(--muted)}
+/* links that open a new tab say so: a described "Opens in a new tab." and an arrow that screen readers skip (#242) */
+a[target="_blank"]::after{content:"\2197" / "";margin-left:.15em}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .fatal{padding:16px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
 .modesw{display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}

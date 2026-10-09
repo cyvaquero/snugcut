@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="60mm" viewBox="0 0 100 60">
   <!-- Rounded rect outline (#15): rx 25 rounds every corner, so the nesting outline follows the curves (area about
-       5,432 mm²) instead of the 100 x 60 mm box (6,000 mm²), and small parts can tuck into the corners. -->
+       5,432 mm²) instead of its 99.8 × 59.8 mm box (5,968 mm²), and small parts can tuck into the corners. -->
   <rect x="0.1" y="0.1" width="99.8" height="59.8" rx="25" fill="none" stroke="#ff0000" stroke-width="0.2"/>
 </svg>

@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-a4lkYlkondMSIFOIALmIsTXPXCcmu2Y4AiHjYYhTy50=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OV/b19xXvPNhZi5uhypwUBs/EF0tZSnw8tUnGrAMyOI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,11 +15,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later
    Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). */
 /* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens.
-   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99). */
+   --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99).
+   --plate-edge is at least 3:1 against --surface, the plate card around it (#167). */
 :root{
   --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
   --accent:#2d55f0; --accent-soft:#e3e9ff; --accent-fg:#ffffff;
-  --plate:#e8d6b3; --plate-edge:#bfa77c; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
+  --plate:#e8d6b3; --plate-edge:#8f7a52; --warn:#a14a07; --nohole:#c62828; --warn-soft:#fff1e2; --ok:#1d7349;
   --guide:#2d55f0; --guide-margin:#7a6644;   /* preview guide lines: at least 3:1 on the tan plate in both themes (#105) */
   --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -96,7 +97,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
 .icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
-.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.4;cursor:default}   /* placeholder: the part has no holes (#141) */
+/* stand-in: the part has no holes (#141). Subdued, but its slashed frame says "no holes", so it keeps 3:1 against its
+   background in both themes (#176) */
+.icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.75;cursor:default}
 .icon svg{width:15px;height:15px}
 .badge{font:600 11px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
 .results{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -134,6 +137,8 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .bar i{display:block;height:100%;background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}
 .note{font-size:13px;color:var(--muted)}
+/* links that open a new tab say so: a described "Opens in a new tab." and an arrow that screen readers skip (#242) */
+a[target="_blank"]::after{content:"\2197" / "";margin-left:.15em}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .fatal{padding:16px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
 .modesw{display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}
@@ -159,108 +164,116 @@ footer a,header p a{color:var(--accent)}
 <div class="wrap">
   <header>
     <h1>SnugCut</h1>
-    <p>Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
-    <p>SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener">issue tracker</a>.</p>
+    <p data-t="page.intro">Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
+    <p data-t="page.source">SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener" aria-describedby="newTab">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener" aria-describedby="newTab">issue tracker</a>.</p>
     <ul>
-      <li><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
-      <li><b>Bounding box</b> packs rectangles fast.</li>
+      <li data-t="page.aboutShape"><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
+      <li data-t="page.aboutBbox"><b>Bounding box</b> packs rectangles fast.</li>
     </ul>
-    <div class="modesw" role="group" aria-label="Nesting mode">
-      <button type="button" id="m-shape" aria-pressed="true">True shape</button><button type="button" id="m-bbox" aria-pressed="false">Bounding box</button>
+    <div class="modesw" role="group" aria-label="Nesting mode" data-t-aria-label="page.modeGroup">
+      <button type="button" id="m-shape" aria-pressed="true" data-t="page.shape">True shape</button><button type="button" id="m-bbox" aria-pressed="false" data-t="page.bbox">Bounding box</button>
     </div>
   </header>
 
   <div class="layout">
     <div class="rail">
+      <section class="panel" aria-labelledby="h-pool" data-only="shape">
+        <div class="panel-hd"><h2 id="h-pool" data-t="page.poolHeading">Worker pool</h2></div>
+        <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search finds better layouts in the same time.</p>
+        <div class="field"><label for="pool" data-t="page.pool">Workers</label>
+          <select id="pool" aria-describedby="pool-about pool-warn"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select></div>
+        <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave the pool off.</p>
+      </section>
       <section class="panel" aria-labelledby="h-plate">
-        <div class="panel-hd"><h2 id="h-plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units">
+        <div class="panel-hd"><h2 id="h-plate" data-t="page.plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units" data-t-aria-label="page.units">
           <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
         <div class="row">
-          <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="number" id="plateW" min="1" step="any"></div>
-          <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
+          <div class="field"><label for="plateW" data-t="page.plateW">Plate width (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateW"></div>
+          <div class="field"><label for="plateH" data-t="page.plateH">Plate height (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateH"></div>
         </div>
         <div class="kerf">
-          <label for="kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10">
-          <p class="hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
-          <label class="check"><input type="checkbox" id="kerfComp"> Compensate kerf on objects</label>
-          <p class="hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
-          <div class="msg" id="compWarn" hidden><b>The kerf is now built into your downloads.</b><ul>
-            <li><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
-            <li>Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
-            <li>Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
-            <li>Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
+          <label for="kerf" data-t="page.kerf">Kerf (<span class="u">mm</span>)</label>
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
+          <p class="hint" id="kerf-hint" data-t="page.kerfHint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
+          <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> <span data-t="page.comp">Compensate kerf on objects</span></label>
+          <p class="hint" id="comp-hint" data-t="page.compHint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
+          <div class="msg" id="compWarn" hidden><b data-t="page.compWarn">The kerf is now built into your downloads.</b><ul>
+            <li data-t="page.compWarn1"><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
+            <li data-t="page.compWarn2">Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
+            <li data-t="page.compWarn3">Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
+            <li data-t="page.compWarn4">Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
           <details>
-            <summary>Measure it from a test cut</summary>
-            <p class="hint" style="margin-top:6px">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
+            <summary data-t="page.measure">Measure it from a test cut</summary>
+            <p class="hint" style="margin-top:6px" data-t="page.measureHint">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
             <div class="row">
-              <div class="field"><label for="kDesign">Designed (<span class="u">mm</span>)</label><input type="number" id="kDesign" step="any"></div>
-              <div class="field"><label for="kMeasured">Measured (<span class="u">mm</span>)</label><input type="number" id="kMeasured" step="any"></div>
+              <div class="field"><label for="kDesign" data-t="page.kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
+              <div class="field"><label for="kMeasured" data-t="page.kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled>Use this</button></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
           </details>
         </div>
         <div class="row">
-          <div class="field"><label for="gap">Extra gap (<span class="u">mm</span>)</label><input type="number" id="gap" min="0" step="any"></div>
-          <div class="field"><label for="margin">Edge margin (<span class="u">mm</span>)</label><input type="number" id="margin" min="0" step="any"></div>
+          <div class="field"><label for="gap" data-t="page.gap">Extra gap (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="gap"></div>
+          <div class="field"><label for="margin" data-t="page.margin">Edge margin (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="margin"></div>
         </div>
         <div class="row" data-only="shape">
-          <div class="field"><label for="rotStep">Rotation</label>
-            <select id="rotStep"><option value="0">None</option><option value="180">180° flips</option><option value="90">90° steps</option><option value="45">45° steps</option><option value="30">30° steps</option><option value="15">15° steps</option></select></div>
-          <div class="field"><label for="prec">Outline precision</label>
-            <select id="prec"><option value="0.25">Standard (0.25 mm)</option><option value="0.1">Fine (0.1 mm)</option></select></div>
+          <div class="field"><label for="rotStep" data-t="page.rotation">Rotation</label>
+            <select id="rotStep"><option value="0" data-t="page.rot0">None</option><option value="180" data-t="page.rot180">180° flips</option><option value="90" data-t="page.rot90">90° steps</option><option value="45" data-t="page.rot45">45° steps</option><option value="30" data-t="page.rot30">30° steps</option><option value="15" data-t="page.rot15">15° steps</option></select></div>
+          <div class="field"><label for="prec" data-t="page.precision">Outline precision</label>
+            <select id="prec"><option value="0.25" data-t="page.precStandard">Standard (0.25 mm)</option><option value="0.1" data-t="page.precFine">Fine (0.1 mm)</option></select></div>
         </div>
         <div class="row">
-          <div class="field"><label for="dpi">Unitless SVG scale</label>
-            <select id="dpi"><option value="96">96 px/in (Inkscape)</option><option value="72">72 px/in (Illustrator)</option><option value="90">90 px/in (old Inkscape)</option></select></div>
+          <div class="field"><label for="dpi" data-t="page.dpi">Unitless SVG scale</label>
+            <select id="dpi"><option value="96" data-t="page.dpi96">96 px/in (Inkscape)</option><option value="72" data-t="page.dpi72">72 px/in (Illustrator)</option><option value="90" data-t="page.dpi90">90 px/in (old Inkscape)</option></select></div>
           <div class="field" style="justify-content:flex-end;gap:8px">
-            <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> Allow 90° rotation</label>
-            <label class="check"><input type="checkbox" id="outline"> Plate outline in export</label>
+            <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> <span data-t="page.rotate">Allow 90° rotation</span></label>
+            <label class="check"><input type="checkbox" id="outline"> <span data-t="page.outline">Plate outline in export</span></label>
           </div>
         </div>
         <div class="row">
-          <div class="field"><label for="prefix">Output file prefix</label>
-            <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" spellcheck="false" autocomplete="off"></div>
-          <div class="field"><label for="format">Export format</label>
+          <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
+            <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label for="format" data-t="page.format">Export format</label>
             <select id="format"><option value="svg">SVG</option><option value="dxf">DXF (R12, mm)</option></select></div>
         </div>
-        <p class="hint">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
+        <p class="hint" data-t="page.downloadsNamed">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
-        <div class="panel-hd"><h2 id="h-parts">Parts</h2><span id="sampleBadge" class="badge">Sample parts</span></div>
-        <div class="drop" id="drop" tabindex="0" role="button">Drop SVG or DXF files here or <b>browse</b></div>
+        <div class="panel-hd"><h2 id="h-parts" data-t="page.parts">Parts</h2><span id="sampleBadge" class="badge" data-t="page.samples">Sample parts</span></div>
+        <div class="drop" id="drop" tabindex="0" role="button" data-t="page.drop">Drop SVG or DXF files here or <b>browse</b></div>
         <input type="file" id="file" accept=".svg,image/svg+xml,.dxf,image/vnd.dxf,application/dxf" multiple hidden>
         <div class="parts" id="parts"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <span class="note" id="partCount"></span>
-          <button type="button" class="btn small" id="clear">Remove all</button>
+          <button type="button" class="btn small" id="clear" data-t="page.removeAll">Remove all</button>
         </div>
       </section>
     </div>
 
     <main class="results" aria-labelledby="h-results">
-      <h2 id="h-results" class="sr-only">Results</h2>
+      <h2 id="h-results" class="sr-only" data-t="page.results">Results</h2>
       <div class="summary">
-        <div class="stat"><span class="v" id="sPlates">–</span><span class="k">Plates</span></div>
-        <div class="stat"><span class="v" id="sMin">–</span><span class="k">Area minimum</span></div>
-        <div class="stat"><span class="v" id="sFill">–</span><span class="k">Average utilization</span></div>
-        <div class="stat"><span class="v" id="sParts">–</span><span class="k">Parts placed</span></div>
+        <div class="stat"><span class="v" id="sPlates">–</span><span class="k" data-t="page.statPlates">Plates</span></div>
+        <div class="stat"><span class="v" id="sMin">–</span><span class="k" data-t="page.statMin">Area minimum</span></div>
+        <div class="stat"><span class="v" id="sFill">–</span><span class="k" data-t="page.statFill">Average utilization</span></div>
+        <div class="stat"><span class="v" id="sParts">–</span><span class="k" data-t="page.statParts">Parts placed</span></div>
         <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK">Efficiency</span></div>
         <div class="sp"></div>
-        <button type="button" class="btn primary" id="dlAll" hidden>Download all (.zip)</button>
+        <button type="button" class="btn primary" id="dlAll" hidden data-t="page.downloadAll">Download all (.zip)</button>
       </div>
       <div class="search" data-only="shape">
         <span class="st" id="status"><span class="dot on"></span>Nesting…</span>
-        <button type="button" class="btn small" id="more">Search 30 s more</button>
-        <button type="button" class="btn small" id="stop" hidden>Stop</button>
+        <button type="button" class="btn small" id="more" data-t="page.more">Search 30 s more</button>
+        <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
       <div class="msgs" id="notices"></div>
       <div class="msgs" id="msgs"></div>
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.1-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -283,8 +296,52 @@ const CL = window.ClipperLib;
 let appVersion = "";                    // written into exported files
 const setVersion = v => { appVersion = v; };
 
+/* ---------- messages (#128) ---------- */
+// Every message the library shows a person has a code and values (README "Library messages"). setMessages(fn) lets the
+// caller word them: fn(code, vars, english) returns the text, or anything but a string for the English below.
+// Errors carry the worded text as .message, plus .code and .vars.
+const s_ = (n, one, many) => n === 1 ? one : many;
+const HIDDEN_LAYERS = "frozen, off, non-plotting or Defpoints layers";
+const MESSAGES = {
+  "dxf.binary": v => `${v.name} is a binary DXF. Save it as an ASCII DXF and try again.`,
+  "dxf.unreadable": v => `${v.name} isn't a readable DXF file.`,
+  "dxf.noUnits": v => `${v.name} doesn't say what units it's drawn in, so it was read as ${v.units === "in"
+    ? "inches, as its imperial measurement setting suggests" : "millimeters"}. If that's wrong, change it next to the part in the parts list.`,
+  "dxf.tooManyItems": v => `${v.name} expands to more than ${v.limit.toLocaleString("en-US")} items (blocks and arrays), so it wasn't added.`,
+  "dxf.tooManyPoints": v => `${v.name} draws more than ${v.limit.toLocaleString("en-US")} points (blocks and arrays repeat them), so it wasn't added.`,
+  "dxf.splineDegree": v => `${v.name} has a spline of degree ${v.degree}, but only degrees 1 to 11 can be read, so it wasn't added.`,
+  "dxf.hiddenLeftOut": v => `${v.name}: left out ${v.count} item${s_(v.count, "", "s")} on ${HIDDEN_LAYERS}.`,
+  "dxf.skipped": v => `${v.name}: skipped ${v.skipped.map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")} (only lines, arcs, circles, ellipses, polylines and splines are cut).`,
+  "dxf.nothingToCut": v => `${v.name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space`
+    + (v.hidden ? `; ${v.hidden} item${s_(v.hidden, " is", "s are")} on ${HIDDEN_LAYERS}.` : "."),   // #85
+  "svg.unreadable": v => `${v.name} isn't a readable SVG file.`,
+  "svg.tooManyCopies": v => `${v.name} repeats shapes through linked copies (<use>) more than ${v.limit.toLocaleString("en-US")} times, so it wasn't added.`,
+  "svg.nothingVisible": v => `${v.name} has no visible shapes to place.`,
+  "svg.nothingToCut": v => `${v.name} has no cuttable shapes.`,
+  "svg.noClosedOutline": v => `${v.name} has no closed outline to nest.`,
+  "kerf.holeTooNarrow": v => `A hole in ${v.name} is narrower than the kerf, so it was left as drawn.`,
+  "kerf.markup": v => `${v.name} has text, images, linked copies or effects, so its kerf can't be compensated; it is exported as drawn.`,
+  "dxfOut.nothing": v => `${v.name} has nothing that can be written to DXF.`,
+  "dxfOut.clipping": v => `Not in the DXF: clipping, masks and filters (shapes exported whole) in ${v.name}.`,
+  "dxfOut.text": v => `Not in the DXF: text in ${v.name}.`,
+  "dxfOut.images": v => `Not in the DXF: images in ${v.name}.`,
+  "dxfOut.use": v => `Not in the DXF: linked copies (<use>) in ${v.name}.`,
+  "dxfOut.element": v => `Not in the DXF: <${v.tag}> elements in ${v.name}.`,
+  "dxfOut.paint": v => `Not in the DXF: gradient and pattern colors (exported black) in ${v.name}.`,
+  "dxfOut.unreadable": v => `Not in the DXF: unreadable paths in ${v.name}.`,
+  "dxfOut.fills": () => "Filled areas are written as their outlines.",
+};
+let wording = null;
+const setMessages = fn => { wording = typeof fn === "function" ? fn : null; };
+function msg(code, vars = {}){
+  const en = MESSAGES[code](vars);
+  if (!wording) return en;
+  try { const t = wording(code, vars, en); return typeof t === "string" ? t : en; } catch(e) { return en; }
+}
+const fail = (code, vars) => Object.assign(new Error(msg(code, vars)), {code, vars});
+
 /* ---------- settings (lengths in mm) ---------- */
-const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg", comp:false};
+const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg", comp:false, pool:1};
 const S = {...DEFAULTS};
 let uid = 0, geoVer = 0;
 const invalidateGeometry = () => { geoVer++; };   // settings that change outlines, envelopes or no-fit polygons
@@ -304,49 +361,74 @@ function measureScale(p){
   buildOutline(p);
 }
 const SHAPES = "path,rect,circle,ellipse,polygon,polyline,line,text,use,image";
-function extractRings(g, depth = 0){
-  // sample every drawable element into polylines, in the part's own user units
-  const hostInv = host.getScreenCTM().inverse();
+const XLINK = "http://www.w3.org/1999/xlink";
+const useRef = el => (el.getAttribute("href") || el.getAttributeNS(XLINK, "href") || "").replace(/^#/, "");
+// SVG lengths and points read through the DOM are single precision, half a unit apart at 5e6. Far from the origin,
+// take a plain number as written in the attribute when it agrees with the DOM's value; closer in, keep the DOM's (#214).
+const FAR = 1e4;
+const exact = (f, a) => { if (!(Math.abs(f) > FAR) || a == null) return f; const t = a.trim(), n = Number(t);
+  return t && isFinite(n) && Math.abs(n - f) <= Math.abs(f) * 1e-6 ? n : f; };
+const len = (el, k) => exact(el[k].baseVal.value, el.getAttribute(k));
+const pointsOf = el => { const ps = [...el.points], t = (el.getAttribute("points") || "").trim().split(/[\s,]+/);
+  return ps.map((q, i) => [exact(q.x, t[2*i]), exact(q.y, t[2*i + 1])]); };
+const boxOf = el => { const b = el.getBBox(); if (el.localName !== "rect") return b;
+  const at = k => el.getAttribute(k);
+  return {x:exact(b.x, at("x")), y:exact(b.y, at("y")), width:exact(b.width, at("width")), height:exact(b.height, at("height"))}; };
+const noIds = n => { n.removeAttribute("id"); n.querySelectorAll("[id]").forEach(c => c.removeAttribute("id")); return n; };
+function extractRings(g){
+  // sample every drawable element into polylines, in the part's own user units.
+  // A <use> of shapes in this file is measured as those shapes where the copy puts them (#15); copies inside a copy count
+  // as their box. The copies are set out all at once in a duplicate of the part with no ids: nothing refers into it, so
+  // one layout serves the whole measurement. Setting them out one by one in the part itself made the browser rebuild
+  // every <use> of the changed shapes each time, which took seconds for a 1 KB file (#158).
+  const G = noIds(g.cloneNode(true)), orig = [...g.querySelectorAll(SHAPES)], copy = [...G.querySelectorAll(SHAPES)], wraps = new Map();
+  orig.forEach((el, i) => {
+    if (el.localName !== "use" || el.closest("defs,clipPath,mask,symbol,pattern,marker") || isHidden(el, g)) return;
+    const id = useRef(el), ref = id && g.querySelector(`[id="${CSS.escape(id)}"]`);   // in the part: it is measured in a shadow root (#261)
+    if (ref && g.contains(ref) && !ref.contains(el) && ref.localName !== "symbol" && ref.localName !== "svg") {
+      const w = document.createElementNS(SVGNS, "g");
+      w.setAttribute("transform", `${el.getAttribute("transform") || ""} translate(${len(el, "x")} ${len(el, "y")})`);
+      w.appendChild(noIds(ref.cloneNode(true)));
+      wraps.set(copy[i], w);
+    }
+  });
+  g.after(G);
+  for (const [el, w] of wraps) el.after(w);
   const rings = [];
-  for (const el of g.querySelectorAll(SHAPES)) {
+  try { sampleRings(copy, G, wraps, rings); } finally { G.remove(); }
+  return rings;
+}
+function sampleRings(list, root, wraps, rings){
+  const hostInv = host.getScreenCTM().inverse();
+  for (const el of list) {
     if (el.closest("defs,clipPath,mask,symbol,pattern,marker")) continue;
-    if (isHidden(el, g)) continue;                       // hidden shapes are neither measured nor exported
+    if (isHidden(el, root)) continue;                    // hidden shapes are neither measured nor exported
     const scr = el.getScreenCTM(); if (!scr) continue;
     const m = hostInv.multiply(scr);
     const T = (x, y) => [m.a*x + m.c*y + m.e, m.b*x + m.d*y + m.f];
-    const tag = el.localName;
-    if (tag === "use" && depth < 8) {                    // a copy of shapes in this file: measure those shapes where the copy puts them (#15)
-      const id = (el.getAttribute("href") || el.getAttributeNS("http://www.w3.org/1999/xlink", "href") || "").replace(/^#/, "");
-      const ref = id && g.ownerDocument.getElementById(id);
-      if (ref && g.contains(ref) && !ref.contains(el) && ref.localName !== "symbol" && ref.localName !== "svg") {
-        const w = document.createElementNS(SVGNS, "g"), x = el.x.baseVal.value, y = el.y.baseVal.value;
-        w.setAttribute("transform", `${el.getAttribute("transform") || ""} translate(${x} ${y})`);
-        const c = ref.cloneNode(true); c.removeAttribute("id"); c.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
-        w.appendChild(c); el.after(w);
-        try { rings.push(...extractRings(w, depth + 1)); } finally { w.remove(); }
-        continue;
-      }
-    }
+    const tag = el.localName, w = wraps && wraps.get(el);
+    if (w) { sampleRings([...w.querySelectorAll(SHAPES)], w, null, rings); continue; }
     let rr = null;                                       // a rounded rect is sampled along its corners (#15)
-    if (tag === "rect") { const cs = getComputedStyle(el), b = el.getBBox();
+    if (tag === "rect") { const cs = getComputedStyle(el), b = boxOf(el);
       let rx = parseFloat(cs.rx), ry = parseFloat(cs.ry); if (isNaN(rx)) rx = isNaN(ry) ? 0 : ry; if (isNaN(ry)) ry = rx;
       rx = Math.min(Math.max(rx, 0), b.width / 2); ry = Math.min(Math.max(ry, 0), b.height / 2);
       if (rx > 0 && ry > 0) rr = {b, rx, ry}; }
     if (!rr && (tag === "rect" || tag === "text" || tag === "use" || tag === "image")) {
-      const b = el.getBBox(); if (!b.width && !b.height) continue;
+      const b = boxOf(el); if (!b.width && !b.height) continue;
       rings.push({closed:true, pts:[T(b.x,b.y), T(b.x+b.width,b.y), T(b.x+b.width,b.y+b.height), T(b.x,b.y+b.height)]});
     } else if (tag === "polygon" || tag === "polyline") {
-      const pts = [...el.points].map(q => T(q.x, q.y));
+      const pts = pointsOf(el).map(([x, y]) => T(x, y));
       if (pts.length > 1) rings.push({closed: tag === "polygon", pts});
     } else if (tag === "line") {
-      rings.push({closed:false, pts:[T(+el.getAttribute("x1")||0, +el.getAttribute("y1")||0), T(+el.getAttribute("x2")||0, +el.getAttribute("y2")||0)]});
+      const v = k => len(el, k);                         // resolves units and percentages, as extractFlat does (#163)
+      rings.push({closed:false, pts:[T(v("x1"), v("y1")), T(v("x2"), v("y2"))]});
     } else {
       const scale = Math.sqrt(Math.abs(m.a*m.d - m.b*m.c)) || 1;
       // path, circle, ellipse: points straight from the path data, lines at their ends and curves every ~0.1 mm.
       // Much faster than getPointAtLength, which walks the whole path on every call (long CAD/DXF paths took minutes).
       let segs = null;
       try {
-        const v = k => el[k].baseVal.value;
+        const v = k => len(el, k);
         if (tag === "path") segs = parsePathD(el.getAttribute("d") || "");
         else if (rr) { const {b:{x, y, width:w, height:h}, rx, ry} = rr;
           segs = parsePathD(`M${x+rx} ${y}H${x+w-rx}A${rx} ${ry} 0 0 1 ${x+w} ${y+ry}V${y+h-ry}A${rx} ${ry} 0 0 1 ${x+w-rx} ${y+h}H${x+rx}A${rx} ${ry} 0 0 1 ${x} ${y+h-ry}V${y+ry}A${rx} ${ry} 0 0 1 ${x+rx} ${y}Z`); }
@@ -390,7 +472,6 @@ function extractRings(g, depth = 0){
       }
     }
   }
-  return rings;
 }
 let extractStepU = 1;
 function isHidden(el, root){
@@ -400,7 +481,11 @@ function isHidden(el, root){
 /* ---------- external references ----------
    The file's nodes are put into this page to be measured, so anything that points off the file (images, <use> of
    other files, @import, url() fonts and paints) would be fetched by the browser. Only #fragment and data: survive. */
-const decodeCSS = s => s.replace(/\/\*[\s\S]*?\*\//g, "")
+// comments removed in one pass; an unterminated one is left in place, so a url() after it is still seen. A regex here
+// rescanned the rest of the text from every "/*" (#162).
+const stripComments = s => { let out = "", i = 0;
+  for (;;) { const a = s.indexOf("/*", i), b = a < 0 ? -1 : s.indexOf("*/", a + 2); if (b < 0) return out + s.slice(i); out += s.slice(i, a); i = b + 2; } };
+const decodeCSS = s => stripComments(s)
   .replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?/gi, (m, h) => { const c = parseInt(h, 16); return String.fromCodePoint(c > 0 && c <= 0x10FFFF ? c : 0xFFFD); })
   .replace(/\\([^\n])/g, "$1");
 // data: URLs are kept only for raster images and fonts. Anything else (an embedded SVG or HTML) can carry its own outside
@@ -410,7 +495,14 @@ function cssExternal(v){
   v = decodeCSS(v).toLowerCase();
   if (v.includes("@import")) return true;
   for (const m of v.matchAll(/(?:url|src)\(\s*(['"]?)\s*([^'")\s]*)/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
-  if (/(?:image-set|image|cross-fade)\(/.test(v)) for (const m of v.matchAll(/(['"])\s*([^'"]*)\1/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
+  if (/(?:image-set|image|cross-fade)\(/.test(v)) {
+    for (const m of v.matchAll(/(['"])\s*([^'"]*)\1/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
+    // a URL kept as a string in a custom property and used as image-set(var(--u)): its value is only known after var()
+    // is substituted, so any var() in these functions counts as outside (#238)
+    if (v.includes("var(")) return true;
+  }
+  // a custom property holding a string can carry a URL into any of those functions, in this rule or another (#238)
+  if (/(?:^|[;{\s])--[^\s:;{}]*\s*:[^;{}]*['"]/.test(v)) return true;
   return false;
 }
 function splitDecls(t){
@@ -437,16 +529,31 @@ function cleanSheet(text){
   return [...sheet.cssRules].map(r => r.cssText).filter(t => !cssExternal(t)).join("\n");
 }
 const ANIM = new Set(["animate", "animateMotion", "animateTransform", "set", "discard"]);
+// SVG elements, in their exact case, that may stay in a part (no script, foreignObject or font: those, any other
+// unprefixed name and any case variant would become live HTML if other software parsed the exported plate as HTML, #161)
+const SVG_ELEMENTS = new Set(("a altGlyph altGlyphDef altGlyphItem circle clipPath color-profile cursor defs desc ellipse feBlend feColorMatrix "
+  + "feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight feDropShadow feFlood feFuncA "
+  + "feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset fePointLight feSpecularLighting "
+  + "feSpotLight feTile feTurbulence filter font-face font-face-format font-face-name font-face-src font-face-uri g glyph glyphRef "
+  + "hatch hatchpath hkern image line linearGradient marker mask mesh meshgradient meshpatch meshrow metadata missing-glyph mpath "
+  + "path pattern polygon polyline radialGradient rect solidcolor stop style svg switch symbol text textPath title tref tspan use "
+  + "view vkern").split(" "));
 function stripExternal(root){
   let n = 0;
   for (const el of [...root.querySelectorAll("*")]) {
-    // HTML/MathML elements (img, link, iframe, …) fetch even when not rendered; SMIL can set href/fill to a URL
-    if (el.namespaceURI === "http://www.w3.org/1999/xhtml" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML" || (el.namespaceURI === SVGNS && ANIM.has(el.localName))) { el.remove(); n++; }
+    if (!root.contains(el)) continue;                   // already removed with its parent
+    // HTML/MathML elements (img, link, iframe, …) fetch even when not rendered; SMIL can set href/fill to a URL.
+    // Unprefixed elements must be known SVG elements; prefixed ones (inkscape:, sodipodi:, rdf:, …) stay, as an HTML
+    // parser reads those as unknown, inert tags.
+    if (el.namespaceURI === "http://www.w3.org/1999/xhtml" || el.namespaceURI === "http://www.w3.org/1998/Math/MathML" || (el.namespaceURI === SVGNS && ANIM.has(el.localName))
+      || (!el.prefix && !(el.namespaceURI === SVGNS && SVG_ELEMENTS.has(el.localName)))) { el.remove(); n++; continue; }
+    // an HTML parser reads what's inside <desc> and <title> as HTML, so only their text stays
+    if (el.namespaceURI === SVGNS && (el.localName === "desc" || el.localName === "title")) for (const c of [...el.children]) { c.remove(); n++; }
   }
   for (const el of [root, ...root.querySelectorAll("*")]) {
     for (const a of [...el.attributes]) {
-      const v = a.value.trim();
-      if (a.localName === "href" || a.localName === "src") {
+      const v = a.value.trim(), ln = a.localName.toLowerCase();      // HTML parsers lowercase attribute names (HREF → href)
+      if (ln === "href" || ln === "src" || ln === "srcset" || ln === "srcdoc") {
         if (v[0] === "#" || (safeData(v) && (el.localName === "image" || el.localName === "feImage"))) continue;
         el.removeAttributeNS(a.namespaceURI, a.localName); n++;
       } else if (a.localName === "base" && a.namespaceURI === "http://www.w3.org/XML/1998/namespace") {
@@ -463,11 +570,11 @@ function stripExternal(root){
   return n;
 }
 function renameSelectors(css, f){
-  // rewrite #id and .class names in selectors only (the text before each "{" that isn't an at-rule); declarations,
-  // strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are left as they are.
-  // f(kind, name) returns the new name, or null to keep it.
-  const sel = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)/gi,
-    (m, keep, k, name) => { if (keep) return keep; const r = f(k, name); return r == null ? m : k + r; });
+  // rewrite #id and .class names, and the :root pseudo-class, in selectors only (the text before each "{" that isn't an
+  // at-rule); declarations, strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are
+  // left as they are. f(kind, name) returns the new name, or null to keep it; kind is "#", "." or ":".
+  const sel = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)|(:)(root)(?![\w-])/gi,
+    (m, keep, k, name, k2, name2) => { if (keep) return keep; if (k2) { k = k2; name = name2; } const r = f(k, name); return r == null ? m : k + r; });
   let out = "", seg = "", q = "", depth = 0;
   for (let i = 0; i < css.length; i++) {
     const ch = css[i];
@@ -498,14 +605,14 @@ function aciColor(i){
   return "#" + [f(5), f(3), f(1)].map(c => c.toString(16).padStart(2, "0")).join("");
 }
 function dxfToSVG(text, name, opts = {}){
-  if (/^AutoCAD Binary DXF/.test(text)) throw new Error(`${name} is a binary DXF. Save it as an ASCII DXF and try again.`);
+  if (/^AutoCAD Binary DXF/.test(text)) throw fail("dxf.binary", {name});
   const lines = text.split(/\r\n|\r|\n/), recs = [];
   for (let i = 0; i + 1 < lines.length; i += 2) {
     const c = parseInt(lines[i], 10), v = lines[i + 1].trim();
-    if (isNaN(c)) { if (!lines[i].trim() && i >= lines.length - 2) break; throw new Error(`${name} isn't a readable DXF file.`); }
+    if (isNaN(c)) { if (!lines[i].trim() && i >= lines.length - 2) break; throw fail("dxf.unreadable", {name}); }
     if (c === 0) recs.push({type:v.toUpperCase(), g:[]}); else if (recs.length) recs[recs.length - 1].g.push([c, v]);
   }
-  if (!recs.some(r => r.type === "SECTION")) throw new Error(`${name} isn't a readable DXF file.`);
+  if (!recs.some(r => r.type === "SECTION")) throw fail("dxf.unreadable", {name});
   const str = (r, c, d) => { const p = r.g.find(q => q[0] === c); return p ? p[1] : d; };
   const num = (r, c, d = 0) => { const v = parseFloat(str(r, c)); return isFinite(v) ? v : d; };
   const nums = (r, c) => r.g.filter(q => q[0] === c).map(q => parseFloat(q[1]) || 0);
@@ -545,15 +652,15 @@ function dxfToSVG(text, name, opts = {}){
   const unit = DXF_MM[+header.$INSUNITS], notes = [];
   const units = unit ? null : opts.units || (header.$MEASUREMENT != null && +header.$MEASUREMENT === 0 ? "in" : "mm");
   const k = unit || (units === "in" ? 25.4 : 1);
-  if (!unit && !opts.units) notes.push(`${name} doesn't say what units it's drawn in, so it was read as ${units === "in"
-    ? "inches, as its imperial measurement setting suggests" : "millimeters"}. If that's wrong, change it next to the part in the parts list.`);
+  if (!unit && !opts.units) notes.push(msg("dxf.noUnits", {name, units}));
 
   const out = new Map(), skipped = {};                          // layer → color → path data
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0, work = 0;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0, work = 0, points = 0;
   // a crafted file can't hang the page (#77): block-array cells and entities drawn are counted against a limit, and arc
-  // sweeps are reduced with a modulo instead of a loop that never ends on huge angles
-  const LIMIT = 250000, TAU = 2 * Math.PI;
-  const tooBig = () => { if (++work > LIMIT) throw new Error(`${name} expands to more than ${LIMIT.toLocaleString("en-US")} items (blocks and arrays), so it wasn't added.`); };
+  // sweeps are reduced with a modulo instead of a loop that never ends on huge angles. Points written are counted too,
+  // since every array cell repeats its block's whole outline (#160): 2 million take about 2.5 s to read and measure.
+  const LIMIT = 250000, PLIMIT = 2000000, TAU = 2 * Math.PI;
+  const tooBig = () => { if (++work > LIMIT) throw fail("dxf.tooManyItems", {name, limit:LIMIT}); };
   const sweep = (a, b) => { const s = ((b - a) % TAU + TAU) % TAU; return s > 1e-12 ? s : TAU; };   // end after start, at most one turn
   const mul = (A, B) => [A[0]*B[0] + A[2]*B[1], A[1]*B[0] + A[3]*B[1], A[0]*B[2] + A[2]*B[3], A[1]*B[2] + A[3]*B[3], A[0]*B[4] + A[2]*B[5] + A[4], A[1]*B[4] + A[3]*B[5] + A[5]];
   const fmtN = v => { const r = +v.toFixed(4); return Object.is(r, -0) ? "0" : String(r); };
@@ -583,33 +690,34 @@ function dxfToSVG(text, name, opts = {}){
       return;
     }
     const d = [];
-    const P = (x, y) => { const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
-      x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return fmtN(X) + " " + fmtN(Y); };
+    const P = (x, y) => { if (++points > PLIMIT) throw fail("dxf.tooManyPoints", {name, limit:PLIMIT});
+      const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
+      x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
     const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
       // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 90° each)
       const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 2) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
       const pt = t => [cx + ax*Math.cos(t) + bx*Math.sin(t), cy + ay*Math.cos(t) + by*Math.sin(t)];
       const dv = t => [-ax*Math.sin(t) + bx*Math.cos(t), -ay*Math.sin(t) + by*Math.cos(t)];
-      if (move) d.push("M" + P(...pt(ta)));
+      if (move) d.push(["M", P(...pt(ta))]);
       for (let j = 0; j < n; j++) {
         const s = ta + j*dt, e = s + dt, [px, py] = pt(s), [qx, qy] = pt(e), [ux, uy] = dv(s), [vx, vy] = dv(e);
-        d.push("C" + P(px + h*ux, py + h*uy) + " " + P(qx - h*vx, qy - h*vy) + " " + P(qx, qy));
+        d.push(["C", P(px + h*ux, py + h*uy), P(qx - h*vx, qy - h*vy), P(qx, qy)]);
       }
     };
     const bulgeTo = (ax, ay, bx, by, bu) => {
-      if (!bu || (ax === bx && ay === by)) { d.push("L" + P(bx, by)); return; }
+      if (!bu || (ax === bx && ay === by)) { d.push(["L", P(bx, by)]); return; }
       const th = 4 * Math.atan(bu), ch = Math.hypot(bx - ax, by - ay), off = ch / 2 / Math.tan(th / 2), r0 = ch / 2 / Math.sin(th / 2);
       const cx = (ax + bx) / 2 - (by - ay) / ch * off, cy = (ay + by) / 2 + (bx - ax) / ch * off, s = Math.atan2(ay - cy, ax - cx), rr = Math.abs(r0);
       ell(cx, cy, rr, 0, 0, rr, s, s + th, false);
     };
     const poly = (vs, closed) => {                                             // vs: [[x, y, bulge]]
       if (vs.length < 2) return;
-      d.push("M" + P(vs[0][0], vs[0][1]));
+      d.push(["M", P(vs[0][0], vs[0][1])]);
       for (let j = 1; j < vs.length; j++) bulgeTo(vs[j-1][0], vs[j-1][1], vs[j][0], vs[j][1], vs[j-1][2]);
-      if (closed) { const a = vs[vs.length - 1], b = vs[0]; if (a[2] || a[0] !== b[0] || a[1] !== b[1]) bulgeTo(a[0], a[1], b[0], b[1], a[2]); d.push("Z"); }
+      if (closed) { const a = vs[vs.length - 1], b = vs[0]; if (a[2] || a[0] !== b[0] || a[1] !== b[1]) bulgeTo(a[0], a[1], b[0], b[1], a[2]); d.push(["Z"]); }
     };
-    if (t === "LINE") d.push("M" + P(num(r, 10), num(r, 20)) + "L" + P(num(r, 11), num(r, 21)));
-    else if (t === "CIRCLE") { const rr = num(r, 40); if (rr > 0) { ell(num(r, 10), num(r, 20), rr, 0, 0, rr, 0, 2 * Math.PI, true); d.push("Z"); } }
+    if (t === "LINE") d.push(["M", P(num(r, 10), num(r, 20))], ["L", P(num(r, 11), num(r, 21))]);
+    else if (t === "CIRCLE") { const rr = num(r, 40); if (rr > 0) { ell(num(r, 10), num(r, 20), rr, 0, 0, rr, 0, 2 * Math.PI, true); d.push(["Z"]); } }
     else if (t === "ARC") {
       const rr = num(r, 40), a = num(r, 50) * Math.PI / 180 % TAU, b = a + sweep(a, num(r, 51) * Math.PI / 180 % TAU);
       if (rr > 0 && isFinite(a) && isFinite(b)) ell(num(r, 10), num(r, 20), rr, 0, 0, rr, a, b, true);
@@ -618,7 +726,7 @@ function dxfToSVG(text, name, opts = {}){
       const a = num(r, 41) % TAU, b = a + sweep(a, num(r, 42, TAU) % TAU);
       if (!isFinite(a) || !isFinite(b)) return;
       ell(num(r, 10), num(r, 20), ax, ay, -ay * q * sg, ax * q * sg, a, b, true);
-      if (Math.abs(b - a - TAU) < 1e-6) d.push("Z");
+      if (Math.abs(b - a - TAU) < 1e-6) d.push(["Z"]);
     } else if (t === "LWPOLYLINE") {
       const vs = [];
       for (const [c, v] of r.g) { if (c === 10) vs.push([+v || 0, 0, 0]); else if (vs.length && c === 20) vs[vs.length - 1][1] = +v || 0; else if (vs.length && c === 42) vs[vs.length - 1][2] = +v || 0; }
@@ -631,6 +739,9 @@ function dxfToSVG(text, name, opts = {}){
       const p = num(r, 71, 3), K = nums(r, 40), W = nums(r, 41), xs = nums(r, 10), ys = nums(r, 20), C = xs.map((x, j) => [x, ys[j] || 0]);
       const fx = nums(r, 11), fy = nums(r, 21);
       if (C.length > p && K.length === C.length + p + 1) {
+        // CAD programs write degrees up to 11 (3 is usual); de Boor costs O(p²) per point, so a crafted degree of a few
+        // hundred took minutes (#159)
+        if (!(Number.isInteger(p) && p >= 1 && p <= 11)) throw fail("dxf.splineDegree", {name, degree:p});
         const ev = u => {                                                        // de Boor, rational when weights are given
           let s = p; while (s < C.length - 1 && u >= K[s + 1]) s++;
           const q = []; for (let j = 0; j <= p; j++) { const w = W.length === C.length ? W[s - p + j] : 1; q.push([C[s - p + j][0]*w, C[s - p + j][1]*w, w]); }
@@ -638,9 +749,21 @@ function dxfToSVG(text, name, opts = {}){
             q[j] = q[j].map((v, z) => (1 - al) * q[j - 1][z] + al * v); }
           return [q[p][0] / q[p][2], q[p][1] / q[p][2]];
         };
-        const pts = [], lo = K[p], hi = K[C.length];
-        for (let s = p; s < C.length; s++) { if (K[s + 1] <= K[s]) continue; for (let j = 0; j < 16; j++) pts.push(ev(K[s] + (K[s + 1] - K[s]) * j / 16)); }
-        pts.push(ev(hi - (hi - lo) * 1e-9));
+        const us = [], lo = K[p], hi = K[C.length];
+        for (let s = p; s < C.length; s++) { if (K[s + 1] <= K[s]) continue; for (let j = 0; j < 16; j++) us.push(K[s] + (K[s + 1] - K[s]) * j / 16); }
+        us.push(hi - (hi - lo) * 1e-9);
+        // 16 points per knot span, plus halving where a piece's middle is more than 0.005 mm off its chord: a large span
+        // came out up to 0.9 mm off the curve (#262)
+        const tol = 0.005 / (k * Math.max(Math.hypot(M[0], M[1]), Math.hypot(M[2], M[3]))), pts = [];
+        const off = (a, b, m) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
+          const t = l ? Math.max(0, Math.min(1, ((m[0] - a[0]) * dx + (m[1] - a[1]) * dy) / l)) : 0;
+          return Math.hypot(m[0] - a[0] - t * dx, m[1] - a[1] - t * dy); };
+        const refine = (u0, a, u1, b, depth) => {
+          const um = (u0 + u1) / 2, m = ev(um);
+          if (depth < 10 && off(a, b, m) > tol) { refine(u0, a, um, m, depth + 1); pts.push(m); refine(um, m, u1, b, depth + 1); }
+        };
+        const at = us.map(ev);
+        at.forEach((q, j) => { if (j) refine(us[j - 1], at[j - 1], us[j], q, 0); pts.push(q); });
         poly(pts.map(([x, y]) => [x, y, 0]), (num(r, 70) & 1) === 1);
       } else if (fx.length > 1) {
         // fit points only: cubic spline through them (chord-length parameters, natural ends) as Béziers
@@ -656,41 +779,65 @@ function dxfToSVG(text, name, opts = {}){
           Mx.push(...sx); My.push(...sy);
         }
         Mx.push(0); My.push(0);
-        d.push("M" + P(Q[0][0], Q[0][1]));
+        d.push(["M", P(Q[0][0], Q[0][1])]);
         for (let j = 0; j < n; j++) {
           const h = hs[j], ux = (Q[j+1][0] - Q[j][0]) / h, uy = (Q[j+1][1] - Q[j][1]) / h;
           const d0x = ux - h * (2*Mx[j] + Mx[j+1]) / 6, d0y = uy - h * (2*My[j] + My[j+1]) / 6, d1x = ux + h * (Mx[j] + 2*Mx[j+1]) / 6, d1y = uy + h * (My[j] + 2*My[j+1]) / 6;
-          d.push("C" + P(Q[j][0] + d0x*h/3, Q[j][1] + d0y*h/3) + " " + P(Q[j+1][0] - d1x*h/3, Q[j+1][1] - d1y*h/3) + " " + P(Q[j+1][0], Q[j+1][1]));
+          d.push(["C", P(Q[j][0] + d0x*h/3, Q[j][1] + d0y*h/3), P(Q[j+1][0] - d1x*h/3, Q[j+1][1] - d1y*h/3), P(Q[j+1][0], Q[j+1][1])]);
         }
-        if ((num(r, 70) & 1) === 1) d.push("Z");
+        if ((num(r, 70) & 1) === 1) d.push(["Z"]);
       }
     } else { if (t !== "VIEWPORT") skipped[t] = (skipped[t] || 0) + 1; return; }
     if (!d.length) return;
     if (!out.has(layer)) out.set(layer, new Map());
-    const byC = out.get(layer); if (!byC.has(color)) byC.set(color, []); byC.get(color).push(d.join(""));   // one path per entity: measured separately, fast
+    const byC = out.get(layer); if (!byC.has(color)) byC.set(color, []); byC.get(color).push(d);   // one path per entity: measured separately, fast
     count++;
   }
   for (const r of group(model)) draw(r, [1, 0, 0, 1, 0, 0], {layer:null, color:null}, 0);
   const sk = Object.entries(skipped);
-  if (onHidden) notes.push(`${name}: left out ${onHidden} item${onHidden === 1 ? "" : "s"} on frozen, off, non-plotting or Defpoints layers.`);
-  if (sk.length) notes.push(`${name}: skipped ${sk.map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")} (only lines, arcs, circles, ellipses, polylines and splines are cut).`);
-  if (!count) throw new Error(`${name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space`
-    + (onHidden ? `; ${onHidden} item${onHidden === 1 ? " is" : "s are"} on frozen, off, non-plotting or Defpoints layers.` : "."));   // #85
+  if (onHidden) notes.push(msg("dxf.hiddenLeftOut", {name, count:onHidden}));
+  if (sk.length) notes.push(msg("dxf.skipped", {name, skipped:sk}));   // [DXF entity type, count]
+  if (!count) throw fail("dxf.nothingToCut", {name, hidden:onHidden});
   const w = Math.max(x1 - x0, 1e-3), h = Math.max(y1 - y0, 1e-3), used = new Set();
+  // The browser measures in single precision, so a drawing far from the origin (site coordinates) got a bounding box
+  // off by up to a few tenths of a mm (#164). Its coordinates are moved toward the origin by whole meters, which
+  // leaves drawings within a meter of it as they were.
+  const ox = Math.trunc(x0 / 1000) * 1000, oy = Math.trunc(y0 / 1000) * 1000;
+  const fmtD = d => d.map(sg => sg[0] + sg.slice(1).map(([X, Y]) => fmtN(X - ox) + " " + fmtN(Y - oy)).join(" ")).join("");
   let body = "";
   for (const [ln, byC] of out) {
     let id = "layer-" + (ln.replace(/[^A-Za-z0-9_.-]+/g, "_") || "0"); while (used.has(id)) id += "_"; used.add(id);
-    body += `<g id="${esc(id)}">` + [...byC].map(([c, ds]) => `<g stroke="${c}">` + ds.map(dd => `<path d="${dd}"/>`).join("") + `</g>`).join("") + `</g>`;
+    body += `<g id="${esc(id)}">` + [...byC].map(([c, ds]) => `<g stroke="${c}">` + ds.map(dd => `<path d="${fmtD(dd)}"/>`).join("") + `</g>`).join("") + `</g>`;
   }
-  const svg = `<svg xmlns="${SVGNS}" width="${fmtN(w)}mm" height="${fmtN(h)}mm" viewBox="${fmtN(x0)} ${fmtN(y0)} ${fmtN(w)} ${fmtN(h)}">`
+  const svg = `<svg xmlns="${SVGNS}" width="${fmtN(w)}mm" height="${fmtN(h)}mm" viewBox="${fmtN(x0 - ox)} ${fmtN(y0 - oy)} ${fmtN(w)} ${fmtN(h)}">`
     + `<g fill="none" stroke-width="0.1">${body}</g></svg>`;
   return {svg, notes, units};
+}
+const USE_LIMIT = 100000;
+function useCopies(root){
+  // the number of elements the browser creates for the <use> copies in this file
+  const byId = new Map(); for (const el of root.querySelectorAll("[id]")) if (!byId.has(el.id)) byId.set(el.id, el);
+  const memo = new Map(), busy = new Set();
+  const size = el => {                                  // el and everything it draws, copies included
+    if (memo.has(el)) return memo.get(el);
+    if (busy.has(el)) return 0;                         // a reference loop isn't drawn
+    busy.add(el);
+    let n = 1;
+    for (const c of el.children) n += size(c);
+    if (el.localName === "use") { const ref = byId.get(useRef(el)); if (ref) n += size(ref); }
+    busy.delete(el); memo.set(el, n);
+    return n;
+  };
+  try { return size(root) - root.querySelectorAll("*").length - 1; } catch(e) { return Infinity; }   // nested too deep to count
 }
 function parseSVG(text, name){
   const doc = new DOMParser().parseFromString(text, "image/svg+xml");
   const root = doc.documentElement;
-  if (doc.getElementsByTagName("parsererror").length || root.localName !== "svg") throw new Error(`${name} isn't a readable SVG file.`);
+  if (doc.getElementsByTagName("parsererror").length || root.localName !== "svg") throw fail("svg.unreadable", {name});
   root.querySelectorAll("script,foreignObject").forEach(n => n.remove());
+  // every <use> makes the browser build a copy of what it points to, copies inside copies included, as soon as the
+  // part is put in the page: a 2 KB file can ask for millions (#158)
+  if (useCopies(root) > USE_LIMIT) throw fail("svg.tooManyCopies", {name, limit:USE_LIMIT});
   const stripped = stripExternal(root);
   const all = [root, ...root.querySelectorAll("*")];
   for (const el of all) for (const a of [...el.attributes]) if (/^on/i.test(a.name)) el.removeAttribute(a.name);
@@ -712,14 +859,23 @@ function parseSVG(text, name){
   if (sheets.length) {
     // class names get the same prefix, so one file's .cut rules can't restyle another file's parts on a plate
     for (const el of all) { const c = (el.getAttribute("class") || "").trim(); if (c) el.setAttribute("class", c.split(/\s+/).map(n => pfx + n).join(" ")); }
-    for (const el of sheets) { const t = renameSelectors(el.textContent, (k, n) => k === "." ? pfx + n : null); if (t !== el.textContent) el.textContent = t; }
+    // and :root becomes :host: parts are measured in a shadow tree (#239), where :root matches nothing and :host is the
+    // element above the part, so custom properties set on :root still reach its shapes
+    for (const el of sheets) { const t = renameSelectors(el.textContent, (k, n) => k === "." ? pfx + n : k === ":" ? "host" : null); if (t !== el.textContent) el.textContent = t; }
   }
   const vbA = (root.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
   const vb = vbA.length === 4 && vbA.every(isFinite) && vbA[2] > 0 && vbA[3] > 0 ? vbA : null;
   const rootAttrs = KEEP_ATTRS.filter(a => root.hasAttribute(a)).map(a => `${a}="${esc(root.getAttribute(a))}"`).join(" ");
   const ser = new XMLSerializer();
   const inner = [...root.childNodes].filter(n => n.nodeType === 1).map(n => ser.serializeToString(n)).join("");
-  if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;opacity:0;pointer-events:none"; document.body.appendChild(host); }
+  if (!host) {
+    // measured in a shadow tree, so the page's own CSS (a {color}, [hidden] {display:none}, .icon, …) can't match the
+    // part's elements and change what is measured or exported, and the part's CSS can't match the page's (#239, #63)
+    const box = document.createElement("div"); box.setAttribute("aria-hidden", "true");
+    box.style.cssText = "all:initial;position:absolute;left:0;top:0;width:0;height:0;pointer-events:none";
+    host = document.createElementNS(SVGNS, "svg"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;opacity:0;pointer-events:none";
+    box.attachShadow({mode:"closed"}).appendChild(host); document.body.appendChild(box);
+  }
   // all:initial + black: parts must not inherit the page's theme color or fonts (currentColor would export as the UI text color, #44).
   // Hidden with opacity, which isn't inherited: visibility:hidden would make every part's own visibility unreadable (#17).
   const g = document.createElementNS(SVGNS, "g");
@@ -727,21 +883,22 @@ function parseSVG(text, name){
   // the root's fill, stroke, font-size, style, … inherit to every shape, so measuring and flattening must see them (#64)
   for (const a of KEEP_ATTRS) if (a !== "class" && root.hasAttribute(a)) g.setAttribute(a, root.getAttribute(a));
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
-  // Without a <style> the file's class names do nothing, but in the measuring host the page's own rules (.icon, .dot,
-  // .note, …) would match them and resize or recolor the shapes (#63). Prefix them while measuring; mark(false) puts
-  // the drawn names back for the exported markup.
-  const bare = sheets.length ? [] : [...g.querySelectorAll("[class]")].map(el => [el, el.getAttribute("class")]);
-  const mark = on => { for (const [el, c] of bare) el.setAttribute("class", on ? c.split(/\s+/).filter(Boolean).map(n => pfx + n).join(" ") : c); };
-  mark(true);
+  // the file's own viewport, at one px per unit, so percentage lengths resolve as in the file (#260)
+  const px = v => { const m = /^\s*([\d.]+(?:e[-+]?\d+)?)\s*(px|mm|cm|in|pt|pc)?\s*$/i.exec(v || ""), n = m ? parseFloat(m[1]) : NaN;
+    return n > 0 ? n * {px:1, mm:96 / IN, cm:960 / IN, in:96, pt:96 / 72, pc:16}[(m[2] || "px").toLowerCase()] : null; };
+  const vw = vb ? vb[2] : px(root.getAttribute("width")), vh = vb ? vb[3] : px(root.getAttribute("height"));
+  const [W, H] = vw && vh ? [vw, vh] : [10, 10];
+  host.setAttribute("viewBox", `0 0 ${W} ${H}`); host.setAttribute("width", W); host.setAttribute("height", H);
   host.appendChild(g);
   let bb, rings;
   const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, stripped};
   try {
+    const pct = fixPercents(g);
     const inl = inlineSheets(g);
     p.hidden = dropHidden(g);
-    if (inl || p.hidden) { mark(false); p.inner = [...g.children].map(n => ser.serializeToString(n)).join(""); mark(true); }
+    if (pct || inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
     bb = g.getBBox();
-    if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
+    if (!bb || (bb.width <= 0 && bb.height <= 0)) throw fail("svg.nothingVisible", {name});
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
     // sample at ~0.1 mm along curves (unit guess refined by measureScale)
     measureScaleOnly(p);
@@ -750,14 +907,42 @@ function parseSVG(text, name){
     p.flat = extractFlat(g);
     if (!p.flat) { const r = extractFlat(g, true); p.loose = r.items.length ? r.items : null; p.looseSkipped = r.skipped; }   // for DXF export
   } finally { g.remove(); }
-  if (!rings.length) throw new Error(`${name} has no cuttable shapes.`);
+  if (!rings.length) throw fail("svg.nothingToCut", {name});
   p.rings = rings;
+  // getBBox works in single precision: a drawing far from its origin (site or GIS exports) gets a box off by up to a
+  // few tenths of a unit, and Bounding box mode places parts by it (#213). Far out, take the box from the sampled
+  // outlines instead, which are in double precision, when they agree with it to within that error.
+  const far = Math.max(Math.abs(bb.x), Math.abs(bb.y), Math.abs(bb.x + bb.width), Math.abs(bb.y + bb.height));
+  if (far > 1e4) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const r of rings) for (const [x, y] of r.pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const tol = far * 1e-6;
+    if (Math.abs(x0 - bb.x) <= tol && Math.abs(y0 - bb.y) <= tol && Math.abs(x1 - bb.x - bb.width) <= tol && Math.abs(y1 - bb.y - bb.height) <= tol)
+      p.bbox = {x:x0, y:y0, width:Math.max(x1 - x0, 1e-6), height:Math.max(y1 - y0, 1e-6)};
+  }
   p.cx = p.bbox.x + p.bbox.width/2; p.cy = p.bbox.y + p.bbox.height/2;
   measureScale(p);
-  if (!p.outers.length) throw new Error(`${name} has no closed outline to nest.`);
+  if (!p.outers.length) throw fail("svg.noClosedOutline", {name});
   const thumbSVG = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${rootAttrs}>${p.inner}</g></svg>`;
   p.thumb = URL.createObjectURL(new Blob([thumbSVG], {type:"image/svg+xml"}));
   return p;
+}
+const PCT_ATTRS = {rect:["x","y","width","height","rx","ry"], circle:["cx","cy","r"], ellipse:["cx","cy","rx","ry"],
+  line:["x1","y1","x2","y2"], image:["x","y","width","height"], use:["x","y","width","height"], svg:["x","y","width","height"]};
+function fixPercents(g){
+  // percentage lengths are written out as the user-unit values they resolve to in the file's viewport, so the outline,
+  // the export, the thumbnail and the plate (each drawn in a different viewport) all agree (#260). Shapes in clip paths,
+  // masks, patterns, markers and symbols are left alone: their percentages can be relative to something else.
+  let n = 0;
+  for (const el of g.querySelectorAll(Object.keys(PCT_ATTRS).join(","))) {
+    if (el.namespaceURI !== SVGNS || el.closest("clipPath,mask,pattern,marker,symbol")) continue;
+    for (const k of PCT_ATTRS[el.localName]) {
+      const a = el.getAttribute(k);
+      if (!a || !/%\s*$/.test(a) || !el[k] || !el[k].baseVal) continue;
+      el.setAttribute(k, String(+el[k].baseVal.value.toPrecision(7))); n++;
+    }
+  }
+  return n;
 }
 const PRES = new Set(["fill","fill-opacity","fill-rule","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin",
   "stroke-miterlimit","stroke-dasharray","stroke-dashoffset","opacity","display","visibility","color","font-family","font-size",
@@ -817,7 +1002,8 @@ function inlineSheets(g){
     }
     return PRES.has(prop) && !/url\(|["']/.test(v) ? px(v).replace(/,\s*/g, prop === "stroke-dasharray" ? " " : ", ") : v;
   };
-  const writes = [...want].map(([el, props]) => { const cs = getComputedStyle(el); return [el, [...props].map(q => [q, cs.getPropertyValue(q)]).filter(([, v]) => v !== "")]; });
+  // the computed values have var() substituted: check them again, so nothing the sanitizer couldn't see reaches the export (#238)
+  const writes = [...want].map(([el, props]) => { const cs = getComputedStyle(el); return [el, [...props].map(q => [q, cs.getPropertyValue(q)]).filter(([q, v]) => v !== "" && !cssExternal(`${q}:${v}`))]; });
   for (const s of sheets) {
     const keep = s.sheet ? [...s.sheet.cssRules].filter(r => r instanceof CSSFontFaceRule || r instanceof CSSKeyframesRule).map(r => r.cssText).join("\n") : "";
     if (keep) s.textContent = keep; else s.remove();
@@ -929,7 +1115,7 @@ function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
   return out;
 }
 const FLAT_SHAPES = new Set(["path","rect","circle","ellipse","line","polyline","polygon"]);
-const FLAT_SKIP = new Set(["g","a","svg","switch","defs","style","title","desc","metadata","linearGradient","radialGradient","stop","symbol","clipPath","mask","pattern","marker","filter"]);
+const FLAT_SKIP = new Set(["g","a","svg","switch","defs","style","title","desc","metadata","linearGradient","radialGradient","stop","symbol","clipPath","mask","pattern","marker","filter","view"]);
 function cssColor(v){
   if (!v || v === "none") return "none";
   if (/^url\(/i.test(v)) return undefined;
@@ -945,17 +1131,17 @@ function extractFlat(g, loose){
   const out = [], skipped = new Set();
   for (const el of g.querySelectorAll("*")) {
     if (el.namespaceURI !== SVGNS) continue;
-    if (el.closest("defs,clipPath,mask,symbol,pattern,marker")) continue;
+    if (el.closest("defs,clipPath,mask,symbol,pattern,marker,filter")) continue;   // a filter's primitives draw nothing (#265)
     const tag = el.localName, cs = getComputedStyle(el);
     if ((cs.clipPath && cs.clipPath !== "none") || (cs.mask && cs.mask !== "none") || (cs.filter && cs.filter !== "none")) {
       if (!loose) return null;
-      skipped.add("clipping, masks and filters (shapes exported whole)");
+      skipped.add("clipping");
     }
     if (FLAT_SKIP.has(tag)) continue;
     if (!FLAT_SHAPES.has(tag)) {                        // text, images, <use>: keep original markup
       if (!loose) return null;
       if (["text","tspan","textPath"].includes(tag)) skipped.add("text"); else if (tag === "image") skipped.add("images");
-      else if (tag === "use") skipped.add("linked copies (<use>)"); else skipped.add(`<${tag}> elements`);
+      else if (tag === "use") skipped.add("use"); else skipped.add("<" + tag);
       continue;
     }
     let hidden = false;
@@ -964,17 +1150,22 @@ function extractFlat(g, loose){
     let fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);     // a line is never filled
     if (fill === undefined || stroke === undefined) {
       if (!loose) return null;
-      skipped.add("gradient and pattern colors (exported black)");
+      skipped.add("paint");
       if (fill === undefined) fill = "#000000"; if (stroke === undefined) stroke = "#000000";
     }
     if (fill === "none" && stroke === "none") continue;
     let d;
-    const v = k => el[k].baseVal.value;
+    const v = k => len(el, k);
     if (tag === "path") d = el.getAttribute("d") || "";
     else if (tag === "rect") {
       const x = v("x"), y = v("y"), w = v("width"), h = v("height");
       if (w <= 0 || h <= 0) continue;
-      let rx = el.hasAttribute("rx") ? v("rx") : null, ry = el.hasAttribute("ry") ? v("ry") : null;
+      // the corner radii as drawn: CSS rx/ry (from a style sheet or attribute) win over the attributes, as in the outline (#263)
+      const radius = k => { const c = cs[k]; if (!c || c === "auto") return null;
+        const n = parseFloat(c), a = el.hasAttribute(k) ? v(k) : null;
+        if (c.endsWith("%") || isNaN(n)) return a;
+        return a != null && Math.abs(n - a) <= 1e-6 * Math.max(1, Math.abs(a)) ? a : n; };
+      let rx = radius("rx"), ry = radius("ry");
       if (rx == null) rx = ry ?? 0; if (ry == null) ry = rx;
       rx = Math.min(rx, w/2); ry = Math.min(ry, h/2);
       d = rx > 0 && ry > 0
@@ -986,12 +1177,12 @@ function extractFlat(g, loose){
       d = `M${cx-rx} ${cy}A${rx} ${ry} 0 1 0 ${cx+rx} ${cy}A${rx} ${ry} 0 1 0 ${cx-rx} ${cy}Z`;
     } else if (tag === "line") d = `M${v("x1")} ${v("y1")}L${v("x2")} ${v("y2")}`;
     else {
-      const pts = [...el.points].map(q => `${q.x} ${q.y}`);
+      const pts = pointsOf(el).map(([x, y]) => `${x} ${y}`);
       if (pts.length < 2) continue;
       d = "M" + pts.join("L") + (tag === "polygon" ? "Z" : "");
     }
     let segs;
-    try { segs = parsePathD(d); } catch(e) { if (!loose) return null; skipped.add("unreadable paths"); continue; }
+    try { segs = parsePathD(d); } catch(e) { if (!loose) return null; skipped.add("unreadable"); continue; }
     if (!segs.length) continue;
     const scr = el.getScreenCTM(); if (!scr) continue;
     const m = hostInv.multiply(scr);
@@ -1043,8 +1234,15 @@ function cutPlan(p, flat = p.flat, byLayer = false){
   if (p[slot] && p[slot + "Key"] === ck) return p[slot];
   let subs = [];
   flat.forEach((it, item) => {
-    let cur = null;
-    for (const sg of it.segs) { if (sg[0] === "M" || !cur) { cur = {item, segs:[]}; subs.push(cur); } cur.segs.push(sg); }
+    // after Z, drawing goes on from the subpath's start point as a new subpath (as in SVG), not as part of the closed one (#264)
+    let cur = null, home = null;
+    for (const sg of it.segs) {
+      if (sg[0] === "M") home = [sg[1], sg[2]];
+      if (sg[0] === "M" || !cur || cur.segs[cur.segs.length - 1][0] === "Z") {
+        cur = {item, segs:sg[0] === "M" || !home ? [] : [["M", ...home]]}; subs.push(cur);
+      }
+      cur.segs.push(sg);
+    }
   });
   subs = joinSubpaths(flat, subs, 0.01 / Math.min(p.kx, p.ky), byLayer);
   for (const sub of subs) {
@@ -1199,7 +1397,7 @@ function kerfPaths(p, gr, M, notes){
     const ccw = CL.Clipper.Orientation(ring); if (!ccw) ring.reverse();
     const off = new CL.ClipperOffset(2, 2); off.AddPath(ring, CL.JoinType.jtRound, CL.EndType.etClosedPolygon);
     const res = new CL.Paths(); off.Execute(res, (sub.depth % 2 ? -c : c) * SC);
-    if (!res.length) { notes && notes.add(`A hole in ${p.name} is narrower than the kerf, so it was left as drawn.`); return null; }
+    if (!res.length) { notes && notes.add(msg("kerf.holeTooNarrow", {name:p.name})); return null; }
     const [sx, sy] = pts[0];
     return res.map(q => {
       if (CL.Clipper.Orientation(q) !== ccw) q.reverse();               // keep the drawn direction
@@ -1209,7 +1407,7 @@ function kerfPaths(p, gr, M, notes){
     });
   });
 }
-const markupNote = (p, notes) => { if (kerfC() && !p.precomp) notes.add(`${p.name} has text, images, linked copies or effects, so its kerf can't be compensated; it is exported as drawn.`); };
+const markupNote = (p, notes) => { if (kerfC() && !p.precomp) notes.add(msg("kerf.markup", {name:p.name})); };
 function partMarkup(p, M, id, fallbackTransform, notes){
   // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
   // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
@@ -1235,18 +1433,6 @@ function partMarkup(p, M, id, fallbackTransform, notes){
 }
 
 /* ---------- polygon helpers ---------- */
-const area = path => CL.Clipper.Area(path);
-function hull(pts){
-  const P = pts.slice().sort((a, b) => a.X - b.X || a.Y - b.Y);
-  if (P.length < 3) return P;
-  const cr = (o, a, b) => (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
-  const lo = [], up = [];
-  for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length-2], lo[lo.length-1], p) <= 0) lo.pop(); lo.push(p); }
-  for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (up.length >= 2 && cr(up[up.length-2], up[up.length-1], p) <= 0) up.pop(); up.push(p); }
-  const h = lo.slice(0, -1).concat(up.slice(0, -1));
-  if (!CL.Clipper.Orientation(h)) h.reverse();
-  return h;
-}
 function rdp(path, tol){
   // Ramer–Douglas–Peucker on a closed ring of {X,Y}
   const n = path.length; if (n < 5) return path;
@@ -1263,11 +1449,6 @@ function rdp(path, tol){
   }
   const out = []; for (let i = 0; i < n; i++) if (keep[i]) out.push(path[i]);
   return out.length >= 3 ? out : path;
-}
-function bounds(paths){
-  let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
-  for (const p of paths) for (const q of p) { if (q.X < a) a = q.X; if (q.Y < b) b = q.Y; if (q.X > c) c = q.X; if (q.Y > d) d = q.Y; }
-  return {minX:a, minY:b, maxX:c, maxY:d};
 }
 
 function buildOutline(p){
@@ -1387,33 +1568,6 @@ function holeRegions(p){
   }
   return out;
 }
-function holeFit(A, hi, B){
-  // where B's origin may go so that B's envelope lies wholly inside hole region hi of A (A at the origin): the region
-  // moved by −(a vertex of each of B's outlines), minus every position where B touches the region's edges. Exact for
-  // B's convex pieces: B meets an edge exactly when its origin is in edge ⊕ (−piece).
-  const key = A.key + "#" + hi + "|" + B.key;
-  let r = nfpCache.get(key);
-  if (r) return r;
-  const R = A.holes[hi];
-  r = [];
-  if (R.maxX - R.minX >= B.maxX - B.minX && R.maxY - R.minY >= B.maxY - B.minY) {
-    let base = R.paths;
-    for (const q of B.paths) {
-      const v = q[0], c = new CL.Clipper(), moved = R.paths.map(path => path.map(u => ({X:u.X - v.X, Y:u.Y - v.Y})));
-      if (base === R.paths) { base = moved; continue; }
-      c.AddPaths(base, CL.PolyType.ptSubject, true); c.AddPaths(moved, CL.PolyType.ptClip, true);
-      base = new CL.Paths(); c.Execute(CL.ClipType.ctIntersection, base, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
-    }
-    const c = new CL.Clipper(); c.AddPaths(base, CL.PolyType.ptSubject, true);
-    for (const path of R.paths) for (let i = 0; i < path.length; i++) {
-      const e0 = path[i], e1 = path[(i + 1) % path.length];
-      for (const pb of B.pieces) { const pts = []; for (const b of pb) pts.push({X:e0.X - b.X, Y:e0.Y - b.Y}, {X:e1.X - b.X, Y:e1.Y - b.Y});
-        c.AddPath(hull(pts), CL.PolyType.ptClip, true); }
-    }
-    r = new CL.Paths(); c.Execute(CL.ClipType.ctDifference, r, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
-  }
-  return cacheSet(key, r);
-}
 function convexPieces(poly){
   // ear-clipping triangulation, then Hertel–Mehlhorn merging into convex pieces
   const P = poly.map(v => ({X:v.X, Y:v.Y}));
@@ -1461,78 +1615,281 @@ function convexPieces(poly){
   }
   return pcs.map(r => r.map(i => P[i]));
 }
-function shape(p, ang){
-  const env = envelope(p);
-  let s = p.shapes.get(ang);
-  if (s) return s;
-  const r = ang * Math.PI / 180, co = Math.cos(r), si = Math.sin(r);
-  const rot = q => ang === 0 ? q : q.map(v => ({X:Math.round(v.X*co - v.Y*si), Y:Math.round(v.X*si + v.Y*co)}));
-  const paths = env.paths.map(rot);
-  // bounds of the part's real cut outline (moved out by the kerf when compensated): what has to stay inside the margins
-  const tb = bounds(p.outers.map(rot)), k = kerfC(p) * SC;
-  const cut = {minX:tb.minX - k, minY:tb.minY - k, maxX:tb.maxX + k, maxY:tb.maxY + k};
-  const holes = env.holes.map(h => { const ps = h.paths.map(rot); return {paths:ps, ...bounds(ps)}; });
-  s = {key:`${p.uid}:${ang}:${geoVer}${env.useHoles ? "h" : ""}`, part:p, ang, paths, pieces:env.pieces.map(rot), convex:env.convex, area:env.area,
-    holes, holeArea:env.holeArea, cut, ...bounds(paths)};
-  p.shapes.set(ang, s);
-  return s;
-}
-// A ⊕ (−B) for convex pieces in O(n + m) by merging their edges by angle, returned exactly as hull() would return the
-// hull of every a − b (strictly convex, counterclockwise, from the lowest-x, then lowest-y vertex), so layouts don't
-// change. null when a piece isn't convex (the whole-outline fallback of convexPieces): hull() handles it.
-function convexSum(pa, pb){
-  const prep = poly => {                   // counterclockwise, no repeated or collinear vertices; null if not convex
-    const q = []; for (const v of poly) { const l = q[q.length - 1]; if (!l || l.X !== v.X || l.Y !== v.Y) q.push(v); }
-    while (q.length > 1 && q[0].X === q[q.length - 1].X && q[0].Y === q[q.length - 1].Y) q.pop();
-    let neg = false, pos = false; const out = [];
-    for (let i = 0; i < q.length; i++) { const a = q[(i + q.length - 1) % q.length], b = q[i], c = q[(i + 1) % q.length];
-      const z = (b.X - a.X) * (c.Y - b.Y) - (b.Y - a.Y) * (c.X - b.X); if (z > 0) pos = true; else if (z < 0) neg = true; if (z) out.push(b); }
-    if (pos && neg) return null;
-    if (neg) out.reverse();
-    return out.length >= 3 ? out : null;
-  };
-  const A = prep(pa), B = prep(pb && pb.map(v => ({X:-v.X, Y:-v.Y})));
-  if (!A || !B) return null;
-  const low = P => { let k = 0; for (let i = 1; i < P.length; i++) if (P[i].Y < P[k].Y || (P[i].Y === P[k].Y && P[i].X < P[k].X)) k = i; return P.slice(k).concat(P.slice(0, k)); };
-  const P = low(A), Q = low(B), n = P.length, m = Q.length, out = [];
-  let i = 0, j = 0;
-  while (i < n || j < m) {
-    const a = P[i % n], b = Q[j % m]; out.push({X:a.X + b.X, Y:a.Y + b.Y});
-    const ea = {X:P[(i + 1) % n].X - a.X, Y:P[(i + 1) % n].Y - a.Y}, eb = {X:Q[(j + 1) % m].X - b.X, Y:Q[(j + 1) % m].Y - b.Y};
-    const z = i >= n ? -1 : j >= m ? 1 : ea.X * eb.Y - ea.Y * eb.X;
-    if (z > 0) i++; else if (z < 0) j++; else { i++; j++; }
+/* ---------- nesting core ----------
+   Shapes, no-fit polygons, placement, packing and the order search. Self-contained (it uses only its arguments and
+   the global performance), because the search worker (#4) runs this same function from its source text: CL is
+   clipper-lib, SC the integer units per mm, and hooks give what the page works out from the imported file
+   (envOf(p): the part's envelope, kerfOf(p): its kerf compensation, fillOf(p): its real material, ver(): the geometry
+   version). */
+function nestCore(CL, SC, hooks){
+  const area = path => CL.Clipper.Area(path);
+  function hull(pts){
+    const P = pts.slice().sort((a, b) => a.X - b.X || a.Y - b.Y);
+    if (P.length < 3) return P;
+    const cr = (o, a, b) => (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
+    const lo = [], up = [];
+    for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length-2], lo[lo.length-1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (up.length >= 2 && cr(up[up.length-2], up[up.length-1], p) <= 0) up.pop(); up.push(p); }
+    const h = lo.slice(0, -1).concat(up.slice(0, -1));
+    if (!CL.Clipper.Orientation(h)) h.reverse();
+    return h;
   }
-  const r = prep(out); if (!r) return null;
-  let k = 0; for (let t = 1; t < r.length; t++) if (r[t].X < r[k].X || (r[t].X === r[k].X && r[t].Y < r[k].Y)) k = t;
-  return r.slice(k).concat(r.slice(0, k));
-}
-const nfpCache = new Map(), NFP_MAX = 80000;
-// a full cache drops its oldest quarter, not everything: a big mixed job needs more pairs than fit, and clearing it all
-// made every pack rebuild most of them
-// Entries are kept as flat Int32Arrays (x, y, x, y…), one object per polygon instead of one per point: a full cache of
-// {X,Y} objects made garbage collection pause the page for up to a second.
-function cacheSet(key, r){
-  if (nfpCache.size >= NFP_MAX) { let n = NFP_MAX >> 2; for (const k of nfpCache.keys()) { nfpCache.delete(k); if (!--n) break; } }
-  const packed = r.map(q => { const a = new Int32Array(q.length * 2); q.forEach((v, i) => { a[2*i] = v.X; a[2*i + 1] = v.Y; }); return a; });
-  nfpCache.set(key, packed);
-  return packed;
-}
-const unpack = (a, dx = 0, dy = 0) => { const q = new Array(a.length >> 1); for (let i = 0; i < q.length; i++) q[i] = {X:a[2*i] + dx, Y:a[2*i + 1] + dy}; return q; };
-function nfp(A, B){
-  // region where B's origin may NOT go when A sits at the origin: A ⊕ (−B), built from convex piece pairs
-  const key = A.key + "|" + B.key;
-  let r = nfpCache.get(key);
-  if (r) return r;
-  const sum = (pa, pb) => convexSum(pa, pb) || hull(pa.flatMap(a => pb.map(b => ({X:a.X - b.X, Y:a.Y - b.Y}))));
-  if (A.pieces.length === 1 && B.pieces.length === 1) r = [sum(A.pieces[0], B.pieces[0])];
-  else {
-    const c = new CL.Clipper();
-    for (const pa of A.pieces) for (const pb of B.pieces) c.AddPath(sum(pa, pb), CL.PolyType.ptSubject, true);
-    r = new CL.Paths();
-    c.Execute(CL.ClipType.ctUnion, r, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+  function bounds(paths){
+    let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+    for (const p of paths) for (const q of p) { if (q.X < a) a = q.X; if (q.Y < b) b = q.Y; if (q.X > c) c = q.X; if (q.Y > d) d = q.Y; }
+    return {minX:a, minY:b, maxX:c, maxY:d};
   }
-  return cacheSet(key, r);
+  function holeFit(A, hi, B){
+    // where B's origin may go so that B's envelope lies wholly inside hole region hi of A (A at the origin): the region
+    // moved by −(a vertex of each of B's outlines), minus every position where B touches the region's edges. Exact for
+    // B's convex pieces: B meets an edge exactly when its origin is in edge ⊕ (−piece).
+    const key = A.key + "#" + hi + "|" + B.key;
+    let r = nfpCache.get(key);
+    if (r) return r;
+    const R = A.holes[hi];
+    r = [];
+    if (R.maxX - R.minX >= B.maxX - B.minX && R.maxY - R.minY >= B.maxY - B.minY) {
+      let base = R.paths;
+      for (const q of B.paths) {
+        const v = q[0], c = new CL.Clipper(), moved = R.paths.map(path => path.map(u => ({X:u.X - v.X, Y:u.Y - v.Y})));
+        if (base === R.paths) { base = moved; continue; }
+        c.AddPaths(base, CL.PolyType.ptSubject, true); c.AddPaths(moved, CL.PolyType.ptClip, true);
+        base = new CL.Paths(); c.Execute(CL.ClipType.ctIntersection, base, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+      }
+      const c = new CL.Clipper(); c.AddPaths(base, CL.PolyType.ptSubject, true);
+      for (const path of R.paths) for (let i = 0; i < path.length; i++) {
+        const e0 = path[i], e1 = path[(i + 1) % path.length];
+        for (const pb of B.pieces) { const pts = []; for (const b of pb) pts.push({X:e0.X - b.X, Y:e0.Y - b.Y}, {X:e1.X - b.X, Y:e1.Y - b.Y});
+          c.AddPath(hull(pts), CL.PolyType.ptClip, true); }
+      }
+      r = new CL.Paths(); c.Execute(CL.ClipType.ctDifference, r, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+    }
+    return cacheSet(key, r);
+  }
+  function shape(p, ang){
+    const env = hooks.envOf(p);
+    let s = p.shapes.get(ang);
+    if (s) return s;
+    const r = ang * Math.PI / 180, co = Math.cos(r), si = Math.sin(r);
+    const rot = q => ang === 0 ? q : q.map(v => ({X:Math.round(v.X*co - v.Y*si), Y:Math.round(v.X*si + v.Y*co)}));
+    const paths = env.paths.map(rot);
+    // bounds of the part's real cut outline (moved out by the kerf when compensated): what has to stay inside the margins
+    const tb = bounds(p.outers.map(rot)), k = hooks.kerfOf(p) * SC;
+    const cut = {minX:tb.minX - k, minY:tb.minY - k, maxX:tb.maxX + k, maxY:tb.maxY + k};
+    const holes = env.holes.map(h => { const ps = h.paths.map(rot); return {paths:ps, ...bounds(ps)}; });
+    s = {key:`${p.uid}:${ang}:${hooks.ver()}${env.useHoles ? "h" : ""}`, part:p, ang, paths, pieces:env.pieces.map(rot), convex:env.convex, area:env.area,
+      holes, holeArea:env.holeArea, cut, ...bounds(paths)};
+    p.shapes.set(ang, s);
+    return s;
+  }
+  // A ⊕ (−B) for convex pieces in O(n + m) by merging their edges by angle, returned exactly as hull() would return the
+  // hull of every a − b (strictly convex, counterclockwise, from the lowest-x, then lowest-y vertex), so layouts don't
+  // change. null when a piece isn't convex (the whole-outline fallback of convexPieces): hull() handles it.
+  function convexSum(pa, pb){
+    const prep = poly => {                   // counterclockwise, no repeated or collinear vertices; null if not convex
+      const q = []; for (const v of poly) { const l = q[q.length - 1]; if (!l || l.X !== v.X || l.Y !== v.Y) q.push(v); }
+      while (q.length > 1 && q[0].X === q[q.length - 1].X && q[0].Y === q[q.length - 1].Y) q.pop();
+      let neg = false, pos = false; const out = [];
+      for (let i = 0; i < q.length; i++) { const a = q[(i + q.length - 1) % q.length], b = q[i], c = q[(i + 1) % q.length];
+        const z = (b.X - a.X) * (c.Y - b.Y) - (b.Y - a.Y) * (c.X - b.X); if (z > 0) pos = true; else if (z < 0) neg = true; if (z) out.push(b); }
+      if (pos && neg) return null;
+      if (neg) out.reverse();
+      return out.length >= 3 ? out : null;
+    };
+    const A = prep(pa), B = prep(pb && pb.map(v => ({X:-v.X, Y:-v.Y})));
+    if (!A || !B) return null;
+    const low = P => { let k = 0; for (let i = 1; i < P.length; i++) if (P[i].Y < P[k].Y || (P[i].Y === P[k].Y && P[i].X < P[k].X)) k = i; return P.slice(k).concat(P.slice(0, k)); };
+    const P = low(A), Q = low(B), n = P.length, m = Q.length, out = [];
+    let i = 0, j = 0;
+    while (i < n || j < m) {
+      const a = P[i % n], b = Q[j % m]; out.push({X:a.X + b.X, Y:a.Y + b.Y});
+      const ea = {X:P[(i + 1) % n].X - a.X, Y:P[(i + 1) % n].Y - a.Y}, eb = {X:Q[(j + 1) % m].X - b.X, Y:Q[(j + 1) % m].Y - b.Y};
+      const z = i >= n ? -1 : j >= m ? 1 : ea.X * eb.Y - ea.Y * eb.X;
+      if (z > 0) i++; else if (z < 0) j++; else { i++; j++; }
+    }
+    const r = prep(out); if (!r) return null;
+    let k = 0; for (let t = 1; t < r.length; t++) if (r[t].X < r[k].X || (r[t].X === r[k].X && r[t].Y < r[k].Y)) k = t;
+    return r.slice(k).concat(r.slice(0, k));
+  }
+  const nfpCache = new Map(), NFP_MAX = 80000;
+  // a full cache drops its oldest quarter, not everything: a big mixed job needs more pairs than fit, and clearing it all
+  // made every pack rebuild most of them
+  // Entries are kept as flat Int32Arrays (x, y, x, y…), one object per polygon instead of one per point: a full cache of
+  // {X,Y} objects made garbage collection pause the page for up to a second.
+  function cacheSet(key, r){
+    if (nfpCache.size >= NFP_MAX) { let n = NFP_MAX >> 2; for (const k of nfpCache.keys()) { nfpCache.delete(k); if (!--n) break; } }
+    const packed = r.map(q => { const a = new Int32Array(q.length * 2); q.forEach((v, i) => { a[2*i] = v.X; a[2*i + 1] = v.Y; }); return a; });
+    nfpCache.set(key, packed);
+    return packed;
+  }
+  const unpack = (a, dx = 0, dy = 0) => { const q = new Array(a.length >> 1); for (let i = 0; i < q.length; i++) q[i] = {X:a[2*i] + dx, Y:a[2*i + 1] + dy}; return q; };
+  function nfp(A, B){
+    // region where B's origin may NOT go when A sits at the origin: A ⊕ (−B), built from convex piece pairs
+    const key = A.key + "|" + B.key;
+    let r = nfpCache.get(key);
+    if (r) return r;
+    const sum = (pa, pb) => convexSum(pa, pb) || hull(pa.flatMap(a => pb.map(b => ({X:a.X - b.X, Y:a.Y - b.Y}))));
+    if (A.pieces.length === 1 && B.pieces.length === 1) r = [sum(A.pieces[0], B.pieces[0])];
+    else {
+      const c = new CL.Clipper();
+      for (const pa of A.pieces) for (const pb of B.pieces) c.AddPath(sum(pa, pb), CL.PolyType.ptSubject, true);
+      r = new CL.Paths();
+      c.Execute(CL.ClipType.ctUnion, r, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+    }
+    return cacheSet(key, r);
+  }
+  function bestPos(bin, Bs, F){
+    // the margins are checked against the real cut outline, not the envelope: simplification can leave the envelope up
+    // to 0.95 × the precision inside the outline, which let cuts reach into the margin (#72)
+    let xMin = F.mL - Bs.cut.minX, xMax = F.mR - Bs.cut.maxX, yMin = F.mT - Bs.cut.minY, yMax = F.mB - Bs.cut.maxY;
+    if (xMin > xMax || yMin > yMax) return null;
+    if (xMax - xMin < 2) xMax = xMin + 2;
+    if (yMax - yMin < 2) yMax = yMin + 2;
+    const ifp = [{X:xMin, Y:yMin}, {X:xMax, Y:yMin}, {X:xMax, Y:yMax}, {X:xMin, Y:yMax}];
+    let region;
+    if (!bin.items.length) region = [ifp];
+    else {
+      const c = new CL.Clipper();
+      c.AddPath(ifp, CL.PolyType.ptSubject, true);
+      for (const it of bin.items) {
+        // skip neighbors that can't reach the inner-fit rectangle
+        if (it.x + it.s.maxX - Bs.minX < xMin || it.x + it.s.minX - Bs.maxX > xMax || it.y + it.s.maxY - Bs.minY < yMin || it.y + it.s.minY - Bs.maxY > yMax) continue;
+        let block = nfp(it.s, Bs);
+        if (it.s.holes.length) {            // the neighbor's holes, where Bs fits inside them, are open (#3)
+          const fits = it.s.holes.flatMap((_, hi) => holeFit(it.s, hi, Bs));
+          if (fits.length) { const d = new CL.Clipper(); d.AddPaths(block.map(q => unpack(q)), CL.PolyType.ptSubject, true); d.AddPaths(fits.map(q => unpack(q)), CL.PolyType.ptClip, true);
+            block = new CL.Paths(); d.Execute(CL.ClipType.ctDifference, block, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero); }
+        }
+        for (const q of block) c.AddPath(q instanceof Int32Array ? unpack(q, it.x, it.y) : q.map(v => ({X:v.X + it.x, Y:v.Y + it.y})), CL.PolyType.ptClip, true);
+      }
+      region = new CL.Paths();
+      c.Execute(CL.ClipType.ctDifference, region, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+    }
+    let best = null;
+    const bb = bin.bb;
+    for (const path of region) for (const v of path) {
+      const x0 = Math.min(bb.x0, v.X + Bs.minX), y0 = Math.min(bb.y0, v.Y + Bs.minY), x1 = Math.max(bb.x1, v.X + Bs.maxX), y1 = Math.max(bb.y1, v.Y + Bs.maxY);
+      const sc = (x1 - x0) / SC * ((y1 - y0) / SC) + (v.Y + v.X * 0.5) / SC * 1e-3;
+      if (!best || sc < best.sc) best = {x:v.X, y:v.Y, sc};
+    }
+    return best;
+  }
+  function newBin(){ return {items:[], area:0, fill:0, envArea:0, bb:{x0:Infinity, y0:Infinity, x1:-Infinity, y1:-Infinity}}; }
+  function addTo(bin, s, pos){
+    bin.items.push({s, x:pos.x, y:pos.y});
+    // area scores the search: whole outlines, a part nested in a hole adding nothing. fill is for the figures shown: real
+    // material, so a hole counts as empty until a part is nested in it, and then only that part counts (#3)
+    if (s.holes.length) bin.holey = true;
+    if (!bin.holey || container(bin.items, bin.items.length - 1) == null) bin.area += s.part.areaMM;
+    bin.fill += hooks.fillOf(s.part);
+    bin.envArea += s.area - s.holeArea;
+    const b = bin.bb; b.x0 = Math.min(b.x0, pos.x + s.minX); b.y0 = Math.min(b.y0, pos.y + s.minY); b.x1 = Math.max(b.x1, pos.x + s.maxX); b.y1 = Math.max(b.y1, pos.y + s.maxY);
+  }
+  async function pack(items, order, angPick, F, pause){
+    // pause() is awaited about every 30 ms: it lets the page (or the worker's messages) in, and throws to stop the pack
+    const bins = []; let last = performance.now();
+    const frameA = (F.R - F.L) * (F.B - F.T);
+    // also between rotations: one part at 24 angles against one bin (holes on) ran over a second without a pause (#148)
+    const breathe = async () => { if (performance.now() - last > 30) { await pause(); last = performance.now(); } };
+    for (const i of order) {
+      const it = items[i]; let done = false;
+      const angs = angPick(it);
+      for (const bin of bins) {
+        if (frameA - bin.envArea < it.envArea * 0.98) continue;
+        // a shape that found no place in this plate finds none again while the plate is unchanged, so its later copies
+        // skip it: bestPos is pure, so the layout is the same, only without repeating the plate's whole difference
+        const full = bin.full || (bin.full = new Map());
+        let best = null;
+        for (const a of angs) {
+          const s = shape(it.part, a);
+          if (full.get(s.key) !== bin.items.length) {
+            const pos = bestPos(bin, s, F);
+            if (!pos) full.set(s.key, bin.items.length);
+            else if (!best || pos.sc < best.pos.sc) best = {s, pos};
+          }
+          await breathe();
+        }
+        if (best) { addTo(bin, best.s, best.pos); done = true; break; }
+        await breathe();
+      }
+      if (!done) {
+        const bin = newBin(); let best = null;
+        for (const a of angs) { const s = shape(it.part, a); const pos = bestPos(bin, s, F); if (pos && (!best || pos.sc < best.pos.sc)) best = {s, pos}; await breathe(); }
+        if (best) { addTo(bin, best.s, best.pos); bins.push(bin); }
+      }
+      await breathe();
+    }
+    return bins;
+  }
+  function score(bins, plateA){ let sq = 0; for (const b of bins) { const u = b.area / plateA; sq += u*u; } return [bins.length, -sq]; }
+  const better = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1] - 1e-9);
+  function container(items, j){
+    // the part whose hole item j was placed in (the innermost one), or null: its cuts must all come first (#3)
+    const B = items[j], v = B.s.paths[0][0], pt = {X:v.X + B.x, Y:v.Y + B.y};
+    // within this many units of an edge counts as on it: the vertex can land a fraction of a unit past it from rounding
+    const TOL = 4, near = (q, r) => r.some((a, k) => {
+      const b = r[(k + 1) % r.length], dx = b.X - a.X, dy = b.Y - a.Y, l = dx * dx + dy * dy;
+      const t = l ? Math.max(0, Math.min(1, ((q.X - a.X) * dx + (q.Y - a.Y) * dy) / l)) : 0;
+      return Math.hypot(q.X - a.X - t * dx, q.Y - a.Y - t * dy) <= TOL;
+    });
+    let best = null, bestA = Infinity;
+    items.forEach((A, i) => {
+      if (i === j) return;
+      A.s.holes.forEach(h => {
+        const q = {X:pt.X - A.x, Y:pt.Y - A.y}, [outer, ...islands] = h.paths;
+        // the vertex usually lies on the hole region's edge (placements are its vertices), so the edge counts as inside
+        // (#151); only a point strictly inside an island is out, and a vertex rounded just past either edge stays on it (#259)
+        if ((CL.Clipper.PointInPolygon(q, outer) === 0 && !near(q, outer))
+          || islands.some(r => CL.Clipper.PointInPolygon(q, r) === 1 && !near(q, r))) return;
+        const a = area(outer); if (a < bestA) { bestA = a; best = i; }
+      });
+    });
+    return best;
+  }
+  // the search's random numbers (mulberry32), seeded with 7; the state is st.seed, so a search can be continued later,
+  // in this thread or another
+  function rand(st){ let seed = st.seed | 0; seed = seed + 0x6D2B79F5 | 0; st.seed = seed; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+  // The order search: the sorted starting orders still pending, then a random walk of 1–3 swaps or moves from the best
+  // order, each try kept when it is no worse. st ({pending, seed, bestOrder, bestScore, tried}) is updated as it goes, so
+  // the caller can continue the search. o: {items, F, plateA, minPlates, ms, t0, angPick, pause, onBest(bins, score),
+  // onStep(), onDraw()}.
+  async function searchLoop(st, o){
+    const {items, F, plateA, minPlates, ms, t0, angPick, pause} = o;
+    while (st.pending.length) {
+      // the time limit covers the starting packs too: on a big job at fine steps one pack can take longer than the
+      // whole search, so the second is skipped once a layout exists and the time is up (#234). ms 0 packs both
+      if (st.bestScore && ms && performance.now() - t0 >= ms) { st.pending = []; break; }
+      const order = st.pending.shift();
+      const bins = await pack(items, order, angPick, F, pause);
+      st.tried++;
+      const sc = score(bins, plateA);
+      if (!st.bestScore || better(sc, st.bestScore)) { st.bestOrder = order; st.bestScore = sc; o.onBest(bins, sc); }
+      o.onStep();
+    }
+    if (items.length < 2) return;
+    let cur = st.bestOrder, curScore = st.bestScore;
+    while (performance.now() - t0 < ms) {
+      if (st.bestScore[0] <= minPlates && st.bestScore[0] === 1) break;
+      const ord = cur.slice(), n = ord.length;
+      const moves = 1 + Math.floor(rand(st) * 3);
+      for (let m = 0; m < moves; m++) {
+        const a = Math.floor(rand(st) * n), b = Math.floor(rand(st) * n);
+        if (rand(st) < 0.5) [ord[a], ord[b]] = [ord[b], ord[a]]; else { const [x] = ord.splice(a, 1); ord.splice(b, 0, x); }
+      }
+      if (o.onDraw) o.onDraw();
+      const bins = await pack(items, ord, angPick, F, pause);
+      st.tried++;
+      const sc = score(bins, plateA);
+      if (!better(curScore, sc)) { cur = ord; curScore = sc; }
+      if (better(sc, st.bestScore)) { st.bestOrder = ord; st.bestScore = sc; o.onBest(bins, sc); }
+      o.onStep();
+    }
+  }
+  return {area, hull, bounds, shape, newBin, addTo, container, score, better, searchLoop};
 }
+const core = nestCore(CL, SC, {envOf:p => envelope(p), kerfOf:p => kerfC(p), fillOf:p => fillMM(p), ver:() => geoVer});
+const {area, hull, bounds, container} = core;
+const {shape, score, better} = core;
 
 /* ---------- placement ---------- */
 // how far compensated cuts move out from the drawn outline; 0 for parts kept as original markup (text, images, effects),
@@ -1545,53 +1902,6 @@ function binFrame(){
   return {L:(S.margin - half - tol) * SC, T:(S.margin - half - tol) * SC, R:(S.plateW - S.margin + half + tol) * SC, B:(S.plateH - S.margin + half + tol) * SC,
     mL:S.margin * SC, mT:S.margin * SC, mR:(S.plateW - S.margin) * SC, mB:(S.plateH - S.margin) * SC};
 }
-function bestPos(bin, Bs, F){
-  // the margins are checked against the real cut outline, not the envelope: simplification can leave the envelope up
-  // to 0.95 × the precision inside the outline, which let cuts reach into the margin (#72)
-  let xMin = F.mL - Bs.cut.minX, xMax = F.mR - Bs.cut.maxX, yMin = F.mT - Bs.cut.minY, yMax = F.mB - Bs.cut.maxY;
-  if (xMin > xMax || yMin > yMax) return null;
-  if (xMax - xMin < 2) xMax = xMin + 2;
-  if (yMax - yMin < 2) yMax = yMin + 2;
-  const ifp = [{X:xMin, Y:yMin}, {X:xMax, Y:yMin}, {X:xMax, Y:yMax}, {X:xMin, Y:yMax}];
-  let region;
-  if (!bin.items.length) region = [ifp];
-  else {
-    const c = new CL.Clipper();
-    c.AddPath(ifp, CL.PolyType.ptSubject, true);
-    for (const it of bin.items) {
-      // skip neighbors that can't reach the inner-fit rectangle
-      if (it.x + it.s.maxX - Bs.minX < xMin || it.x + it.s.minX - Bs.maxX > xMax || it.y + it.s.maxY - Bs.minY < yMin || it.y + it.s.minY - Bs.maxY > yMax) continue;
-      let block = nfp(it.s, Bs);
-      if (it.s.holes.length) {            // the neighbor's holes, where Bs fits inside them, are open (#3)
-        const fits = it.s.holes.flatMap((_, hi) => holeFit(it.s, hi, Bs));
-        if (fits.length) { const d = new CL.Clipper(); d.AddPaths(block.map(q => unpack(q)), CL.PolyType.ptSubject, true); d.AddPaths(fits.map(q => unpack(q)), CL.PolyType.ptClip, true);
-          block = new CL.Paths(); d.Execute(CL.ClipType.ctDifference, block, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero); }
-      }
-      for (const q of block) c.AddPath(q instanceof Int32Array ? unpack(q, it.x, it.y) : q.map(v => ({X:v.X + it.x, Y:v.Y + it.y})), CL.PolyType.ptClip, true);
-    }
-    region = new CL.Paths();
-    c.Execute(CL.ClipType.ctDifference, region, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
-  }
-  let best = null;
-  const bb = bin.bb;
-  for (const path of region) for (const v of path) {
-    const x0 = Math.min(bb.x0, v.X + Bs.minX), y0 = Math.min(bb.y0, v.Y + Bs.minY), x1 = Math.max(bb.x1, v.X + Bs.maxX), y1 = Math.max(bb.y1, v.Y + Bs.maxY);
-    const sc = (x1 - x0) / SC * ((y1 - y0) / SC) + (v.Y + v.X * 0.5) / SC * 1e-3;
-    if (!best || sc < best.sc) best = {x:v.X, y:v.Y, sc};
-  }
-  return best;
-}
-function newBin(){ return {items:[], area:0, fill:0, envArea:0, bb:{x0:Infinity, y0:Infinity, x1:-Infinity, y1:-Infinity}}; }
-function addTo(bin, s, pos){
-  bin.items.push({s, x:pos.x, y:pos.y});
-  // area scores the search: whole outlines, a part nested in a hole adding nothing. fill is for the figures shown: real
-  // material, so a hole counts as empty until a part is nested in it, and then only that part counts (#3)
-  if (s.holes.length) bin.holey = true;
-  if (!bin.holey || container(bin.items, bin.items.length - 1) == null) bin.area += s.part.areaMM;
-  bin.fill += fillMM(s.part);
-  bin.envArea += s.area - s.holeArea;
-  const b = bin.bb; b.x0 = Math.min(b.x0, pos.x + s.minX); b.y0 = Math.min(b.y0, pos.y + s.minY); b.x1 = Math.max(b.x1, pos.x + s.maxX); b.y1 = Math.max(b.y1, pos.y + s.maxY);
-}
 const ABORT = {};
 let runToken = 0;
 const newRun = () => ++runToken;     // a new run; older runs' packs stop at their next yield
@@ -1599,56 +1909,158 @@ const isCurrent = token => token === runToken;
 // yield to the page between pack chunks. The ~4 ms that nested setTimeout(0) idles is what lets the page paint: an
 // unclamped yield (a message) left it painting about twice a second during a search (#146)
 const tick = () => new Promise(r => setTimeout(r, 0));
-async function pack(items, order, angPick, token, F){
-  const bins = []; let last = performance.now();
-  const frameA = (F.R - F.L) * (F.B - F.T);
-  // also between rotations: one part at 24 angles against one bin (holes on) ran over a second without a pause (#148)
-  const breathe = async () => { if (performance.now() - last > 30) { await tick(); last = performance.now(); if (token !== runToken) throw ABORT; } };
-  for (const i of order) {
-    const it = items[i]; let done = false;
-    const angs = angPick(it);
-    for (const bin of bins) {
-      if (frameA - bin.envArea < it.envArea * 0.98) continue;
-      let best = null;
-      for (const a of angs) { const s = shape(it.part, a); const pos = bestPos(bin, s, F); if (pos && (!best || pos.sc < best.pos.sc)) best = {s, pos}; await breathe(); }
-      if (best) { addTo(bin, best.s, best.pos); done = true; break; }
-      if (performance.now() - last > 30) { await tick(); last = performance.now(); if (token !== runToken) throw ABORT; }
-    }
-    if (!done) {
-      const bin = newBin(); let best = null;
-      for (const a of angs) { const s = shape(it.part, a); const pos = bestPos(bin, s, F); if (pos && (!best || pos.sc < best.pos.sc)) best = {s, pos}; await breathe(); }
-      if (best) { addTo(bin, best.s, best.pos); bins.push(bin); }
-    }
-    if (performance.now() - last > 30) { await tick(); last = performance.now(); if (token !== runToken) throw ABORT; }
-  }
-  return bins;
-}
 const angleList = p => {
   if (p.lock || !S.rotStep) return [0];
   const out = []; for (let a = 0; a < 360; a += S.rotStep) out.push(a); return out;
 };
-function score(bins, plateA){ let sq = 0; for (const b of bins) { const u = b.area / plateA; sq += u*u; } return [bins.length, -sq]; }
-const better = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1] - 1e-9);
 /* both modes produce plates of placements: {part, x, y (mm), ang (deg), rx, ry (anchor, user units), env (preview polygons, mm)} */
 function toPlates(bins){
   return bins.map(b => ({area:b.fill, items:b.items.map((it, j) => ({part:it.s.part, x:it.x / SC, y:it.y / SC, ang:it.s.ang, rx:it.s.part.cx, ry:it.s.part.cy,
     env:it.s.paths.map(q => q.map(v => [(v.X + it.x) / SC, (v.Y + it.y) / SC])), in:container(b.items, j)}))}));
 }
-function container(items, j){
-  // the part whose hole item j was placed in (the innermost one), or null: its cuts must all come first (#3)
-  const B = items[j], v = B.s.paths[0][0], pt = {X:v.X + B.x, Y:v.Y + B.y};
-  let best = null, bestA = Infinity;
-  items.forEach((A, i) => {
-    if (i === j) return;
-    A.s.holes.forEach(h => {
-      const q = {X:pt.X - A.x, Y:pt.Y - A.y}, [outer, ...islands] = h.paths;
-      // the vertex usually lies exactly on the hole region's edge (placements are its vertices), so the edge counts as
-      // inside; only a point strictly inside an island is out (#151)
-      if (CL.Clipper.PointInPolygon(q, outer) === 0 || islands.some(r => CL.Clipper.PointInPolygon(q, r) === 1)) return;
-      const a = area(outer); if (a < bestA) { bestA = a; best = i; }
-    });
+
+/* ---------- search worker (#4) ----------
+   The order search runs in a Web Worker, so the page doesn't freeze and the search needn't pause for it. The worker is
+   built from a Blob: clipper-lib's text, fetched with the page's own SRI hash (CSP connect-src), then nestCore and
+   searchWorker from their source. It gets each part's envelope and figures, and answers with placements
+   (uid, angle, x, y), which the page turns back into plates with the same core, so the layouts and exports are the
+   ones the page would have made itself. Where a worker can't be had (an older browser, a stricter CSP, clipper-lib not
+   fetchable), the search runs on the page as before. */
+function searchWorker(self, nestCore, SC){
+  const ABORT = {};
+  let ver = 0, current = 0;
+  const core = nestCore(self.ClipperLib, SC, {envOf:p => p.env, kerfOf:p => p.kerf, fillOf:p => p.fill, ver:() => ver});
+  // a pause is a message, not setTimeout: with no page to paint, the worker needn't idle the ~4 ms of a nested
+  // setTimeout(0) (#146); it only has to let a stop or a newer run in
+  const ch = new MessageChannel(), wake = [];
+  ch.port1.onmessage = () => wake.shift()();
+  const pause = id => () => new Promise(r => { wake.push(r); ch.port2.postMessage(0); }).then(() => { if (current !== id) throw ABORT; });
+  self.onmessage = async e => {
+    const m = e.data;
+    if (m.type === "stop") { if (current === m.id) current = 0; return; }
+    if (m.type !== "run") return;
+    current = m.id; ver = m.ver;
+    const parts = new Map(m.parts.map(p => [p.uid, Object.assign(p, {shapes:new Map()})]));
+    const items = m.items.map(([uid, envArea]) => ({part:parts.get(uid), envArea}));
+    const st = m.st, post = (type, more) => self.postMessage({type, id:m.id, st, ...more});
+    try {
+      await core.searchLoop(st, {items, F:m.F, plateA:m.plateA, minPlates:m.minPlates, ms:m.ms, t0:performance.now() - m.elapsed,
+        angPick:it => it.part.angs, pause:pause(m.id), onDraw:() => post("draw"), onStep:() => post("step"),
+        onBest:(bins, score) => post("best", {score, bins:bins.map(b => b.items.map(it => [it.s.part.uid, it.s.ang, it.x, it.y]))})});
+      post("done");
+    } catch(err) { if (err !== ABORT) post("error", {message:String(err && err.message || err)}); }
+  };
+  self.postMessage({type:"ready"});
+}
+// The search workers (#4): one, or the pool of 2–4 the user picks (S.pool, #253). Each worker holds its own cache of
+// part pairs (about 100 MB on 120 mixed parts), so the pool is off unless the user turns it on.
+const poolSize = () => Math.min(Math.max(S.pool | 0, 1), 4);
+let srcP = null, pool = [], broken = false, workersQ = Promise.resolve(null), workerRun = 0;
+function workerSource(){
+  // clipper-lib's text, fetched with the page's own SRI hash, and the search code: or null where that fails
+  return srcP || (srcP = (async () => {
+    try {
+      const tag = document.querySelector('script[src*="clipper"]');
+      if (typeof Worker !== "function" || !CL || !tag) return null;
+      const res = await fetch(tag.src, tag.integrity ? {integrity:tag.integrity} : {});
+      return res.ok ? `${await res.text()}\n;(${searchWorker})(self, ${nestCore}, ${SC});\n` : null;
+    } catch(e) { return null; }
+  })());
+}
+function spawn(src){
+  // a worker that has said it's ready, or null
+  return new Promise(resolve => {
+    let w, url, t;
+    const done = ok => { clearTimeout(t); URL.revokeObjectURL(url); w.onmessage = w.onerror = null; if (!ok) w.terminate(); resolve(ok ? w : null); };
+    try { url = URL.createObjectURL(new Blob([src], {type:"text/javascript"})); w = new Worker(url); }
+    catch(e) { if (url) URL.revokeObjectURL(url); resolve(null); return; }
+    t = setTimeout(() => done(false), 10000);
+    w.onmessage = e => { if (e.data && e.data.type === "ready") done(true); };
+    w.onerror = () => done(false);
   });
-  return best;
+}
+function getWorkers(){
+  // resolves to as many workers as the setting asks for, or null to search on the page; one call at a time
+  return workersQ = workersQ.then(async () => {
+    if (broken) return null;
+    const src = await workerSource();
+    if (!src) return null;
+    const n = poolSize();
+    while (pool.length > n) pool.pop().terminate();      // a smaller pool: the others are closed, freeing their memory
+    if (!pool.length) {                                  // the first shows whether workers can run here at all (CSP, browser)
+      const w = await spawn(src);
+      if (!w) { broken = true; return null; }
+      pool.push(w);
+    }
+    if (pool.length < n) pool.push(...(await Promise.all(Array.from({length:n - pool.length}, () => spawn(src)))).filter(Boolean));
+    return pool.slice();
+  }, () => null);
+}
+const startWorker = () => { getWorkers(); };     // start building them early, while the page loads
+// One search in one worker: st is that search's state, updated from the worker's messages
+function inWorker(w, st, o, parts, byUid){
+  const id = ++workerRun;
+  return new Promise((resolve, reject) => {
+    const end = () => { clearInterval(watch); w.removeEventListener("message", on); w.removeEventListener("error", bad); };
+    // Stop and newer runs only bump the run token: tell the worker, and let the caller go at once. o.enough() ends
+    // this search early without failing the run
+    const watch = setInterval(() => {
+      if (o.token !== runToken) { w.postMessage({type:"stop", id}); end(); reject(ABORT); }
+      else if (o.enough && o.enough()) { w.postMessage({type:"stop", id}); end(); resolve(); }
+    }, 50);
+    const bad = e => { end(); broken = true; pool.forEach(x => x.terminate()); pool = []; reject(new Error(e.message || "search worker failed")); };
+    const on = e => {
+      const m = e.data;
+      if (m.id !== id || o.token !== runToken) return;
+      Object.assign(st, m.st);
+      if (m.type === "best") o.onBest(m.bins.map(b => { const bin = core.newBin(); for (const [uid, ang, x, y] of b) core.addTo(bin, shape(byUid.get(uid), ang), {x, y}); return bin; }), m.score);
+      else if (m.type === "step") o.onStep();
+      else if (m.type === "draw") { if (o.onDraw) o.onDraw(); }
+      else if (m.type === "done") { end(); resolve(); }
+      else if (m.type === "error") { end(); reject(new Error(m.message)); }
+    };
+    w.addEventListener("message", on); w.addEventListener("error", bad);
+    w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA, minPlates:o.minPlates,
+      ms:o.ms, elapsed:performance.now() - o.t0, st});
+  });
+}
+// Search the order of items (st and o as in the core's searchLoop, plus o.token: the run, see newRun). Resolves when
+// the search ends; rejects with ABORT when a newer run or Stop replaces it.
+// With a pool, the sorted starting orders are packed side by side, one per worker, and the first one is kept on a tie,
+// as when they ran one after the other. Then every worker walks from the best order, worker i with its own seed (worker
+// 0 with st.seed, so it repeats the single search's tries). A better layout from any of them is shown; on an equal
+// score the lower worker wins, so the result doesn't depend on which message comes first. st.walkers keeps each
+// worker's seed and st.bestBy which worker's layout is shown, so "Search more" continues all of them.
+async function searchParts(st, o){
+  const ws = await getWorkers();
+  if (o.token !== runToken) throw ABORT;
+  if (!ws) return core.searchLoop(st, {...o, angPick:it => angleList(it.part), pause:async () => { await tick(); if (o.token !== runToken) throw ABORT; }});
+  const byUid = new Map(o.items.map(it => [it.part.uid, it.part]));
+  const parts = [...byUid.values()].map(p => ({uid:p.uid, outers:p.outers, areaMM:p.areaMM, fill:fillMM(p), kerf:kerfC(p), angs:angleList(p), env:envelope(p)}));
+  if (ws.length === 1) return inWorker(ws[0], st, o, parts, byUid);
+  const take = (sc, by, order, bins) => {
+    if (st.bestScore && !better(sc, st.bestScore) && (better(st.bestScore, sc) || by >= st.bestBy)) return;
+    st.bestOrder = order; st.bestScore = sc; st.bestBy = by; o.onBest(bins, sc);
+  };
+  if (st.pending.length) {
+    const firsts = st.pending.splice(0, ws.length);
+    await Promise.all(firsts.map((order, i) => {
+      const sub = {pending:[order], seed:0, bestOrder:null, bestScore:null, tried:0};
+      // the time limit covers these packs too (#234): once one has given a layout and the time is up, the rest stop
+      return inWorker(ws[i], sub, {...o, ms:0, onBest:(bins, sc) => take(sc, i, order, bins), onStep:() => { st.tried++; o.onStep(); },
+        enough:() => !!st.bestScore && !!o.ms && performance.now() - o.t0 >= o.ms}, parts, byUid);
+    }));
+    st.bestBy = 0;      // every walker starts from this order
+  }
+  if (o.items.length < 2) return;
+  st.walkers = st.walkers || ws.map((_, i) => ({seed:i ? 7 + i : st.seed}));
+  await Promise.all(ws.map((w, i) => {
+    const wk = st.walkers[i] || (st.walkers[i] = {seed:7 + i});
+    const sub = {pending:[], seed:wk.seed, bestOrder:st.bestOrder, bestScore:st.bestScore, tried:0};
+    let seen = 0;
+    const sync = () => { wk.seed = sub.seed; if (!i) st.seed = sub.seed; st.tried += sub.tried - seen; seen = sub.tried; };
+    return inWorker(w, sub, {...o, onBest:(bins, sc) => { sync(); take(sc, i, sub.bestOrder, bins); }, onStep:() => { sync(); o.onStep(); }, onDraw:sync}, parts, byUid);
+  }));
 }
 
 /* ---------- bounding-box mode: MaxRects packing ---------- */
@@ -1756,6 +2168,7 @@ function rectFits(p){
   return a || b;
 }
 
+
 function mulberry(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 function fitsPlate(p, F){
@@ -1792,8 +2205,9 @@ function plateSVG(plate, opts = {}){
   for (const it of cutSequence(plate.items)) {
     const p = it.part;
     // scale and the part-unit offset with 7 significant digits (≈ 0.1 µm per m): 4 decimals cut fine viewBoxes off size by
-    // up to a few % (#74)
-    const t = `translate(${n4(it.x)} ${n4(it.y)})${it.ang ? ` rotate(${it.ang})` : ""} scale(${sig(p.kx)} ${sig(p.ky)}) translate(${sig(-it.rx)} ${sig(-it.ry)})`;
+    // up to a few % (#74). An offset of 1,000 or more keeps 4 decimals instead, or a far-out drawing moves by up to a unit (#217).
+    const off = v => Math.abs(v) < 1000 ? sig(v) : String(+v.toFixed(4));
+    const t = `translate(${n4(it.x)} ${n4(it.y)})${it.ang ? ` rotate(${it.ang})` : ""} scale(${sig(p.kx)} ${sig(p.ky)}) translate(${off(-it.rx)} ${off(-it.ry)})`;
     const base = slug(p.name), k = (ids.get(base) || 0) + 1; ids.set(base, k);
     s += partMarkup(p, placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), `${base}-${k}`, t, opts.notes);
   }
@@ -1848,13 +2262,13 @@ function plateDXF(plate){
   if (S.outline) emit([[0, 0, 0], [W, 0, 0], [W, H, 0], [0, H, 0]], true, layer("PLATE", "#ff0000"), 1);
   for (const it of cutSequence(plate.items)) {
     const p = it.part, flat = p.flat || p.loose;
-    if (!flat) { notes.add(`${p.name} has nothing that can be written to DXF.`); continue; }
-    if (!p.flat) { markupNote(p, notes); for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`); }   // written as drawn, like the SVG
+    if (!flat) { notes.add(msg("dxfOut.nothing", {name:p.name})); continue; }
+    if (!p.flat) { markupNote(p, notes); for (const s of p.looseSkipped) notes.add(s[0] === "<" ? msg("dxfOut.element", {name:p.name, tag:s.slice(1)}) : msg("dxfOut." + s, {name:p.name})); }   // written as drawn, like the SVG
     const [a, b, c, d, e, g] = placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), sc = Math.sqrt(Math.abs(a*d - b*c));
     const T = (x, y) => [a*x + c*y + e, H - (b*x + d*y + g)];
     for (const gr of cutGroups(p, flat, sc, p.fromDXF)) {
       const col = gr.it.stroke !== "none" ? gr.it.stroke : gr.it.fill;
-      if (gr.fill) notes.add("Filled areas are written as their outlines.");
+      if (gr.fill) notes.add(msg("dxfOut.fills"));
       const L = p.fromDXF && gr.it.lay ? layer(gr.it.lay, col) : layer(col.replace("#", ""), col), aci = aciNear(col);
       const kc = kerfPaths(p, gr, [a, b, c, d, e, g], notes);
       gr.subs.forEach((sub, si) => {
@@ -1887,6 +2301,118 @@ function plateDXF(plate){
 const compMark = () => `kerf-compensated: ${+(S.kerf / 2).toFixed(4)} mm per side, already built in; do not offset again`;
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
+// SnugCut app: the English text of every message app.js shows (#128). Whole sentences only, never pieced together:
+// {name} is a value; {n, plural, one {# part} other {# parts}} picks by Intl.PluralRules (# is the number, =0 an exact
+// match) and {v, select, in {…} other {…}} by value. The page's own text stays in app/index.html, marked with data-t
+// keys. "lib.*" words the library's messages (README "Library messages"). tools/build.py fails on a key that is used
+// but missing, or defined but unused.
+const EN = {
+  "fatal.noClipper": "The geometry library didn't load, so shapes can't be nested. Reload the page to try again.",
+  "status.noEngine": "Geometry engine unavailable",
+  "len.plateW": "Plate width",
+  "len.plateH": "Plate height",
+  "len.kerf": "Kerf",
+  "len.gap": "Extra gap",
+  "len.margin": "Edge margin",
+  "field.nan": "Enter a number; still using {value} {unit}.",
+  "field.notPositive": "{field} must be more than 0; still using {value} {unit}.",
+  "field.negative": "{field} can't be negative; still using {value} {unit}.",
+  "kerf.placeholder": "e.g. {value}",
+  "kcalc.nan": "Enter a number.",
+  "kcalc.designedPositive": "Designed must be more than 0.",
+  "kcalc.measuredPositive": "Measured must be more than 0.",
+  "kcalc.measuredSmaller": "Measured must be smaller than designed: the cut takes material away.",
+  "kcalc.none": "Kerf: –",
+  "kcalc.result": "Kerf: {value} {unit}",
+  "toast.kerfUpdated": "Kerf updated",
+  "toast.saved": "Saved {file}",
+  "status.nesting": "Nesting…",
+  "status.searching": "Searching… {elapsed} of {total} s · {tried, plural, one {# layout} other {# layouts}} tried",
+  "status.best": "Best of {tried, plural, one {# layout} other {# layouts}} tried.",
+  "status.ready": "Ready.",
+  "status.longer": "A longer search may save a plate.",
+  "run.stale": "Stopped before a new layout was ready. The plates shown are out of date.",
+  "run.noArea": "The edge margin leaves no usable area on the plate.",
+  "run.finished": "Nesting finished: {n, plural, one {# plate} other {# plates}}, {fill} average utilization, {placed} of {want} parts placed.",
+  "run.nothingPlaced": "Nesting finished: nothing could be placed.",
+  "run.noParts": "No parts to nest.",
+  "run.efficiency": "Efficiency {rating} out of 10: the parts use {eff} of the material the job takes up.",
+  "run.oversize": "{n, plural, one {# file doesn't fit on the plate and was left out.} other {# files don't fit on the plate and were left out.}}",
+  "notice.nestError": "Nesting stopped after an error: {error}",
+  "notice.dismiss": "Dismiss",
+  "notice.dismissLabel": "Dismiss: {text}",
+  "part.size": "{w} × {h} {unit}",
+  "part.sizeTooBig": "{w} × {h} {unit} · too big",
+  "part.drawnIn": "Drawn in",
+  "part.inches": "inches",
+  "part.qty": "Qty",
+  "part.qtyErr": "Enter a whole number, 0 or more; still using {qty}.",
+  "part.holesTitle": "Nest other parts inside this part's holes (only if every closed inner outline is cut, not scored)",
+  "part.holesLabel": "Nest parts inside the holes of {name}",
+  "part.noHoles": "No holes to nest parts in",
+  "part.lockTitle": "Lock orientation (no rotation)",
+  "part.lockLabel": "Lock orientation of {name}",
+  "part.removeTitle": "Remove",
+  "part.removeLabel": "Remove {name}",
+  "part.readIn": "{name} read in {units, select, in {inches} other {millimeters}}: {w} × {h} {unit}.",
+  "parts.none": "No parts yet. Add SVG or DXF files above.",
+  "parts.count": "{files, plural, one {# file} other {# files}} · {n, plural, one {# part} other {# parts}}",
+  "files.only": "Only .svg and .dxf files can be added.",
+  "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
+  "files.hiddenItem": "{n} from {name}",
+  "files.hidden": "Left out hidden shapes (not shown, so not cut): {list}.",
+  "files.stripped": "Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from {list}; only what's inside the file is used.",
+  "stat.eff": "{rating} out of 10",
+  "stat.effLabel": "Efficiency · {eff}",
+  "stat.effNone": "Efficiency",
+  "layout.oversize": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins. It was left out.",
+  "layout.oversizeBbox": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins in either orientation. It was left out.",
+  "layout.oversizeRot": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins at any allowed rotation. It was left out.",
+  "layout.addFiles": "Add SVG or DXF files to see them nested on plates.",
+  "layout.setQty": "Set a quantity above zero to place parts.",
+  "layout.nonePlaced": "No parts could be placed.",
+  "plate.rotated": "{name} (rotated {ang}°)",
+  "plate.alt": "Plate {i} of {n}: {parts, plural, one {# part} other {# parts}}, {fill} utilization",
+  "plate.line": "{name} × {n}",
+  "plate.lineRot": "{name} × {n} ({rots})",
+  "plate.rot": "{n} rotated {ang}°",
+  "plate.title": "Plate {i} of {n}",
+  "plate.meta": "{parts, plural, one {# part} other {# parts}} · {fill} utilization · {w} × {h} {unit}",
+  "plate.metaOffcut": "{parts, plural, one {# part} other {# parts}} · {fill} utilization · {w} × {h} {unit} · offcut {cw} × {ch} {unit}",
+  "plate.download": "Download {format}",
+  "plate.downloadLabel": "Download {format}, plate {i} of {n}",
+  "plate.list": "Parts on this plate",
+  "plate.staleTitle": "Out of date: wait for the new layout",
+  "plate.busyTitle": "Searching: stop the search, or use Download all, so every plate comes from the same layout",
+  "export.compNote": "Kerf compensation is built in ({value} {unit} per side): don't add a kerf offset in your cutter's software.",
+  "lib.dxf.binary": "{name} is a binary DXF. Save it as an ASCII DXF and try again.",
+  "lib.dxf.unreadable": "{name} isn't a readable DXF file.",
+  "lib.dxf.noUnits": "{name} doesn't say what units it's drawn in, so it was read as {units, select, in {inches, as its imperial measurement setting suggests} other {millimeters}}. If that's wrong, change it next to the part in the parts list.",
+  "lib.dxf.tooManyItems": "{name} expands to more than {limit} items (blocks and arrays), so it wasn't added.",
+  "lib.dxf.tooManyPoints": "{name} draws more than {limit} points (blocks and arrays repeat them), so it wasn't added.",
+  "lib.dxf.splineDegree": "{name} has a spline of degree {degree}, but only degrees 1 to 11 can be read, so it wasn't added.",
+  "lib.dxf.hiddenLeftOut": "{name}: left out {count, plural, one {# item} other {# items}} on frozen, off, non-plotting or Defpoints layers.",
+  "lib.dxf.skipped": "{name}: skipped {list} (only lines, arcs, circles, ellipses, polylines and splines are cut).",
+  "lib.dxf.nothingToCut": "{name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space{hidden, plural, =0 {.} one {; # item is on frozen, off, non-plotting or Defpoints layers.} other {; # items are on frozen, off, non-plotting or Defpoints layers.}}",
+  "lib.svg.unreadable": "{name} isn't a readable SVG file.",
+  "lib.svg.tooManyCopies": "{name} repeats shapes through linked copies (<use>) more than {limit} times, so it wasn't added.",
+  "lib.svg.nothingVisible": "{name} has no visible shapes to place.",
+  "lib.svg.nothingToCut": "{name} has no cuttable shapes.",
+  "lib.svg.noClosedOutline": "{name} has no closed outline to nest.",
+  "lib.kerf.holeTooNarrow": "A hole in {name} is narrower than the kerf, so it was left as drawn.",
+  "lib.kerf.markup": "{name} has text, images, linked copies or effects, so its kerf can't be compensated; it is exported as drawn.",
+  "lib.dxfOut.nothing": "{name} has nothing that can be written to DXF.",
+  "lib.dxfOut.clipping": "Not in the DXF: clipping, masks and filters (shapes exported whole) in {name}.",
+  "lib.dxfOut.text": "Not in the DXF: text in {name}.",
+  "lib.dxfOut.images": "Not in the DXF: images in {name}.",
+  "lib.dxfOut.use": "Not in the DXF: linked copies (<use>) in {name}.",
+  "lib.dxfOut.element": "Not in the DXF: <{tag}> elements in {name}.",
+  "lib.dxfOut.paint": "Not in the DXF: gradient and pattern colors (exported black) in {name}.",
+  "lib.dxfOut.unreadable": "Not in the DXF: unreadable paths in {name}.",
+  "lib.dxfOut.fills": "Filled areas are written as their outlines.",
+};
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
 
@@ -1894,7 +2420,38 @@ const compMark = () => `kerf-compensated: ${+(S.kerf / 2).toFixed(4)} mm per sid
 const $ = id => document.getElementById(id);
 setVersion($("appver").textContent);
 $("changelog").href += "#" + $("appver").textContent.replace(/^v|\./g, "");   // GitHub's anchor for "## 0.1.27" is #0127
-if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
+// numbers on screen follow the browser's locale ("0,2" in de-DE, "54 %" in fr-FR), in Latin digits and without
+// grouping; exports keep "." whatever the locale (#128)
+const LOC = (() => { try { return new Intl.NumberFormat(navigator.language).resolvedOptions().locale; } catch(e) { return "en-US"; } })();
+const nfs = new Map();
+const nf = (k, o) => nfs.get(k) || nfs.set(k, new Intl.NumberFormat(LOC, {numberingSystem:"latn", useGrouping:false, ...o})).get(k);
+const num = (v, d = 0, min = 0) => { const r = +v.toFixed(d); return nf(`${d}/${min}`, {minimumFractionDigits:min, maximumFractionDigits:d}).format(r === 0 ? 0 : r); };   // rounded as toFixed did, never "-0"
+const pct = v => nf("%", {style:"percent", maximumFractionDigits:0}).format(Math.round(100 * v) / 100);
+// text (#128): every message app.js shows comes from the string table (strings-en.js) by key, as a whole sentence. The
+// page's own text is in index.html, marked with data-t keys for the translations to come (#129); English is the only
+// language for now.
+const LANG = "en", STR = EN, PR = new Intl.PluralRules(LANG);
+document.documentElement.lang = LANG;
+const t = (key, v = {}) => Object.hasOwn(STR, key) ? fill(STR[key], v) : (console.error("no text for " + key), key);
+function fill(s, v){
+  let out = "";
+  for (let i = 0; i < s.length;) {
+    if (s[i] !== "{") { out += s[i++]; continue; }
+    let j = i, depth = 0;
+    do { if (s[j] === "{") depth++; else if (s[j] === "}") depth--; j++; } while (depth && j < s.length);
+    const body = s.slice(i + 1, j - 1), m = /^(\w+),\s*(plural|select),([\s\S]*)$/.exec(body); i = j;
+    if (!m) { out += Object.hasOwn(v, body) ? v[body] : `{${body}}`; continue; }
+    const x = v[m[1]], cases = {};
+    for (const c of m[3].matchAll(/(=?\w+)\s*\{((?:[^{}]|\{[^{}]*\})*)\}/g)) cases[c[1]] = c[2];
+    const pick = m[2] === "select" ? cases[x] ?? cases.other : cases["=" + x] ?? cases[PR.select(x)] ?? cases.other;
+    out += fill(m[2] === "plural" ? pick.replace(/#/g, num(x)) : pick, v);
+  }
+  return out;
+}
+// the library's messages in the app's words, with its counts formatted for the locale (README "Library messages")
+setMessages((code, v) => Object.hasOwn(STR, "lib." + code) ? t("lib." + code, {...v, limit: v.limit == null ? "" : nf("g", {useGrouping:true}).format(v.limit),
+  list: v.skipped ? v.skipped.map(([type, n]) => `${n} ${type.toLowerCase()}`).join(", ") : ""}) : undefined);
+if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${t("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -1903,7 +2460,7 @@ function loadSettings(saved){
   const pick = (k, ok) => { if (Object.hasOwn(saved, k) && ok(saved[k])) S[k] = saved[k]; };
   const opts = id => [...$(id).options].map(o => +o.value), num = v => typeof v === "number" && isFinite(v);
   pick("mode", v => v === "shape" || v === "bbox"); pick("unit", v => v === "mm" || v === "in"); pick("format", v => v === "svg" || v === "dxf");
-  for (const k of ["rotStep", "prec", "dpi"]) pick(k, v => opts(k).includes(v));
+  for (const k of ["rotStep", "prec", "dpi", "pool"]) pick(k, v => opts(k).includes(v));
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= 100000);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= 100000);
   for (const k of ["rotate", "outline", "comp"]) pick(k, v => typeof v === "boolean");
@@ -1916,48 +2473,64 @@ let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,e
 
 const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
-const fmt = (mm, d) => (+toDisp(mm).toFixed(d ?? (S.unit === "in" ? 3 : 1))).toString();
+// a typed number: "0,2" and "0.2" both mean 0.2 (one decimal mark, either one, no grouping); NaN when it isn't one (#229)
+const parseNum = s => { const x = String(s).trim().replace(/^\u2212/, "-"), v = +x.replace(",", ".");
+  return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(x) && isFinite(v) ? v : NaN; };
+const fmt = (mm, d) => num(toDisp(mm), d ?? (S.unit === "in" ? 3 : 1));
 const LEN = ["plateW","plateH","kerf","gap","margin"];
-const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:"Extra gap", margin:"Edge margin"};
+const LEN_NAME = {plateW:"len.plateW", plateH:"len.plateH", kerf:"len.kerf", gap:"len.gap", margin:"len.margin"};
+// say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
+const later = new Map();
+function sayLater(key, text){ clearTimeout(later.get(key)); later.delete(key); if (text) later.set(key, setTimeout(() => { later.delete(key); say(text); }, 700)); }
+// add or remove one id in an element's aria-describedby, keeping the others (such as a hint, #204); an error goes first
+function describe(el, id, on, first){
+  const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter(x => x && x !== id);
+  if (on) first ? ids.unshift(id) : ids.push(id);
+  if (ids.length) el.setAttribute("aria-describedby", ids.join(" ")); else el.removeAttribute("aria-describedby");
+}
 // field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
-// and which value is still in use; both go as soon as the value is valid
-function fieldErr(input, msg){
+// and which value is still in use; both go as soon as the value is valid. A new or changed message is also announced,
+// once typing pauses (#166).
+function fieldErr(input, msg, quiet){
   let e = document.getElementById(input.id + "-err");
-  if (!msg) { if (e) { e.remove(); input.removeAttribute("aria-invalid"); input.removeAttribute("aria-describedby"); } return; }
+  if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); describe(input, e.id, false); } return; }
+  if (!quiet && (!e || e.textContent !== msg)) sayLater(input.id, msg);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
-  e.textContent = msg; input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", e.id);
+  e.textContent = msg; input.setAttribute("aria-invalid", "true"); describe(input, e.id, true, true);
 }
 function fillInputs(){
   for (const k of LEN) {
     const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
-    $(k).value = +toDisp(S[k]).toFixed(dec); fieldErr($(k));
-    $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
+    $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; $("compWarn").hidden = !S.comp; $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
-  $("kerf").placeholder = S.unit === "in" ? "e.g. 0.004" : "e.g. 0.10";   // 0.10 in would be 2.54 mm (#172)
+  $("kerf").placeholder = t("kerf.placeholder", {value: S.unit === "in" ? num(0.004, 3) : num(0.1, 2, 2)});   // 0.10 in would be 2.54 mm (#172)
   $("u-mm").setAttribute("aria-pressed", S.unit === "mm"); $("u-in").setAttribute("aria-pressed", S.unit === "in");
 }
 function setUnit(u){
   if (S.unit === u) return;
-  const conv = v => isNaN(v) ? "" : +(u === "in" ? v / IN : v * IN).toFixed(4);
-  $("kDesign").value = conv(parseFloat($("kDesign").value)); $("kMeasured").value = conv(parseFloat($("kMeasured").value));
+  const conv = v => isNaN(v) ? "" : num(u === "in" ? v / IN : v * IN, 4);
+  $("kDesign").value = conv(parseNum($("kDesign").value)); $("kMeasured").value = conv(parseNum($("kMeasured").value));
   S.unit = u; save(); fillInputs(); kerfCalc(); renderParts(); renderLayout();
 }
 $("u-mm").onclick = () => setUnit("mm");
 $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
-  const v = parseFloat($(k).value), plate = k === "plateW" || k === "plateH";
-  const bad = $(k).value.trim() === "" || isNaN(v) ? "Enter a number" : plate && v <= 0 ? `${LEN_NAME[k]} must be more than 0` : v < 0 ? `${LEN_NAME[k]} can't be negative` : "";
-  fieldErr($(k), bad && `${bad}; still using ${fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined)} ${S.unit}.`);
+  const v = parseNum($(k).value), plate = k === "plateW" || k === "plateH";
+  const bad = isNaN(v) ? "field.nan" : plate && v <= 0 ? "field.notPositive" : v < 0 ? "field.negative" : "";
+  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined), unit: S.unit}));
   if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
+$("pool").onchange = e => { S.pool = +e.target.value; save(); restart(); };     // the worker pool (#253, #255)
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
-$("kerfComp").onchange = e => { S.comp = e.target.checked; $("compWarn").hidden = !S.comp; save(); invalidateGeometry(); restart(); };
+// the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
+function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }
+$("kerfComp").onchange = e => { S.comp = e.target.checked; showCompWarn(); if (S.comp) say($("compWarn").querySelector("b").textContent); save(); invalidateGeometry(); restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
 $("rotate").onchange = e => { S.rotate = e.target.checked; save(); restart(); };
@@ -1975,101 +2548,83 @@ function filePrefix(){
 function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
 const ext = () => S.format === "dxf" ? "dxf" : "svg";
 function kerfCalc(){
-  const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
-  fieldErr($("kDesign"), !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
-  fieldErr($("kMeasured"), !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
-  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
-  const k = fromDisp(d - m);
-  $("kOut").textContent = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`; $("kUse").disabled = false; return k;
+  const d = parseNum($("kDesign").value), m = parseNum($("kMeasured").value), typed = k => $(k).value.trim() !== "";
+  fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? t("kcalc.nan") : !isNaN(d) && d <= 0 ? t("kcalc.designedPositive") : "");
+  fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? t("kcalc.nan") : !isNaN(m) && m <= 0 ? t("kcalc.measuredPositive") : !isNaN(d) && !isNaN(m) && m > d ? t("kcalc.measuredSmaller") : "");
+  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = t("kcalc.none"); $("kUse").disabled = true; return null; }
+  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, S.unit === "in" ? 4 : 3), unit: S.unit});
+  if (out !== $("kOut").textContent) sayLater("kOut", out);   // announced once typing pauses (#166)
+  $("kOut").textContent = out; $("kUse").disabled = false; return k;
 }
 $("kDesign").oninput = kerfCalc; $("kMeasured").oninput = kerfCalc;
-$("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast("Kerf updated"); } };
+$("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast(t("toast.kerfUpdated")); } };
 
 /* ---------- search controller ---------- */
-let search = null;   // {items, bestOrder, bestScore, tried, F}
-async function run(ms, fresh){
+let search = null;   // {items, oversize, minPlates, F, st: the search state, see searchParts}
+async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
   const token = newRun();
-  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false); return; }
+  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
   const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>Nesting…`;
+  $("status").innerHTML = `<span class="dot on"></span>${t("status.nesting")}`;
   const plateA = S.plateW * S.plateH;
   setRunning(true);
   const t0 = performance.now();
   try {
-    if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
+    if (fresh || !search || !search.st.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
       for (const p of parts) {
         if (!p.qty) continue;
         if (!fitsPlate(p, F)) { oversize.push(p); continue; }
         const e = envelope(p);
-        for (let k = 0; k < p.qty; k++) items.push({part:p, envArea:e.area});
+        for (let k = 0; k < p.qty; k++) items.push({part:p, envArea:e.area, netArea:e.area - e.holeArea});
       }
-      const minPlates = items.length ? Math.ceil(items.reduce((s, it) => s + it.envArea, 0) / ((F.R - F.L) * (F.B - F.T)) - 1e-9) : 0;
-      search = {items, oversize, minPlates, bestOrder:null, bestScore:null, tried:0, F, rnd:mulberry(7)};
+      // the area a part takes from the plate leaves out its holes when other parts may nest in them (#165)
+      const minPlates = items.length ? Math.ceil(items.reduce((s, it) => s + it.netArea, 0) / ((F.R - F.L) * (F.B - F.T)) - 1e-9) : 0;
+      search = {items, oversize, minPlates, F, st:{pending:[], seed:7, bestOrder:null, bestScore:null, tried:0}};
       if (!items.length) { layout = {plates:[], oversize, minPlates:0}; renderLayout(); return; }
       const idx = items.map((_, i) => i);
       const keys = [it => it.envArea, it => { const s = shape(it.part, 0); return Math.max(s.maxX - s.minX, s.maxY - s.minY); }];
-      for (const key of keys) {
-        const order = [...idx].sort((a, b) => key(items[b]) - key(items[a]) || items[a].part.uid - items[b].part.uid);
-        const bins = await pack(items, order, it => angleList(it.part), token, F);
-        search.tried++;
-        const sc = score(bins, plateA);
-        if (!search.bestScore || better(sc, search.bestScore)) { search.bestOrder = order; search.bestScore = sc; layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); }
-        status(t0, ms, token);
-      }
+      search.st.pending = keys.map(key => [...idx].sort((a, b) => key(items[b]) - key(items[a]) || items[a].part.uid - items[b].part.uid));
     }
-    const {items, rnd} = search;
-    if (items.length < 2) return;
-    let cur = search.bestOrder, curScore = search.bestScore;
-    while (performance.now() - t0 < ms) {
-      if (search.bestScore[0] <= search.minPlates && search.bestScore[0] === 1) break;
-      const o = cur.slice(), n = o.length;
-      const moves = 1 + Math.floor(rnd() * 3);
-      for (let m = 0; m < moves; m++) {
-        const a = Math.floor(rnd() * n), b = Math.floor(rnd() * n);
-        if (rnd() < 0.5) [o[a], o[b]] = [o[b], o[a]]; else { const [x] = o.splice(a, 1); o.splice(b, 0, x); }
-      }
-      const bins = await pack(items, o, it => angleList(it.part), token, search.F);
-      search.tried++;
-      const sc = score(bins, plateA);
-      if (!better(curScore, sc)) { cur = o; curScore = sc; }
-      if (better(sc, search.bestScore)) { search.bestOrder = o; search.bestScore = sc; layout = {plates:toPlates(bins), oversize:search.oversize, minPlates:search.minPlates}; renderLayout(); }
-      status(t0, ms, token);
-    }
+    const {items, oversize, minPlates, st} = search;
+    // in the search worker when there is one (#4), else here
+    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token,
+      onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
+      onStep:() => status(t0, ms, token)});
   } catch(e) {
-    if (e !== ABORT) { console.error(e); notice("Nesting stopped after an error: " + (e.message || e), true); }
+    if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
     else return;
   } finally {
-    if (isCurrent(token)) setRunning(false);
+    if (isCurrent(token)) setRunning(false, quiet);
   }
 }
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
-  const el = performance.now() - t0;
-  $("status").innerHTML = `<span class="dot on"></span>Searching… ${(el/1000).toFixed(1)} of ${(ms/1000).toFixed(0)} s · ${search.tried} layouts tried`;
+  const el = Math.min(performance.now() - t0, ms);   // a pack that ends past the limit doesn't read "8.7 of 4 s" (#234)
+  $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.st.tried})}`;
 }
 let searching = false;
-function setRunning(on){
+function setRunning(on, quiet){
   const f = document.activeElement;
   searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
-  if (!on) say(runSummary());
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.st.tried ? t("status.best", {tried: search.st.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.st.bestScore && search.st.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
+  if (!on && !quiet) say(runSummary());
   if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
 // one sentence for screen readers when a run ends (#93)
 function runSummary(){
-  if (!layout) return "Ready.";
-  if (layout.stale) return "Stopped before a new layout was ready. The plates shown are out of date.";
-  if (layout.noArea) return "The edge margin leaves no usable area on the plate.";
+  if (!layout) return t("status.ready");
+  if (layout.stale) return t("run.stale");
+  if (layout.noArea) return t("run.noArea");
   const n = layout.plates.length, placed = layout.plates.reduce((a, b) => a + b.items.length, 0);
-  const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? Math.round(100 * layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : 0;
-  let t = n ? `Nesting finished: ${n} plate${n === 1 ? "" : "s"}, ${fill}% average utilization, ${placed} of ${want} parts placed.` : (want ? "Nesting finished: nothing could be placed." : "No parts to nest.");
+  const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? pct(layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : "";
+  const out = [n ? t("run.finished", {n, fill, placed, want}) : t(want ? "run.nothingPlaced" : "run.noParts")];
   const E = n && efficiency(layout.plates);
-  if (E) t += ` Efficiency ${E.rating} out of 10: the parts use ${Math.round(E.eff * 100)}% of the material the job takes up.`;
-  if (layout.oversize.length) t += ` ${layout.oversize.length} file${layout.oversize.length === 1 ? " doesn't" : "s don't"} fit on the plate and ${layout.oversize.length === 1 ? "was" : "were"} left out.`;
-  return t;
+  if (E) out.push(t("run.efficiency", {rating: E.rating, eff: pct(E.eff)}));
+  if (layout.oversize.length) out.push(t("run.oversize", {n: layout.oversize.length}));
+  return out.join(" ");
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
 $("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(30000, false); };
@@ -2080,14 +2635,15 @@ function staleLayout(){ search = null; if (layout) { layout.stale = true; showSt
 function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
 
 /* ---------- parts list ---------- */
-const ICON_LOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
+// icons are hidden from assistive tech: the buttons they sit in are named by aria-label (#178)
+const ICON_LOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 // open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
-const ICON_UNLOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
+const ICON_UNLOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
 // a part's holes open to other parts (#3): an empty frame when off, a frame with a part inside when on
-const ICON_HOLE = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="5.5" y="5.5" width="5" height="5" rx="1" stroke-dasharray="2 1.5"/></svg>`;
-const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
+const ICON_HOLE = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="5.5" y="5.5" width="5" height="5" rx="1" stroke-dasharray="2 1.5"/></svg>`;
+const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
 const ICON_NOHOLE = ICON_HOLE.replace("</svg>", `<path d="M2.5 13.5l11-11"/></svg>`);   // stand-in on parts without holes (#141)
-const ICON_X = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+const ICON_X = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
 function renderParts(){
   // the list is rebuilt: put focus back on the same control of the same part (#95)
   const box = $("parts"), fa = document.activeElement, fr = fa && box.contains(fa) ? fa.closest(".part") : null;
@@ -2097,17 +2653,18 @@ function renderParts(){
   for (const p of parts) {
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
-    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${esc(S.unit)}${ok?"":" · too big"}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">Drawn in</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>inches</option></select></div>` : ""}</div>
-      <div class="qw"><span class="ql" id="ql-${p.uid}">Qty</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="Nest other parts inside this part's holes (only if every closed inner outline is cut, not scored)" aria-label="Nest parts inside the holes of ${esc(p.name)}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="No holes to nest parts in" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation of ${esc(p.name)}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${t(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: esc(S.unit)})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${t("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${t("part.inches")}</option></select></div>` : ""}</div>
+      <div class="qw"><span class="ql" id="ql-${p.uid}">${t("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
+      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${t("part.holesTitle")}" aria-label="${t("part.holesLabel", {name: esc(p.name)})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${t("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${t("part.lockTitle")}" aria-label="${t("part.lockLabel", {name: esc(p.name)})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${t("part.removeTitle")}" aria-label="${t("part.removeLabel", {name: esc(p.name)})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
-      fieldErr(q, ok ? "" : `Enter a whole number, 0 or more; still using ${p.qty}.`);
+      fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
+      if (ok) delete p.qtyDraft; else p.qtyDraft = q.value;   // kept, with its error, when the list is rebuilt (#240)
       if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
     };
     const du = row.querySelector(".du select");
-    if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(`${np.name} read in ${du.value === "in" ? "inches" : "millimeters"}: ${fmt(np.wMM)} × ${fmt(np.hMM)} ${S.unit}.`); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
+    if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
     if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
@@ -2117,22 +2674,24 @@ function renderParts(){
       (nb ? $("parts").querySelector(`.part[data-uid="${nb.uid}"] input`) : drop).focus(); restart();
     };
     box.appendChild(row);
+    // an invalid entry the user hasn't fixed yet survives the rebuild, error included; it was announced when typed (#240)
+    if (p.qtyDraft != null) { q.value = p.qtyDraft; fieldErr(q, t("part.qtyErr", {qty: p.qty}), true); }
   }
-  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">No parts yet. Add SVG or DXF files above.</p>`;
+  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${t("parts.none")}</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
   updateCount();
   if (keep) { const r = box.querySelector(`.part[data-uid="${keep.uid}"]`); if (r) r.querySelector(keep.sel).focus(); }
 }
 function updateCount(){
   const n = parts.reduce((a, p) => a + p.qty, 0);
-  $("partCount").textContent = `${parts.length} file${parts.length===1?"":"s"} · ${n} part${n===1?"":"s"}`;
+  $("partCount").textContent = t("parts.count", {files: parts.length, n});
 }
 // a DXF file that doesn't declare its units is read again in the units the user picks (#90); the part keeps its place,
 // quantity and lock
 function reunit(p, units){
   try {
     const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
-    Object.assign(np, {fromDXF:true, qty:p.qty, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
@@ -2146,25 +2705,31 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
 file.onchange = () => { addFiles(file.files); file.value = ""; };
+// A file says it already has kerf compensation built in only where SnugCut (once Plate Nester) writes that: the comment
+// right after the <svg> tag, or the 999 comment that opens a DXF. The same words anywhere else, such as in a <desc>,
+// don't count (#179).
+const builtInComp = (text, dxf) => (dxf
+  ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
+  : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
-  if (!files.length) { notice("Only .svg and .dxf files can be added.", true); return; }
+  if (!files.length) { notice(t("files.only"), true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
   const errs = [], notes = [];                                // errors: files that couldn't be added
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await f.text();
-    const pre = /kerf-compensated: [\d.]+ mm per side/.test(text);
+    const pre = builtInComp(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
-    if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
-    if (pre) { p.precomp = true; notes.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
+    if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
+    if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
   } catch(e) { errs.push(e.message); } }
-  if (hiddenIn.length) notes.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
-  if (stripped.length) notes.push(`Removed links to outside files (web images, fonts or styles) from ${stripped.join(", ")}; only what's inside the file is used.`);
-  errs.forEach(t => notice(t, true)); notes.forEach(t => notice(t));
+  if (hiddenIn.length) notes.push(t("files.hidden", {list: hiddenIn.join(", ")}));
+  if (stripped.length) notes.push(t("files.stripped", {list: stripped.join(", ")}));
+  errs.forEach(e => notice(e, true)); notes.forEach(n => notice(n));
   restart();
 }
 $("clear").onclick = () => { removeParts(() => true); restart(); };
@@ -2193,36 +2758,41 @@ function drawLayout(){
   const placed = L.plates.reduce((a, b) => a + b.items.length, 0);
   $("sPlates").textContent = L.plates.length || "–";
   $("sMin").textContent = L.minPlates || "–";
-  $("sFill").textContent = L.plates.length ? Math.round(100 * L.plates.reduce((a, b) => a + b.area, 0) / (plateA * L.plates.length)) + "%" : "–";
+  $("sFill").textContent = L.plates.length ? pct(L.plates.reduce((a, b) => a + b.area, 0) / (plateA * L.plates.length)) : "–";
   $("sParts").textContent = placed;
   // efficiency rating (#138): "6/10" read as "6 out of 10", with the percentage under it
   const E = efficiency(L.plates), cut = E && Math.min(E.offcut.w, E.offcut.h) >= 10 ? E.offcut : null;
-  $("sEff").innerHTML = E ? `${E.rating}<span aria-hidden="true">/</span><span class="sr-only"> out of </span>10` : "–";
-  $("sEffK").textContent = E ? `Efficiency · ${Math.round(E.eff * 100)}%` : "Efficiency";
-  const msg = t => { const m = document.createElement("div"); m.className = "msg"; m.textContent = t; msgs.appendChild(m); };
+  $("sEff").innerHTML = E ? `<span aria-hidden="true">${E.rating}/10</span><span class="sr-only">${t("stat.eff", {rating: E.rating})}</span>` : "–";
+  $("sEffK").textContent = E ? t("stat.effLabel", {eff: pct(E.eff)}) : t("stat.effNone");
+  const msg = text => { const m = document.createElement("div"); m.className = "msg"; m.textContent = text; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
-  for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
-  if (L.noArea) msg("The edge margin leaves no usable area on the plate.");
+  for (const p of L.oversize) msg(t(!p.lock && canRot ? (bbox ? "layout.oversizeBbox" : "layout.oversizeRot") : "layout.oversize", {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
+  if (L.noArea) msg(t("run.noArea"));
   // when nothing was placed, say why only if no message above already does (#84)
-  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${!parts.length ? "Add SVG or DXF files to see them nested on plates." : !parts.some(p => p.qty) ? "Set a quantity above zero to place parts." : "No parts could be placed."}</p>`;
+  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${t(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
-    const fill = Math.round(100 * pl.area / plateA);
-    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
+    const ratio = pl.area / plateA, fill = pct(ratio);
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? t("plate.rotated", {name: esc(it.part.name), ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
-    // text alternative (#96): the image says what's on the plate, and points to a list of the parts on it
-    const alt = `Plate ${i+1} of ${L.plates.length}: ${pl.items.length} part${pl.items.length === 1 ? "" : "s"}, ${fill}% utilization`;
+    // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
+    // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed
+    // one gave the image no description (#168).
+    const alt = t("plate.alt", {i: i+1, n: L.plates.length, parts: pl.items.length, fill});
     const groups = new Map();
     for (const it of pl.items) {
       const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
       g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
     }
-    const list = [...groups].map(([p, g]) => `<li>${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}</li>`).join("");
+    const lines = [...groups].map(([p, g]) => g.rot.size
+      ? t("plate.lineRot", {name: esc(p.name), n: g.n, rots: [...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => t("plate.rot", {n, ang: a})).join(", ")})
+      : t("plate.line", {name: esc(p.name), n: g.n}));
+    const list = lines.map(l => `<li>${l}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill}% utilization · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}${cut && i === L.plates.length - 1 ? ` · offcut ${fmt(cut.w)} × ${fmt(cut.h)} ${esc(S.unit)}` : ""}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
-      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="plist-${i}" src="${url}"><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
-      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
-      <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">${t("plate.title", {i: i+1, n: L.plates.length})}</h3><div class="m">${t(cut && i === L.plates.length - 1 ? "plate.metaOffcut" : "plate.meta", {parts: pl.items.length, fill, w: fmt(S.plateW), h: fmt(S.plateH), unit: esc(S.unit), cw: cut && fmt(cut.w), ch: cut && fmt(cut.h)})}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="${t("plate.downloadLabel", {format: ext().toUpperCase(), i: i+1, n: L.plates.length})}">${t("plate.download", {format: ext().toUpperCase()})}</button></div>
+      <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="pdesc-${i}" src="${url}"><span id="pdesc-${i}" hidden>${lines.join("; ")}</span><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
+      <div class="bar" aria-hidden="true"><i style="width:${Math.round(100 * ratio)}%"></i></div>
+      <details class="plist"><summary>${t("plate.list")}</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });
@@ -2235,7 +2805,7 @@ function showStale(){
   const st = !!(layout && layout.stale), busy = !st && plateBusy();
   $("plates").classList.toggle("stale", st);
   $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st || busy);
-    b.title = st ? "Out of date: wait for the new layout" : busy ? "Searching: stop the search, or use Download all, so every plate comes from the same layout" : ""; });
+    b.title = st ? t("plate.staleTitle") : busy ? t("plate.busyTitle") : ""; });
   $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
@@ -2247,7 +2817,7 @@ function download(data, filename, type){
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function plateFile(pl, notes){
-  if (kerfC()) notes.add(`Kerf compensation is built in (${fmt(S.kerf / 2, S.unit === "in" ? 4 : 3)} ${S.unit} per side): don't add a kerf offset in your cutter's software.`);
+  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, S.unit === "in" ? 4 : 3), unit: S.unit}));
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
@@ -2255,7 +2825,7 @@ function exportPlate(i){
   if (!layout || layout.stale || plateBusy()) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
-  toast(`Saved ${fname(i)}`); notes.forEach(t => notice(t));
+  toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
 }
 $("dlAll").onclick = async () => {
   if (!layout || layout.stale || !window.JSZip) return;
@@ -2263,32 +2833,32 @@ $("dlAll").onclick = async () => {
   const notes = new Set();
   layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
   download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(`Saved ${zipName()}`); notes.forEach(t => notice(t));
+  toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
 // the pointer is over it, and Esc closes it (#94). Warnings and errors go to notice() and stay until dismissed.
 let toastT;
-function toast(t){
-  const el = $("toast"); el.textContent = t; el.hidden = false; say(t); clearTimeout(toastT);
+function toast(text){
+  const el = $("toast"); el.textContent = text; el.hidden = false; say(text); clearTimeout(toastT);
   const wait = ms => { toastT = setTimeout(() => el.matches(":hover") ? wait(1000) : (el.hidden = true), ms); };
-  wait(Math.max(20000, t.length * 100));
+  wait(Math.max(20000, text.length * 100));
 }
 addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) { clearTimeout(toastT); $("toast").hidden = true; } });
 // warnings and errors: one item each in the message list, until dismissed (#94); announced once (#93)
-function notice(t, err){
+function notice(text, err){
   const box = $("notices");
-  if ([...box.children].some(m => m.dataset.text === t)) { say(t, err); return; }   // already on screen
-  const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = t;
-  const s = document.createElement("span"); s.textContent = t;
-  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = "Dismiss";
-  x.setAttribute("aria-label", "Dismiss: " + (t.length > 60 ? t.slice(0, 57) + "…" : t));
+  if ([...box.children].some(m => m.dataset.text === text)) { say(text, err); return; }   // already on screen
+  const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = text;
+  const s = document.createElement("span"); s.textContent = text;
+  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = t("notice.dismiss");
+  x.setAttribute("aria-label", t("notice.dismissLabel", {text: text.length > 60 ? text.slice(0, 57) + "…" : text}));
   x.onclick = () => { const nb = m.nextElementSibling || m.previousElementSibling; m.remove(); (nb ? nb.querySelector(".x") : drop).focus(); };
-  m.append(s, x); box.appendChild(m); say(t, err);
+  m.append(s, x); box.appendChild(m); say(text, err);
 }
 // screen-reader announcements (#93): the live regions stay in the page, and each message is added as a new node so a
 // repeated message is announced again; urgent ones (errors) go to the role="alert" region
-function say(t, urgent){ const p = document.createElement("p"); p.textContent = t; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
+function say(text, urgent){ const p = document.createElement("p"); p.textContent = text; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
 
 /* ---------- sample parts ---------- */
 const S0 = 'fill="none" stroke="#000" stroke-width="0.2"';
@@ -2301,9 +2871,10 @@ const SAMPLES = [
   ["hex-tag.svg", 6, `<svg xmlns="${SVGNS}" width="50mm" height="43.3mm" viewBox="0 0 50 43.3"><polygon points="12.5,0.1 37.5,0.1 49.9,21.65 37.5,43.2 12.5,43.2 0.1,21.65" ${S0}/><circle cx="25" cy="8" r="2" ${S0}/></svg>`],
 ];
 fillInputs();
-for (const [n, q, t] of SAMPLES) { try { const p = parseSVG(t, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+startWorker();   // fetched and built while the parts list is drawn (#4)
 renderParts();
-run(4000, true);
+run(4000, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();
 })();
 </script>
