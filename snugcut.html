@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1sP3O2wXBFtROIbvxElik9UeGr7Nxz/59N+qsHc44Ug=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-opnCOrTuTLC/z20a24/PLdyVqW4q7fJhd1KRjCx+gIw=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -263,7 +263,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.31-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.32-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -560,11 +560,11 @@ function stripExternal(root){
   return n;
 }
 function renameSelectors(css, f){
-  // rewrite #id and .class names in selectors only (the text before each "{" that isn't an at-rule); declarations,
-  // strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are left as they are.
-  // f(kind, name) returns the new name, or null to keep it.
-  const sel = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)/gi,
-    (m, keep, k, name) => { if (keep) return keep; const r = f(k, name); return r == null ? m : k + r; });
+  // rewrite #id and .class names, and the :root pseudo-class, in selectors only (the text before each "{" that isn't an
+  // at-rule); declarations, strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are
+  // left as they are. f(kind, name) returns the new name, or null to keep it; kind is "#", "." or ":".
+  const sel = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)|(:)(root)(?![\w-])/gi,
+    (m, keep, k, name, k2, name2) => { if (keep) return keep; if (k2) { k = k2; name = name2; } const r = f(k, name); return r == null ? m : k + r; });
   let out = "", seg = "", q = "", depth = 0;
   for (let i = 0; i < css.length; i++) {
     const ch = css[i];
@@ -837,14 +837,23 @@ function parseSVG(text, name){
   if (sheets.length) {
     // class names get the same prefix, so one file's .cut rules can't restyle another file's parts on a plate
     for (const el of all) { const c = (el.getAttribute("class") || "").trim(); if (c) el.setAttribute("class", c.split(/\s+/).map(n => pfx + n).join(" ")); }
-    for (const el of sheets) { const t = renameSelectors(el.textContent, (k, n) => k === "." ? pfx + n : null); if (t !== el.textContent) el.textContent = t; }
+    // and :root becomes :host: parts are measured in a shadow tree (#239), where :root matches nothing and :host is the
+    // element above the part, so custom properties set on :root still reach its shapes
+    for (const el of sheets) { const t = renameSelectors(el.textContent, (k, n) => k === "." ? pfx + n : k === ":" ? "host" : null); if (t !== el.textContent) el.textContent = t; }
   }
   const vbA = (root.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
   const vb = vbA.length === 4 && vbA.every(isFinite) && vbA[2] > 0 && vbA[3] > 0 ? vbA : null;
   const rootAttrs = KEEP_ATTRS.filter(a => root.hasAttribute(a)).map(a => `${a}="${esc(root.getAttribute(a))}"`).join(" ");
   const ser = new XMLSerializer();
   const inner = [...root.childNodes].filter(n => n.nodeType === 1).map(n => ser.serializeToString(n)).join("");
-  if (!host) { host = document.createElementNS(SVGNS, "svg"); host.setAttribute("aria-hidden", "true"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;opacity:0;pointer-events:none"; document.body.appendChild(host); }
+  if (!host) {
+    // measured in a shadow tree, so the page's own CSS (a {color}, [hidden] {display:none}, .icon, …) can't match the
+    // part's elements and change what is measured or exported, and the part's CSS can't match the page's (#239, #63)
+    const box = document.createElement("div"); box.setAttribute("aria-hidden", "true");
+    box.style.cssText = "all:initial;position:absolute;left:0;top:0;width:0;height:0;pointer-events:none";
+    host = document.createElementNS(SVGNS, "svg"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;opacity:0;pointer-events:none";
+    box.attachShadow({mode:"closed"}).appendChild(host); document.body.appendChild(box);
+  }
   // all:initial + black: parts must not inherit the page's theme color or fonts (currentColor would export as the UI text color, #44).
   // Hidden with opacity, which isn't inherited: visibility:hidden would make every part's own visibility unreadable (#17).
   const g = document.createElementNS(SVGNS, "g");
@@ -852,19 +861,13 @@ function parseSVG(text, name){
   // the root's fill, stroke, font-size, style, … inherit to every shape, so measuring and flattening must see them (#64)
   for (const a of KEEP_ATTRS) if (a !== "class" && root.hasAttribute(a)) g.setAttribute(a, root.getAttribute(a));
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
-  // Without a <style> the file's class names do nothing, but in the measuring host the page's own rules (.icon, .dot,
-  // .note, …) would match them and resize or recolor the shapes (#63). Prefix them while measuring; mark(false) puts
-  // the drawn names back for the exported markup.
-  const bare = sheets.length ? [] : [...g.querySelectorAll("[class]")].map(el => [el, el.getAttribute("class")]);
-  const mark = on => { for (const [el, c] of bare) el.setAttribute("class", on ? c.split(/\s+/).filter(Boolean).map(n => pfx + n).join(" ") : c); };
-  mark(true);
   host.appendChild(g);
   let bb, rings;
   const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, stripped};
   try {
     const inl = inlineSheets(g);
     p.hidden = dropHidden(g);
-    if (inl || p.hidden) { mark(false); p.inner = [...g.children].map(n => ser.serializeToString(n)).join(""); mark(true); }
+    if (inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw fail("svg.nothingVisible", {name});
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
