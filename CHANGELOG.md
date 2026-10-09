@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.37-beta
+
+- The blind-review prompt in RELEASING.md now covers the string table (`app/strings-en.js`), RELEASING.md itself, the
+  QA workbook tool and its workbooks, and runs `python3 tools/qa_workbooks.py --check` next to the build check
+  (#278).
+
 ## 1.3.36-beta
 
 - CLAUDE.md now says the QA workbooks move to a release once it is tagged, as RELEASING.md does, since the workbooks
