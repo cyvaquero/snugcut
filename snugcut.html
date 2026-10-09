@@ -153,7 +153,9 @@ footer a,header p a{color:var(--accent)}
 /* Windows High Contrast / forced colors: pressed toggles keep a visible state (#98) */
 @media (forced-colors: active){
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
-  .icon[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-4px}
+  /* filled like the pressed toggles, so the outline stays free for the focus ring (#266) */
+  .icon[aria-pressed=true]{background:Highlight;color:HighlightText;border-color:Highlight;forced-color-adjust:none}
+  .icon[aria-pressed=true]:focus-visible{outline-color:CanvasText}
   .icon.nohole{color:GrayText;border-color:GrayText;opacity:1}
   /* the parts are drawn in their own colors inside <img>, so keep the tan plate behind them: forced colors turned it
      into Canvas, black on black in dark themes (#157) */
@@ -273,7 +275,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.16-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.17-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
