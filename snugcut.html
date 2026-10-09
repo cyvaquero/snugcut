@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EnN2i6H+SPWBV2OdOaWfMqSBYNPrqBE+z13DdKi5Y28=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sLCk21eCE77zIKfjdjhfCPMHHDxxKCqP/U7n34spVCk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.33-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.34-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1005,7 +1005,7 @@ function dropHidden(g){
   // exported. Hidden = display:none on it or an ancestor, visibility other than visible (a visible child of a hidden
   // group counts, as in CSS), opacity 0 on it or an ancestor, or nothing painted (no fill and no stroke).
   let n = 0;
-  const paint = (v, o) => v && v !== "none" && !/^rgba\(.*,\s*0\)$/.test(v) && !/^transparent$/.test(v) && !(parseFloat(o) === 0);
+  const paint = (v, o) => { if (!v || v === "none" || parseFloat(o) === 0) return false; const p = parseColor(v); return !p || p.alpha > 0; };
   for (const el of [...g.querySelectorAll("path,rect,circle,ellipse,line,polyline,polygon,text,use,image")]) {
     if (el.namespaceURI !== SVGNS || el.closest("defs,clipPath,mask,symbol,pattern,marker")) continue;
     const cs = getComputedStyle(el);
@@ -1042,12 +1042,12 @@ function inlineSheets(g){
   const px = v => v.replace(/(-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)px\b/gi, "$1");
   const val = (prop, v) => {
     v = v.replace(/url\("(#[^"\\]*)"\)/g, "url($1)");                // url("#id") → url(#id), as uniquifyIds expects
-    const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?\s*\)$/.exec(v);
-    if (m) {
-      const a = m[4] == null ? 1 : parseFloat(m[4]) / (m[4].endsWith("%") ? 100 : 1);
-      if (a === 0 && (prop === "fill" || prop === "stroke")) return "none";
-      if (a === 1) return "#" + [m[1], m[2], m[3]].map(c => Math.round(+c).toString(16).padStart(2, "0")).join("");
-      return v;
+    const c = /^(?:rgba?|transparent)\b|^[a-z-]+\(/i.test(v) ? parseColor(v) : null;
+    if (c) {
+      if (c.alpha === 0 && (prop === "fill" || prop === "stroke")) return "none";
+      if (c.alpha === 1) return c.hex;
+      // partly transparent: an rgb() value stays as computed; newer syntaxes are written as rgba(), which other software reads
+      return /^rgba?\(/i.test(v) ? v : `rgba(${parseInt(c.hex.slice(1, 3), 16)}, ${parseInt(c.hex.slice(3, 5), 16)}, ${parseInt(c.hex.slice(5, 7), 16)}, ${+c.alpha.toFixed(4)})`;
     }
     return PRES.has(prop) && !/url\(|["']/.test(v) ? px(v).replace(/,\s*/g, prop === "stroke-dasharray" ? " " : ", ") : v;
   };
@@ -1165,13 +1165,32 @@ function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
 }
 const FLAT_SHAPES = new Set(["path","rect","circle","ellipse","line","polyline","polygon"]);
 const FLAT_SKIP = new Set(["g","a","svg","switch","defs","style","title","desc","metadata","linearGradient","radialGradient","stop","symbol","clipPath","mask","pattern","marker","filter","view"]);
-function cssColor(v){
-  if (!v || v === "none") return "none";
-  if (/^url\(/i.test(v)) return undefined;
-  const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?\s*\)/.exec(v);
-  if (!m) return v;
-  if (m[4] != null && parseFloat(m[4]) === 0) return "none";
-  return "#" + [m[1], m[2], m[3]].map(c => Math.round(+c).toString(16).padStart(2, "0")).join("");
+// A computed color as {hex, alpha}, whatever its syntax, or null when v isn't a color. The one color parser (#284):
+// Chrome keeps oklch(), color(), lab() … as written in computed values, so those are mixed into sRGB by the browser
+// (color-mix serializes as color(srgb r g b / a)) instead of reaching the exports as written (#317).
+const hex3 = (r, g, b) => "#" + [r, g, b].map(c => Math.round(Math.min(255, Math.max(0, +c))).toString(16).padStart(2, "0")).join("");
+let colorProbe = null;
+function parseColor(v){
+  v = String(v || "").trim();
+  const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?\s*\)$/.exec(v);
+  if (m) return {hex:hex3(m[1], m[2], m[3]), alpha:m[4] == null ? 1 : parseFloat(m[4]) / (m[4].endsWith("%") ? 100 : 1)};
+  if (/^transparent$/i.test(v)) return {hex:"#000000", alpha:0};
+  if (!/^[a-z-]+\(/i.test(v) || !host || !CSS.supports("color", v)) return null;
+  if (!colorProbe) { colorProbe = document.createElementNS(SVGNS, "g"); host.appendChild(colorProbe); }
+  colorProbe.style.color = ""; colorProbe.style.color = `color-mix(in srgb, ${v} 100%, transparent)`;
+  if (!colorProbe.style.color) return null;                    // no color-mix (Firefox < 113, which has no such syntax)
+  const cc = getComputedStyle(colorProbe).color;
+  const c = /^color\(srgb\s+([-\d.e]+)\s+([-\d.e]+)\s+([-\d.e]+)(?:\s*\/\s*([\d.e]+))?\s*\)$/.exec(cc);
+  if (c) return {hex:hex3(c[1] * 255, c[2] * 255, c[3] * 255), alpha:c[4] == null ? 1 : +c[4]};
+  const q = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/.exec(cc);
+  return q ? {hex:hex3(q[1], q[2], q[3]), alpha:q[4] == null ? 1 : +q[4]} : null;
+}
+// a fill or stroke for flattened export: {c: hex, "none", or undefined for gradients and patterns, a: its alpha}
+function paintOf(v){
+  if (!v || v === "none") return {c:"none", a:1};
+  if (/^url\(/i.test(v)) return {c:undefined, a:1};
+  const p = parseColor(v);
+  return !p ? {c:v, a:1} : p.alpha === 0 ? {c:"none", a:1} : {c:p.hex, a:p.alpha};
 }
 function extractFlat(g, loose){
   // every drawable shape → absolute path segments in the part's user units; null when the part needs its original markup.
@@ -1198,7 +1217,8 @@ function extractFlat(g, loose){
       continue;
     }
     if (isHidden(el, g)) continue;
-    let fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);     // a line is never filled
+    const pf = tag === "line" ? {c:"none", a:1} : paintOf(cs.fill), ps = paintOf(cs.stroke);     // a line is never filled
+    let fill = pf.c, stroke = ps.c;
     if (fill === undefined || stroke === undefined) {
       if (!loose) return null;
       skipped.add("paint");
@@ -1250,7 +1270,7 @@ function extractFlat(g, loose){
       if (!opac.has(a)) { const v = parseFloat(getComputedStyle(a).opacity); opac.set(a, isNaN(v) ? 1 : v); }
       o *= opac.get(a);
     }
-    out.push({segs, fill, stroke, sw, evenodd: cs.fillRule === "evenodd", fo: o * (parseFloat(cs.fillOpacity) || (cs.fillOpacity === "0" ? 0 : 1)), so: o * (parseFloat(cs.strokeOpacity) || (cs.strokeOpacity === "0" ? 0 : 1)),
+    out.push({segs, fill, stroke, sw, evenodd: cs.fillRule === "evenodd", fo: o * pf.a * (parseFloat(cs.fillOpacity) || (cs.fillOpacity === "0" ? 0 : 1)), so: o * ps.a * (parseFloat(cs.strokeOpacity) || (cs.strokeOpacity === "0" ? 0 : 1)),
       cap: cs.strokeLinecap || "butt", join: cs.strokeLinejoin || "miter", ml: isFinite(ml) ? ml : 4, dash, doff: dash ? (parseFloat(cs.strokeDashoffset) || 0) * k : 0,
       lay: (/_layer-(.+)$/.exec(el.closest("g[id*='_layer-']")?.id || "") || [])[1]});   // DXF layer, for parts imported from DXF
   }
