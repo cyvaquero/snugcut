@@ -186,9 +186,9 @@ TESTS = [
     ("Kerf compensation", None, [
         (14, "Kerf, SVG", "#36", [
             "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects**.",
-            "Add `test-cuts/kerf-test.svg`. A notice says a hole is narrower than the kerf and was left as drawn: "
-            "that's the pin hole.",
-            "Download the plate and import it. The download says kerf compensation is built in.",
+            "Add `test-cuts/kerf-test.svg`.",
+            "Download the plate and import it. The download says kerf compensation is built in, and that a hole is "
+            "narrower than the kerf and was left as drawn: that's the pin hole.",
             "Leave kerf and compensation as they are for test 22.",
         ], [
             "A red 20.2 × 20.2 mm outline, a red 9.8 mm square hole and a red 5.8 mm round hole.",
