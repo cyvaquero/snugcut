@@ -82,6 +82,11 @@ are left out; filled shapes become outlines. A notice names anything that was le
 Settings are remembered in this browser (local storage) and restored next time.
 
 - **Nesting mode**: True shape or Bounding box (top right).
+- **Worker pool** (True shape, its own box above Plate & cutting): Off (the default) searches in one background
+  worker; 2, 3 or 4 workers try that many orders at once, so more layouts are tried in the same time. Each extra
+  worker uses more memory, about 100 MB on a job of 120 parts, so on a lower-spec computer (little memory or few
+  processor cores) leave it off; the box says so. Layouts and exports don't depend on it beyond the number of layouts
+  tried.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
   Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
   German, for example); exported files always use `.`.
@@ -91,10 +96,6 @@ Settings are remembered in this browser (local storage) and restored next time.
 - **Compensate kerf on objects**: see above.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
-- **Worker pool** (True shape): Off (the default) searches in one background worker; 2, 3 or 4 workers try that many
-  orders at once, so more layouts are tried in the same time. Each extra worker uses more memory, about 100 MB on a
-  job of 120 parts, so on a lower-spec computer (little memory or few processor cores) leave it off. Layouts and
-  exports don't depend on it beyond the number of layouts tried.
 - **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
   72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
   `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).

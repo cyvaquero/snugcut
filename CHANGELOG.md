@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.39-beta
+
+- The **Worker pool** setting has its own box above Plate & cutting (#255), shown in True shape mode. It explains in
+  one sentence what the pool does, and always shows the warning that each extra worker uses more memory (about
+  100 MB on a job of 120 parts), so on a lower-spec computer the pool should stay off. Screen readers read both as the
+  setting's description. The setting itself is unchanged: Off by default, or 2, 3 or 4 workers.
+
 ## 1.2.38-beta
 
 - The worker pool is now a setting, **Worker pool** (True shape): Off by default, or 2, 3 or 4 workers (#253). Off
