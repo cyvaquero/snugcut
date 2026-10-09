@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.10-beta
+
+- **Security:** a crafted SVG with a long run of `--name:` text in a style sheet or an attribute no longer freezes the
+  page while it is added (#272). The check for CSS custom properties holding a string backtracked quadratically: a
+  300 KB file took 8.7 s, and 1 MB would take about 95 s. It now checks one declaration at a time, with the same
+  results: that file is added in 14 ms.
+
 ## 1.3.9-beta
 
 - The blind review's **Best practices** reviewer covers project structure, build and dependency hygiene, testability
