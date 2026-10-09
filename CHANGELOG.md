@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.35-beta
+
+- QA workbook test 14 says the pin-hole notice appears when the plate is downloaded, which is when the app shows it,
+  instead of when `kerf-test.svg` is added (#274). All six workbooks in `qa/` are regenerated.
+
 ## 1.3.34-beta
 
 - Colors are exported right whatever syntax the file uses (#317, #284). A 50%-transparent fill was cut as fully
