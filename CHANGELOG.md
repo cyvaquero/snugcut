@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.2-beta
+
+- A `<use>` copy of a shape is nested by the shape again, not by its bounding box (#261). Since parts are measured
+  out of the page's reach (#239), the copy's original couldn't be found and every copy counted as a rectangle:
+  `use-rotated.svg` (two L shapes) measured 1528 mm² instead of 928 mm². Exports are unchanged.
+
 ## 1.3.1-beta
 
 - A part nested in a hole next to an island (the disc left in a frame's window) is now always recognized as in the
