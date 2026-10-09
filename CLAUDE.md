@@ -26,6 +26,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - **CSP**: `app/index.html` carries its own Content-Security-Policy `<meta>`, as strict as `snugcut.html`'s plus
   `'self'` for its own module and stylesheet. Any new or changed library/CDN URL goes into both: edit the CSP in
   `app/index.html`, and the build writes it into `snugcut.html` (minus `'self'`). Otherwise the browser blocks it.
+  clipper-lib's URL is also in `connect-src`: the search worker (#4, `worker-src blob:`) fetches it with the script
+  tag's integrity hash.
   `script-src` never allows `'unsafe-inline'`: the build puts the sha256 hash of `snugcut.html`'s one inline script into
   its `script-src` on every run, so injected inline handlers can't run. Never add inline `on…=` handlers or
   `javascript:` URLs; attach handlers in `app.js`.

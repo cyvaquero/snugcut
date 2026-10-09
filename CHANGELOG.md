@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.36-beta
+
+- The layout search runs in a background worker (#4), so the page no longer stutters while it searches. On 120 mixed
+  parts the page had up to 56 ms long tasks (260 ms in all) during a 4 s search, with frames up to 60 ms apart. Now
+  there are none, and frames stay 17 ms apart. Without the pauses that kept the page painting, the search also tries
+  about 12–14% more layouts in the same time: 120 parts at 15° steps finish in 8.3 s instead of 9.5 s. Layouts and
+  exports are exactly the ones the page would make itself. The page's security policy now allows a worker built in the
+  page (`worker-src blob:`) and fetching clipper-lib's own URL with its integrity hash (`connect-src`); the browser
+  serves that from its cache. Where a worker can't start, the search runs on the page as before.
+
 ## 1.2.35-beta
 
 - The four links that open a new tab (SnugCut on GitHub, issue tracker, changelog, license) say so (#242). Screen

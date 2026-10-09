@@ -9,7 +9,7 @@ Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded order search
-  ("Search 30 s more", Stop).
+  ("Search 30 s more", Stop). The search runs in a background worker, so the page stays responsive while it works.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
@@ -254,8 +254,14 @@ A Content-Security-Policy allows only those URLs, so an imported SVG can't make 
 allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both library script
 tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have changed.
 
+The search runs in a Web Worker built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
+worker needs its own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`
+allows that one URL), which the browser serves from its cache. If a worker can't be started (an older browser, or a
+page embedding SnugCut with a stricter CSP), the search runs on the page itself, as before.
+
 The script tags and the CSP are kept in `app/index.html`; don't edit them in `snugcut.html`, which is generated. To
-bump a library version, change its URL in the script tag and in the CSP, set its `integrity` to `sha384-` plus the
+bump a library version, change its URL in the script tag and in the CSP (clipper-lib's in both `script-src` and
+`connect-src`), set its `integrity` to `sha384-` plus the
 output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, and run `python3 tools/build.py`. The
 build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
 allows its own files with `'self'` instead).
