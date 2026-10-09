@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.42-beta
+
+- The blind review's **Best practices** reviewer covers project structure, build and dependency hygiene, testability
+  and operational defaults too, and cites a source for each practice (#306). Its findings stay at info severity, and
+  one that shares a root cause with another reviewer's finding is merged into it. No change to the app.
+
 ## 1.2.41-beta
 
 - The release blind review gains a fifth blind reviewer, **Best practices** (#282), launched with the other four. It
