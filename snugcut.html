@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-i5Y3JmFbMbpMJeLmTw2LBhWSAF0jZZ3Y2RVPBcvdKqk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sIOGzhJJ1gh2k1Ct9sxPVCQbjOat+5gEF9mhRfjJmj8=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,7 +276,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.26-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.27-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -658,6 +658,7 @@ function dxfToSVG(text, name, opts = {}){
   }
   if (!recs.some(r => r.type === "SECTION")) throw fail("dxf.unreadable", {name});
   const str = (r, c, d) => { const p = r.g.find(q => q[0] === c); return p ? p[1] : d; };
+  const trueColor = r => str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0") : null;   // group 420
   const num = (r, c, d = 0) => { const v = parseFloat(str(r, c)); return isFinite(v) ? v : d; };
   const nums = (r, c) => r.g.filter(q => q[0] === c).map(q => parseFloat(q[1]) || 0);
   const header = {}, layers = new Map(), blocks = new Map(), model = [];
@@ -673,7 +674,7 @@ function dxfToSVG(text, name, opts = {}){
     if (sec === "TABLES" && r.type === "LAYER") {
       const c = num(r, 62, 7), fl = num(r, 70);
       layers.set(str(r, 2, "0").toUpperCase(), {   // layer names ignore case, as in CAD (#268)
-        color:str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0") : aciColor(Math.abs(c)),
+        color:trueColor(r) ?? aciColor(Math.abs(c)),
         hidden:c < 0 || (fl & 1) === 1 || str(r, 290) === "0"});
     } else if (sec === "BLOCKS") {
       if (r.type === "BLOCK") { block = {name:str(r, 2, ""), bx:num(r, 10), by:num(r, 20), ents:[]}; blocks.set(block.name.toUpperCase(), block); }
@@ -696,7 +697,7 @@ function dxfToSVG(text, name, opts = {}){
   // $MEASUREMENT says imperial; opts.units ("mm" or "in") is the user's choice for such a file, from the parts list (#90)
   const unit = DXF_MM[+header.$INSUNITS], notes = [];
   const units = unit ? null : opts.units || (header.$MEASUREMENT != null && +header.$MEASUREMENT === 0 ? "in" : "mm");
-  const k = unit || (units === "in" ? 25.4 : 1);
+  const k = unit || (units === "in" ? IN : 1);
   if (!unit && !opts.units) notes.push(msg("dxf.noUnits", {name, units}));
 
   const out = new Map(), skipped = {};                          // layer → color → path data
@@ -716,8 +717,7 @@ function dxfToSVG(text, name, opts = {}){
     const L = layers.get(layer.toUpperCase()) || {color:"#000000", hidden:false};
     if (L.hidden || layer.toUpperCase() === "DEFPOINTS") { onHidden++; return; }   // named in a notice (#80)
     const ci = num(r, 62, 256);
-    const color = str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0")
-      : ci === 256 ? L.color : ci === 0 ? ctx.color || "#000000" : aciColor(Math.abs(ci));
+    const color = trueColor(r) ?? (ci === 256 ? L.color : ci === 0 ? ctx.color || "#000000" : aciColor(Math.abs(ci)));
     const wcs = t === "LINE" || t === "ELLIPSE" || t === "SPLINE" || (t === "POLYLINE" && num(r, 70) & 8);
     if (num(r, 230, 1) < 0 && !wcs) M = mul(M, [-1, 0, 0, 1, 0, 0]);         // 2D entity in an OCS with extrusion (0,0,-1)
     if (t === "INSERT") {
@@ -1199,9 +1199,7 @@ function extractFlat(g, loose){
       else if (tag === "use") skipped.add("use"); else skipped.add("<" + tag);
       continue;
     }
-    let hidden = false;
-    for (let a = el; a && a !== g; a = a.parentElement) if (getComputedStyle(a).display === "none") { hidden = true; break; }
-    if (hidden) continue;
+    if (isHidden(el, g)) continue;
     let fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);     // a line is never filled
     if (fill === undefined || stroke === undefined) {
       if (!loose) return null;
@@ -1286,6 +1284,13 @@ function uniquifyIds(markup, prefix){
   }
   return markup;
 }
+// whether point q ([x, y]) is inside the ring poly ([[x, y], …]), by the even-odd rule
+function insideRing(q, poly){
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > q[1]) !== (yj > q[1]) && q[0] < (xj - xi) * (q[1] - yi) / (yj - yi) + xi) c = !c; }
+  return c;
+}
 function cutPlan(p, flat = p.flat, byLayer = false){
   // the part's subpaths with their nesting depth (how many closed contours contain them), computed once per part;
   // inner cuts (holes, slots, engraving) must come before the outline that contains them.
@@ -1321,16 +1326,12 @@ function cutPlan(p, flat = p.flat, byLayer = false){
     sub.pts = pts; sub.bb = [x0, y0, x1, y1];
     sub.closed = pts.length > 2 && (sub.segs[sub.segs.length - 1][0] === "Z" || Math.hypot(a[0] - z[0], a[1] - z[1]) <= 1e-6 * Math.max(x1 - x0, y1 - y0, 1));
   }
-  const inside = (q, poly) => { let c = false;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j];
-      if ((yi > q[1]) !== (yj > q[1]) && q[0] < (xj - xi) * (q[1] - yi) / (yj - yi) + xi) c = !c; }
-    return c; };
   for (const sub of subs) {
     sub.depth = 0;
     for (const o of subs) {
       if (o === sub || !o.closed || !sub.pts.length) continue;
       const [a0, b0, a1, b1] = sub.bb, [c0, d0, c1, d1] = o.bb;
-      if (a0 >= c0 && b0 >= d0 && a1 <= c1 && b1 <= d1 && (a1 - a0) * (b1 - b0) < (c1 - c0) * (d1 - d0) && inside(sub.pts[0], o.pts)) sub.depth++;
+      if (a0 >= c0 && b0 >= d0 && a1 <= c1 && b1 <= d1 && (a1 - a0) * (b1 - b0) < (c1 - c0) * (d1 - d0) && insideRing(sub.pts[0], o.pts)) sub.depth++;
     }
   }
   p[slot + "Key"] = ck;
@@ -1651,17 +1652,13 @@ function holeFree(p, tol){
     return pts.map(([x, y]) => ({X:Math.round(x * SC), Y:Math.round(y * SC)}));
   };
   const inBB = (a, b) => a.bb[0] >= b.bb[0] && a.bb[1] >= b.bb[1] && a.bb[2] <= b.bb[2] && a.bb[3] <= b.bb[3];
-  const inside = (q, poly) => { let c = false;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j];
-      if ((yi > q[1]) !== (yj > q[1]) && q[0] < (xj - xi) * (q[1] - yi) / (yj - yi) + xi) c = !c; }
-    return c; };
   const out = [];
   for (const h of holeSubs(p)) {
     const H = tol ? rdp(ring(h), tol * 0.8) : ring(h); if (H.length < 3) continue;
     if (!CL.Clipper.Orientation(H)) H.reverse();
     const c = new CL.Clipper(); c.AddPath(H, CL.PolyType.ptSubject, true);
     for (const o of subs) {               // whatever lies inside the hole stays solid (open lines with a little width)
-      if (o === h || !o.pts.length || !inBB(o, h) || !inside(o.pts[0], h.pts)) continue;
+      if (o === h || !o.pts.length || !inBB(o, h) || !insideRing(o.pts[0], h.pts)) continue;
       const q = ring(o); if (q.length < 2) continue;
       if (o.closed && q.length >= 3) { if (!CL.Clipper.Orientation(q)) q.reverse(); c.AddPath(q, CL.PolyType.ptClip, true); }
       else { const off = new CL.ClipperOffset(2, 0.05 * SC); off.AddPath(q, CL.JoinType.jtSquare, CL.EndType.etOpenSquare);
@@ -1977,7 +1974,11 @@ function nestCore(CL, SC, hooks){
   }
   // the search's random numbers (mulberry32), seeded with 7; the state is st.seed, so a search can be continued later,
   // in this thread or another
-  function rand(st){ let seed = st.seed | 0; seed = seed + 0x6D2B79F5 | 0; st.seed = seed; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+  // one step of mulberry32 from state s: [next state, number in [0, 1)]
+  function m32(s){ s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return [s, ((t ^ t >>> 14) >>> 0) / 4294967296]; }
+  function rand(st){ const [s, v] = m32(st.seed | 0); st.seed = s; return v; }
+  // the same numbers from a seed, as a function (Bounding box mode's search)
+  function mulberry(seed){ return () => { const [s, v] = m32(seed | 0); seed = s; return v; }; }
   // The order search: the sorted starting orders still pending, then a random walk of 1–3 swaps or moves from the best
   // order, each try kept when it is no worse. st ({pending, seed, bestOrder, bestScore, tried}) is updated as it goes, so
   // the caller can continue the search. o: {items, F, plateA, minPlates, ms, t0, angPick, pause, onBest(bins, score),
@@ -2014,11 +2015,11 @@ function nestCore(CL, SC, hooks){
       o.onStep();
     }
   }
-  return {area, hull, bounds, shape, newBin, addTo, container, score, better, searchLoop};
+  return {area, hull, bounds, shape, newBin, addTo, container, score, better, searchLoop, mulberry};
 }
 const core = nestCore(CL, SC, {envOf:p => envelope(p), kerfOf:p => kerfC(p), fillOf:p => fillMM(p), ver:() => geoVer});
 const {area, hull, bounds, container} = core;
-const {shape, score, better} = core;
+const {shape, score, better, mulberry} = core;
 
 /* ---------- placement ---------- */
 // how far compensated cuts move out from the drawn outline; 0 for parts kept as original markup (text, images, effects),
@@ -2306,7 +2307,6 @@ function rectFits(p){
 }
 
 
-function mulberry(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 function fitsPlate(p, F){
   return angleList(p).some(a => { const s = shape(p, a); return F.mR - F.mL >= s.cut.maxX - s.cut.minX && F.mB - F.mT >= s.cut.maxY - s.cut.minY; });

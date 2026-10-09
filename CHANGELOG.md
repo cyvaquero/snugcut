@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.27-beta
+
+- Internal: helpers that existed in two or three copies in `lib/snugcut.js` now exist once: point in polygon, the
+  hidden-ancestor check, the mulberry32 random numbers (now inside the search core and exported from it), the DXF
+  true-color parse, and `25.4` as `IN` (#293). No change in behavior: layouts, random sequences and exports are
+  identical.
+
 ## 1.3.26-beta
 
 - `snugcut.html` runs its script in strict mode, as `app/` already does as ES modules, and so does the search worker's
