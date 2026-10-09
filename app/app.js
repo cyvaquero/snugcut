@@ -493,6 +493,8 @@ const SAMPLES = [
   ["hex-tag.svg", 6, `<svg xmlns="${SVGNS}" width="50mm" height="43.3mm" viewBox="0 0 50 43.3"><polygon points="12.5,0.1 37.5,0.1 49.9,21.65 37.5,43.2 12.5,43.2 0.1,21.65" ${S0}/><circle cx="25" cy="8" r="2" ${S0}/></svg>`],
 ];
 fillInputs();
+// text the app writes into the page from the string table, the first time (#279)
+$("kOut").textContent = t("kcalc.none"); $("sEffK").textContent = t("stat.effNone");
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 startWorker({url: $("clipper-lib").src, integrity: $("clipper-lib").integrity});   // fetched and built while the parts list is drawn (#4)
 renderParts();

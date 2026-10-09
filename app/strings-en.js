@@ -115,4 +115,5 @@ export const EN = {
   "lib.dxfOut.markers": "Not in the DXF: markers (arrowheads and the like) in {name}.",
   "lib.dxfOut.unreadable": "Not in the DXF: unreadable paths in {name}.",
   "lib.dxfOut.fills": "Filled areas are written as their outlines.",
+  "lib.search.workerFailed": "the search worker stopped",
 };
