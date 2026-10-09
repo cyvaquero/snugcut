@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5NZi23ZdghXubHNwfkVXxF3Psd1Wz3GZ5GJOr+aB5Xo=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WscbzOkO3cy/kuNqpTD8Xnc0mCy1mPekjqgi5SWNgNA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,7 +276,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.21-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.22-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2126,17 +2126,21 @@ function getWorkers(){
 }
 const startWorker = () => { getWorkers(); };     // start building them early, while the page loads
 // One search in one worker: st is that search's state, updated from the worker's messages
+const live = new Set();     // the running inWorker() calls, by their fail()
 function inWorker(w, st, o, parts, byUid){
   const id = ++workerRun;
   return new Promise((resolve, reject) => {
-    const end = () => { clearInterval(watch); w.removeEventListener("message", on); w.removeEventListener("error", bad); };
+    const end = () => { clearInterval(watch); w.removeEventListener("message", on); w.removeEventListener("error", bad); live.delete(fail); };
+    const fail = err => { end(); reject(err); };
     // Stop and newer runs only bump the run token: tell the worker, and let the caller go at once. o.enough() ends
     // this search early without failing the run
     const watch = setInterval(() => {
       if (o.token !== runToken) { w.postMessage({type:"stop", id}); end(); reject(ABORT); }
       else if (o.enough && o.enough()) { w.postMessage({type:"stop", id}); end(); resolve(); }
     }, 50);
-    const bad = e => { end(); broken = true; pool.forEach(x => x.terminate()); pool = []; reject(new Error(e.message || "search worker failed")); };
+    // a worker that fails takes the pool down: every search still running in it is ended too, or its 50 ms watch and
+    // listeners would stay until the next run (#288)
+    const bad = e => { const err = new Error(e.message || "search worker failed"); broken = true; pool.forEach(x => x.terminate()); pool = []; [...live].forEach(f => f(err)); };
     const on = e => {
       const m = e.data;
       if (m.id !== id || o.token !== runToken) return;
@@ -2147,7 +2151,7 @@ function inWorker(w, st, o, parts, byUid){
       else if (m.type === "done") { end(); resolve(); }
       else if (m.type === "error") { end(); reject(new Error(m.message)); }
     };
-    w.addEventListener("message", on); w.addEventListener("error", bad);
+    w.addEventListener("message", on); w.addEventListener("error", bad); live.add(fail);
     w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA, minPlates:o.minPlates,
       ms:o.ms, elapsed:performance.now() - o.t0, st});
   });
