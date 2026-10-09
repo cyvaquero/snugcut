@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-C6HWcDV6V3mu1zM77n9PYFzyHz1oK4iZyqWYATSY6nk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/3dprjNCw32HgUTW1bkpCWw4SOevYlSrh+jW758nT9o=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -266,7 +266,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.36-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.37-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1879,45 +1879,54 @@ function searchWorker(self, nestCore, SC){
   };
   self.postMessage({type:"ready"});
 }
-let workerP = null, workerRun = 0;
-function getWorker(){
-  // resolves to the worker, or null to search on the page; tried once per page load
-  return workerP || (workerP = (async () => {
-    let w;
+// a pool of workers (#4), one per core but one, at most 4: each walks from the best order with its own seed. Each holds
+// its own cache of part pairs (about 100 MB on 120 mixed parts), so more would cost more memory than they gain
+const POOL = Math.max(1, Math.min((typeof navigator !== "undefined" && navigator.hardwareConcurrency || 1) - 1, 4));
+let workersP = null, workerRun = 0;
+function getWorkers(){
+  // resolves to the workers, or null to search on the page; built once per page load
+  return workersP || (workersP = (async () => {
+    const ws = [], ready = w => new Promise(r => { const t = setTimeout(() => r(false), 10000);
+      w.onmessage = e => { if (e.data && e.data.type === "ready") { clearTimeout(t); r(true); } }; w.onerror = () => { clearTimeout(t); r(false); }; });
+    let url;
     try {
       const tag = document.querySelector('script[src*="clipper"]');
       if (typeof Worker !== "function" || !CL || !tag) return null;
       const res = await fetch(tag.src, tag.integrity ? {integrity:tag.integrity} : {});
       if (!res.ok) return null;
-      const url = URL.createObjectURL(new Blob([`${await res.text()}\n;(${searchWorker})(self, ${nestCore}, ${SC});\n`], {type:"text/javascript"}));
-      try { w = new Worker(url); } finally { URL.revokeObjectURL(url); }
-      const ok = await new Promise(r => { const t = setTimeout(() => r(false), 10000); w.onmessage = e => { if (e.data && e.data.type === "ready") { clearTimeout(t); r(true); } }; w.onerror = () => { clearTimeout(t); r(false); }; });
-      if (!ok) { w.terminate(); return null; }
-      w.onmessage = null;
-      return w;
-    } catch(e) { if (w) w.terminate(); return null; }
+      url = URL.createObjectURL(new Blob([`${await res.text()}\n;(${searchWorker})(self, ${nestCore}, ${SC});\n`], {type:"text/javascript"}));
+      // the first one shows whether workers can run here at all (CSP, browser); then the rest, keeping those that start
+      const w0 = new Worker(url);
+      if (!await ready(w0)) { w0.terminate(); return null; }
+      ws.push(w0);
+      const more = Array.from({length:POOL - 1}, () => { try { return new Worker(url); } catch(e) { return null; } }).filter(Boolean);
+      for (const [w, ok] of await Promise.all(more.map(async w => [w, await ready(w)]))) if (ok) ws.push(w); else w.terminate();
+      for (const w of ws) { w.onmessage = null; w.onerror = null; }
+      return ws;
+    } catch(e) { ws.forEach(w => w.terminate()); return null; }
+    finally { if (url) URL.revokeObjectURL(url); }
   })());
 }
-const startWorker = () => { getWorker(); };     // start building it early, while the page loads
-// Search the order of items (st and o as in the core's searchLoop, plus o.token: the run, see newRun). Resolves when
-// the search ends; rejects with ABORT when a newer run or Stop replaces it.
-async function searchParts(st, o){
-  const w = await getWorker();
-  if (o.token !== runToken) throw ABORT;
-  if (!w) return core.searchLoop(st, {...o, angPick:it => angleList(it.part), pause:async () => { await tick(); if (o.token !== runToken) throw ABORT; }});
-  const id = ++workerRun, byUid = new Map(o.items.map(it => [it.part.uid, it.part]));
-  const parts = [...byUid.values()].map(p => ({uid:p.uid, outers:p.outers, areaMM:p.areaMM, fill:fillMM(p), kerf:kerfC(p), angs:angleList(p), env:envelope(p)}));
+const startWorker = () => { getWorkers(); };     // start building them early, while the page loads
+// One search in one worker: st is that search's state, updated from the worker's messages
+function inWorker(w, st, o, parts, byUid){
+  const id = ++workerRun;
   return new Promise((resolve, reject) => {
     const end = () => { clearInterval(watch); w.removeEventListener("message", on); w.removeEventListener("error", bad); };
-    // Stop and newer runs only bump the run token: tell the worker, and let the caller go at once
-    const watch = setInterval(() => { if (o.token !== runToken) { w.postMessage({type:"stop", id}); end(); reject(ABORT); } }, 50);
-    const bad = e => { end(); workerP = Promise.resolve(null); reject(new Error(e.message || "search worker failed")); };
+    // Stop and newer runs only bump the run token: tell the worker, and let the caller go at once. o.enough() ends
+    // this search early without failing the run
+    const watch = setInterval(() => {
+      if (o.token !== runToken) { w.postMessage({type:"stop", id}); end(); reject(ABORT); }
+      else if (o.enough && o.enough()) { w.postMessage({type:"stop", id}); end(); resolve(); }
+    }, 50);
+    const bad = e => { end(); workersP = Promise.resolve(null); reject(new Error(e.message || "search worker failed")); };
     const on = e => {
       const m = e.data;
       if (m.id !== id || o.token !== runToken) return;
       Object.assign(st, m.st);
       if (m.type === "best") o.onBest(m.bins.map(b => { const bin = core.newBin(); for (const [uid, ang, x, y] of b) core.addTo(bin, shape(byUid.get(uid), ang), {x, y}); return bin; }), m.score);
       else if (m.type === "step") o.onStep();
+      else if (m.type === "draw") { if (o.onDraw) o.onDraw(); }
       else if (m.type === "done") { end(); resolve(); }
       else if (m.type === "error") { end(); reject(new Error(m.message)); }
     };
@@ -1925,6 +1934,44 @@ async function searchParts(st, o){
     w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA, minPlates:o.minPlates,
       ms:o.ms, elapsed:performance.now() - o.t0, st});
   });
+}
+// Search the order of items (st and o as in the core's searchLoop, plus o.token: the run, see newRun). Resolves when
+// the search ends; rejects with ABORT when a newer run or Stop replaces it.
+// With a pool, the sorted starting orders are packed side by side, one per worker, and the first one is kept on a tie,
+// as when they ran one after the other. Then every worker walks from the best order, worker i with its own seed (worker
+// 0 with st.seed, so it repeats the single search's tries). A better layout from any of them is shown; on an equal
+// score the lower worker wins, so the result doesn't depend on which message comes first. st.walkers keeps each
+// worker's seed and st.bestBy which worker's layout is shown, so "Search more" continues all of them.
+async function searchParts(st, o){
+  const ws = await getWorkers();
+  if (o.token !== runToken) throw ABORT;
+  if (!ws) return core.searchLoop(st, {...o, angPick:it => angleList(it.part), pause:async () => { await tick(); if (o.token !== runToken) throw ABORT; }});
+  const byUid = new Map(o.items.map(it => [it.part.uid, it.part]));
+  const parts = [...byUid.values()].map(p => ({uid:p.uid, outers:p.outers, areaMM:p.areaMM, fill:fillMM(p), kerf:kerfC(p), angs:angleList(p), env:envelope(p)}));
+  if (ws.length === 1) return inWorker(ws[0], st, o, parts, byUid);
+  const take = (sc, by, order, bins) => {
+    if (st.bestScore && !better(sc, st.bestScore) && (better(st.bestScore, sc) || by >= st.bestBy)) return;
+    st.bestOrder = order; st.bestScore = sc; st.bestBy = by; o.onBest(bins, sc);
+  };
+  if (st.pending.length) {
+    const firsts = st.pending.splice(0, ws.length);
+    await Promise.all(firsts.map((order, i) => {
+      const sub = {pending:[order], seed:0, bestOrder:null, bestScore:null, tried:0};
+      // the time limit covers these packs too (#234): once one has given a layout and the time is up, the rest stop
+      return inWorker(ws[i], sub, {...o, ms:0, onBest:(bins, sc) => take(sc, i, order, bins), onStep:() => { st.tried++; o.onStep(); },
+        enough:() => !!st.bestScore && !!o.ms && performance.now() - o.t0 >= o.ms}, parts, byUid);
+    }));
+    st.bestBy = 0;      // every walker starts from this order
+  }
+  if (o.items.length < 2) return;
+  st.walkers = st.walkers || ws.map((_, i) => ({seed:i ? 7 + i : st.seed}));
+  await Promise.all(ws.map((w, i) => {
+    const wk = st.walkers[i] || (st.walkers[i] = {seed:7 + i});
+    const sub = {pending:[], seed:wk.seed, bestOrder:st.bestOrder, bestScore:st.bestScore, tried:0};
+    let seen = 0;
+    const sync = () => { wk.seed = sub.seed; if (!i) st.seed = sub.seed; st.tried += sub.tried - seen; seen = sub.tried; };
+    return inWorker(w, sub, {...o, onBest:(bins, sc) => { sync(); take(sc, i, sub.bestOrder, bins); }, onStep:() => { sync(); o.onStep(); }, onDraw:sync}, parts, byUid);
+  }));
 }
 
 /* ---------- bounding-box mode: MaxRects packing ---------- */

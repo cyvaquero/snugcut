@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.37-beta
+
+- The layout search runs in a pool of background workers (#4), one per processor core but one, at most 4, each
+  trying its own orders. With 4 workers the sample parts get 982 layouts tried in 8 s instead of 236, and 120 mixed
+  parts 90 in 15 s instead of 23, with better best layouts in both. The two starting layouts are
+  packed side by side, and the first worker repeats the single search's tries exactly, so a pool never ends with a
+  worse layout than one worker would after the same tries. "Layouts tried" counts all workers, and "Search 30 s more"
+  continues each of them. Each worker keeps its own cache of part pairs (about 100 MB on 120 mixed parts), so the pool
+  stops at 4: four workers took about 300 MB more memory than one.
+
 ## 1.2.36-beta
 
 - The layout search runs in a background worker (#4), so the page no longer stutters while it searches. On 120 mixed
