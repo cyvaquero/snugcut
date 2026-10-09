@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.12-beta
+
+- DXF layer names are matched without regard to case, as in CAD (#268). An entity on `HIDDEN` whose layer table
+  entry is `Hidden` (frozen) was cut, in black, with no "left out" notice; now it is left out with the notice, and an
+  entity on `ENGRAVE` takes the color of layer `Engrave` instead of black.
+
 ## 1.3.11-beta
 
 - **Security:** crafted outlines no longer freeze the page (#271). A 160 KB SVG zigzag of 20,000 teeth froze the tab
