@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EFvU34pKISY6NVY4DbQuIk4dd2DWpGyJ9r4EpiPSN2E=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qBn75AfEFmH9jSCWMNo8Z8qQbI4GHFEuZSLCg0GJtFQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -263,7 +263,7 @@ footer a,header p a{color:var(--accent)}
       </div>
       <div class="search" data-only="shape">
         <span class="st" id="status"><span class="dot on"></span>Nesting…</span>
-        <button type="button" class="btn small" id="more" data-t="page.more">Search 30 s more</button>
+        <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
       <div class="msgs" id="notices"></div>
@@ -272,7 +272,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.28-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.29-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2472,6 +2472,7 @@ const EN = {
   "run.noParts": "No parts to nest.",
   "run.efficiency": "Efficiency {rating} out of 10: the parts use {eff} of the material the job takes up.",
   "run.oversize": "{n, plural, one {# file doesn't fit on the plate and was left out.} other {# files don't fit on the plate and were left out.}}",
+  "search.more": "Search {s} s more",
   "notice.nestError": "Nesting stopped after an error: {error}",
   "notice.exportError": "The download failed: {error}",
   "notice.dismiss": "Dismiss",
@@ -2590,6 +2591,9 @@ function fill(s, v){
 setMessages((code, v) => Object.hasOwn(STR, "lib." + code) ? t("lib." + code, {...v, limit: v.limit == null ? "" : nf("g", {useGrouping:true}).format(v.limit),
   list: v.skipped ? v.skipped.map(([type, n]) => `${n} ${type.toLowerCase()}`).join(", ") : ""}) : undefined);
 if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${t("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
+// how long a search runs: after each change, and for "Search 30 s more" (whose label is built from MORE_MS) (#290)
+const SEARCH_MS = 4000, MORE_MS = 30000;
+$("more").textContent = t("search.more", {s: MORE_MS / 1000});
 // the longest length a field takes, in mm: the fields refuse more, and a saved value past it is ignored on load (#285)
 const MAX_LEN = 100000;
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
@@ -2769,12 +2773,14 @@ function runSummary(){
   return out.join(" ");
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
-$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(30000, false); };
+$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(MORE_MS, false); };
 let tmr;
 // a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
 // and the old search can't be continued
 function staleLayout(){ search = null; if (layout) { layout.stale = true; showStale(); } }
-function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
+// a change drops the layout on screen and searches again after a short pause, so typing doesn't start a search per key
+function restartSoon(ms, rerender){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { if (rerender) renderParts(); run(SEARCH_MS, true); }, ms); }
+function restart(){ restartSoon(250, true); }
 
 /* ---------- parts list ---------- */
 // icons are hidden from assistive tech: the buttons they sit in are named by aria-label (#178)
@@ -2803,13 +2809,13 @@ function renderParts(){
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
       fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
       if (ok) delete p.qtyDraft; else p.qtyDraft = q.value;   // kept, with its error, when the list is rebuilt (#240)
-      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
+      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); restartSoon(350); }
     };
     const du = row.querySelector(".du select");
     if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
-    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
+    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; restartSoon(250); };
+    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; restartSoon(250); };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -3035,7 +3041,7 @@ fillInputs();
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 startWorker();   // fetched and built while the parts list is drawn (#4)
 renderParts();
-run(4000, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
+run(SEARCH_MS, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();
 })();
 </script>

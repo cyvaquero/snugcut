@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.29-beta
+
+- Internal: the search's time limits are named once (`SEARCH_MS`, 4 s, and `MORE_MS`, 30 s), the "Search 30 s more"
+  label is built from the string table with `MORE_MS`, and the three copies of "drop the layout and search again
+  shortly" are one helper (#290). No change in behavior.
+
 ## 1.3.28-beta
 
 - Internal: dead code removed (#294): the dark-theme colors were defined twice (once for a `data-theme` attribute
