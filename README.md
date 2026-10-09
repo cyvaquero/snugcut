@@ -126,6 +126,9 @@ What happens to imported files:
   URLs hidden in CSS custom properties: a custom property holding a string, and `var()` inside `image-set()`,
   `image()` or `cross-fade()`, are removed; custom properties holding colors or lengths keep working. Embedded
   (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
+- A part whose lines cross each other too many times to trace its outline quickly (more than 10,000 crossings, or
+  thousands of open zigzag turns) is nested by the shape around all of it, with a notice; its cut paths are exported
+  as drawn. A file whose curves would be sampled into more than 2,000,000 points isn't added.
 - A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
   page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.
   `:root` rules still apply to the part; rules that need an HTML page around the drawing, such as `body rect`,
@@ -294,6 +297,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
 | `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
 | `svg.unreadable` | | an import isn't a readable SVG |
+| `svg.tooManyPoints` | `limit` | curves sampled past the point limit |
 | `svg.tooManyCopies` | `limit` | `<use>` copies past the limit |
 | `svg.nothingVisible` | | an SVG has no visible shapes |
 | `svg.nothingToCut` | | an SVG has no cuttable shapes |

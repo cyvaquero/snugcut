@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.11-beta
+
+- **Security:** crafted outlines no longer freeze the page (#271). A 160 KB SVG zigzag of 20,000 teeth froze the tab
+  for 94 s after it was added; the page now blocks for at most 255 ms. A thin outline that the nesting simplifies to a
+  line was grown by the spacing point by point: it now keeps a simplified copy within the same tolerance. Lines that
+  cross each other more than 10,000 times, or open zigzags with thousands of turns, would take Clipper seconds to
+  minutes to trace (a DXF spline crossing itself took 22 s at 2,000 control points): such a part is nested by the
+  shape around all of it, with a notice, and exported as drawn. A file whose curves would be sampled into more than
+  2,000,000 points is refused with a message (`svg.tooManyPoints`). Ordinary files measure and nest exactly as before.
+
 ## 1.3.10-beta
 
 - **Security:** a crafted SVG with a long run of `--name:` text in a style sheet or an attribute no longer freezes the
