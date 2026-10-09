@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-M0VTiBa2uaTQr/BEQnBj3bQ3ubePiy6DfoWfQV3sqSM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6uDhx6Lu6y2y3g+tmQvIUgjrMuox9pkel5cOGw8/P8A=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.13-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.14-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2802,6 +2802,18 @@ file.onchange = () => { addFiles(file.files); file.value = ""; };
 const builtInComp = (text, dxf) => (dxf
   ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
   : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
+async function readText(f, dxf){
+  // an SVG is decoded as its byte-order mark or XML declaration says (Latin-1 text came out as "Gr��e"), else as
+  // UTF-8, as File.text() always did (#269)
+  const buf = await f.arrayBuffer(), b = new Uint8Array(buf);
+  let label = b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF ? "utf-8" : b[0] === 0xFF && b[1] === 0xFE ? "utf-16le"
+    : b[0] === 0xFE && b[1] === 0xFF ? "utf-16be" : null;
+  if (!label && !dxf) {
+    const m = /^\s*<\?xml[^>]*?\sencoding\s*=\s*["']([A-Za-z0-9._:-]+)["']/.exec(new TextDecoder("latin1").decode(b.subarray(0, 200)));
+    if (m && !/^utf-?16/i.test(m[1])) label = m[1];      // UTF-16 needs its byte-order mark
+  }
+  try { return new TextDecoder(label || "utf-8").decode(buf); } catch(e) { return new TextDecoder("utf-8").decode(buf); }
+}
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
@@ -2810,7 +2822,7 @@ async function addFiles(list){
   const errs = [], notes = [];                                // errors: files that couldn't be added
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
-    let text = await f.text();
+    let text = await readText(f, isDXF(f));
     const pre = builtInComp(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
