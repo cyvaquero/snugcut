@@ -18,8 +18,10 @@ follows each part. Rounded rectangles nest by their rounded corners and `<use>` 
 images and copies of a `<symbol>` nest by the box around them. It changes only the spacing, never the cut paths. Very complex outlines are simplified further,
 always outward, so they nest a little less tightly but never overlap.
 
-**Area minimum** is the fewest plates the job could fit on by area alone: the parts' envelopes (outlines plus half
-the spacing all round) divided by the plate's usable area. When the best layout uses more plates than that, the status
+**Area minimum** is the fewest plates the job could fit on by area alone: in True shape, the parts' envelopes
+(outlines plus half the spacing all round, less the holes of parts set to nest other parts inside them) divided by the
+plate's usable area; in Bounding box mode, the parts' bounding rectangles grown by the spacing, divided by the usable
+area grown the same way. When the best layout uses more plates than that, the status
 line suggests a longer search ("A longer search may save a plate").
 
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real

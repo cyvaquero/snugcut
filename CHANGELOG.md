@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.38-beta
+
+- The README's Area minimum definition matches the status line in both modes (#276). In True shape, the holes of
+  parts set to nest other parts inside them are left out. In Bounding box mode, it counts the parts' bounding
+  rectangles grown by the spacing.
+
 ## 1.3.37-beta
 
 - The blind-review prompt in RELEASING.md now covers the string table (`app/strings-en.js`), RELEASING.md itself, the
