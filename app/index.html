@@ -28,6 +28,13 @@
 
   <div class="layout">
     <div class="rail">
+      <section class="panel" aria-labelledby="h-pool" data-only="shape">
+        <div class="panel-hd"><h2 id="h-pool" data-t="page.poolHeading">Worker pool</h2></div>
+        <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search finds better layouts in the same time.</p>
+        <div class="field"><label for="pool" data-t="page.pool">Workers</label>
+          <select id="pool" aria-describedby="pool-about pool-warn"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select></div>
+        <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave the pool off.</p>
+      </section>
       <section class="panel" aria-labelledby="h-plate">
         <div class="panel-hd"><h2 id="h-plate" data-t="page.plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units" data-t-aria-label="page.units">
           <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
@@ -65,11 +72,6 @@
             <select id="rotStep"><option value="0" data-t="page.rot0">None</option><option value="180" data-t="page.rot180">180° flips</option><option value="90" data-t="page.rot90">90° steps</option><option value="45" data-t="page.rot45">45° steps</option><option value="30" data-t="page.rot30">30° steps</option><option value="15" data-t="page.rot15">15° steps</option></select></div>
           <div class="field"><label for="prec" data-t="page.precision">Outline precision</label>
             <select id="prec"><option value="0.25" data-t="page.precStandard">Standard (0.25 mm)</option><option value="0.1" data-t="page.precFine">Fine (0.1 mm)</option></select></div>
-        </div>
-        <div class="row" data-only="shape">
-          <div class="field"><label for="pool" data-t="page.pool">Worker pool</label>
-            <select id="pool"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select>
-            <p class="hint" id="pool-hint" hidden data-t="page.poolHint">Searches more layouts at once. Each extra worker uses more memory, about 100 MB on a job of 120 parts: on a lower-spec computer (little memory or few processor cores), leave the pool off.</p></div>
         </div>
         <div class="row">
           <div class="field"><label for="dpi" data-t="page.dpi">Unitless SVG scale</label>
@@ -122,7 +124,7 @@
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.38-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.39-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
