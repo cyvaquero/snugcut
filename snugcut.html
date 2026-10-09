@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3y4ai34Xp4db+WZmkYCDalzGevBheC7kcFK+ppUQUVI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-M0VTiBa2uaTQr/BEQnBj3bQ3ubePiy6DfoWfQV3sqSM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.12-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.13-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1143,7 +1143,7 @@ function extractFlat(g, loose){
   // every drawable shape → absolute path segments in the part's user units; null when the part needs its original markup.
   // loose (for DXF export of such parts): keep every shape that can be drawn as a path and list what was left out.
   const hostInv = host.getScreenCTM().inverse();
-  const out = [], skipped = new Set();
+  const out = [], skipped = new Set(), opac = new Map();
   for (const el of g.querySelectorAll("*")) {
     if (el.namespaceURI !== SVGNS) continue;
     if (el.closest("defs,clipPath,mask,symbol,pattern,marker,filter")) continue;   // a filter's primitives draw nothing (#265)
@@ -1208,7 +1208,12 @@ function extractFlat(g, loose){
     const ml = parseFloat(cs.strokeMiterlimit), da = cs.strokeDasharray || "none";
     let dash = da === "none" || da.includes("%") ? null : da.split(/[\s,]+/).map(parseFloat).filter(isFinite).map(v => v * k);
     if (dash && !dash.some(v => v > 0)) dash = null;
-    const op = parseFloat(cs.opacity); const o = isNaN(op) ? 1 : op;
+    // opacity isn't inherited but multiplies down the tree: a shape in <g opacity="0.3"> draws at 30% (#267)
+    let o = 1;
+    for (let a = el; a; a = a === g ? null : a.parentElement) {
+      if (!opac.has(a)) { const v = parseFloat(getComputedStyle(a).opacity); opac.set(a, isNaN(v) ? 1 : v); }
+      o *= opac.get(a);
+    }
     out.push({segs, fill, stroke, sw, evenodd: cs.fillRule === "evenodd", fo: o * (parseFloat(cs.fillOpacity) || (cs.fillOpacity === "0" ? 0 : 1)), so: o * (parseFloat(cs.strokeOpacity) || (cs.strokeOpacity === "0" ? 0 : 1)),
       cap: cs.strokeLinecap || "butt", join: cs.strokeLinejoin || "miter", ml: isFinite(ml) ? ml : 4, dash, doff: dash ? (parseFloat(cs.strokeDashoffset) || 0) * k : 0,
       lay: (/_layer-(.+)$/.exec(el.closest("g[id*='_layer-']")?.id || "") || [])[1]});   // DXF layer, for parts imported from DXF
