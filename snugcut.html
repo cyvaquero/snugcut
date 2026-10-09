@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-k7KvEzBLpWUDfvB40XUMBX09o/6AdqhOoenPNuHjvlw=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OV/b19xXvPNhZi5uhypwUBs/EF0tZSnw8tUnGrAMyOI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.7-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -749,9 +749,21 @@ function dxfToSVG(text, name, opts = {}){
             q[j] = q[j].map((v, z) => (1 - al) * q[j - 1][z] + al * v); }
           return [q[p][0] / q[p][2], q[p][1] / q[p][2]];
         };
-        const pts = [], lo = K[p], hi = K[C.length];
-        for (let s = p; s < C.length; s++) { if (K[s + 1] <= K[s]) continue; for (let j = 0; j < 16; j++) pts.push(ev(K[s] + (K[s + 1] - K[s]) * j / 16)); }
-        pts.push(ev(hi - (hi - lo) * 1e-9));
+        const us = [], lo = K[p], hi = K[C.length];
+        for (let s = p; s < C.length; s++) { if (K[s + 1] <= K[s]) continue; for (let j = 0; j < 16; j++) us.push(K[s] + (K[s + 1] - K[s]) * j / 16); }
+        us.push(hi - (hi - lo) * 1e-9);
+        // 16 points per knot span, plus halving where a piece's middle is more than 0.005 mm off its chord: a large span
+        // came out up to 0.9 mm off the curve (#262)
+        const tol = 0.005 / (k * Math.max(Math.hypot(M[0], M[1]), Math.hypot(M[2], M[3]))), pts = [];
+        const off = (a, b, m) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
+          const t = l ? Math.max(0, Math.min(1, ((m[0] - a[0]) * dx + (m[1] - a[1]) * dy) / l)) : 0;
+          return Math.hypot(m[0] - a[0] - t * dx, m[1] - a[1] - t * dy); };
+        const refine = (u0, a, u1, b, depth) => {
+          const um = (u0 + u1) / 2, m = ev(um);
+          if (depth < 10 && off(a, b, m) > tol) { refine(u0, a, um, m, depth + 1); pts.push(m); refine(um, m, u1, b, depth + 1); }
+        };
+        const at = us.map(ev);
+        at.forEach((q, j) => { if (j) refine(us[j - 1], at[j - 1], us[j], q, 0); pts.push(q); });
         poly(pts.map(([x, y]) => [x, y, 0]), (num(r, 70) & 1) === 1);
       } else if (fx.length > 1) {
         // fit points only: cubic spline through them (chord-length parameters, natural ends) as Béziers

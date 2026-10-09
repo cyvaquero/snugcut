@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.7-beta
+
+- DXF splines follow their curve within 0.005 mm, however large (#262). Every knot span was drawn with 16 straight
+  pieces, so a 300 mm one-span curve (how Inkscape writes each Bézier segment) was off by up to 0.88 mm and cut
+  faceted. Pieces whose middle strays more than 0.005 mm from the curve are now split: that curve comes out within
+  0.0035 mm. Splines that were already within tolerance are unchanged.
+
 ## 1.3.6-beta
 
 - Lengths given as percentages in an SVG (`width="100%"`, `r="20%"`, `x="50%"` on a `<use>` …) resolve against the
