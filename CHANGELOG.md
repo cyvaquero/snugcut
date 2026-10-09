@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.24-beta
+
+- `tools/build.py` writes `snugcut.html` with `\n` line endings on every platform, and `--check` compares bytes, so a
+  build on Windows can no longer rewrite every line as `\r\n` while `--check` still passes (#292). Output on macOS and
+  Linux is unchanged.
+
 ## 1.3.23-beta
 
 - `tools/build.py` drops `'self'` from every CSP directive of `snugcut.html` wherever it stands, not only when a space
