@@ -70,7 +70,7 @@ def build():
         d = d.strip()
         if "'unsafe-inline'" in d and d.startswith("script-src"): fail("app/index.html: script-src must not allow 'unsafe-inline'")
         if d.startswith("script-src"): d = d.replace("'self'", digest)    # the one inline script, by hash
-        else: d = d.replace("'self' ", "")
+        else: d = " ".join(w for w in d.split() if w != "'self'")   # wherever it stands in the directive (#296)
         dirs.append(d)
     html = html.replace(csp.group(0), csp.group(1) + "; ".join(dirs) + csp.group(3), 1)
     html = html.replace(link, "<style>\n" + css + "</style>\n", 1)
