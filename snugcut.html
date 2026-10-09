@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EdLpdqwNrK2aTLgqbMTtGKMNBDhq1j7A4EuRO0TF+fM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5NZi23ZdghXubHNwfkVXxF3Psd1Wz3GZ5GJOr+aB5Xo=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,7 +276,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.20-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.21-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2615,6 +2615,8 @@ const fromDisp = v => S.unit === "in" ? v * IN : v;
 const parseNum = s => { const x = String(s).trim().replace(/^\u2212/, "-"), v = +x.replace(",", ".");
   return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(x) && isFinite(v) ? v : NaN; };
 const fmt = (mm, d) => num(toDisp(mm), d ?? (S.unit === "in" ? 3 : 1));
+// decimals a setting is shown with, in its field, its error and the kerf notes alike: the kerf finer (#286)
+const fieldDec = k => k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
 const LEN = ["plateW","plateH","kerf","gap","margin"];
 const LEN_NAME = {plateW:"len.plateW", plateH:"len.plateH", kerf:"len.kerf", gap:"len.gap", margin:"len.margin"};
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
@@ -2638,7 +2640,7 @@ function fieldErr(input, msg, quiet){
 }
 function fillInputs(){
   for (const k of LEN) {
-    const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
+    const dec = fieldDec(k);
     $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
   $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
@@ -2659,7 +2661,7 @@ $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
   const v = parseNum($(k).value), plate = k === "plateW" || k === "plateH";
   const bad = isNaN(v) ? "field.nan" : plate && v <= 0 ? "field.notPositive" : v < 0 ? "field.negative" : fromDisp(v) > MAX_LEN ? "field.tooLarge" : "";
-  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined), max: fmt(MAX_LEN, 0), unit: S.unit}));
+  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], fieldDec(k)), max: fmt(MAX_LEN, 0), unit: S.unit}));
   if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
@@ -2690,7 +2692,7 @@ function kerfCalc(){
   fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? t("kcalc.nan") : !isNaN(d) && d <= 0 ? t("kcalc.designedPositive") : "");
   fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? t("kcalc.nan") : !isNaN(m) && m <= 0 ? t("kcalc.measuredPositive") : !isNaN(d) && !isNaN(m) && m > d ? t("kcalc.measuredSmaller") : "");
   if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = t("kcalc.none"); $("kUse").disabled = true; return null; }
-  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, S.unit === "in" ? 4 : 3), unit: S.unit});
+  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, fieldDec("kerf")), unit: S.unit});
   if (out !== $("kOut").textContent) sayLater("kOut", out);   // announced once typing pauses (#166)
   $("kOut").textContent = out; $("kUse").disabled = false; return k;
 }
@@ -2968,7 +2970,7 @@ function download(data, filename, type){
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function plateFile(pl, notes){
-  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, S.unit === "in" ? 4 : 3), unit: S.unit}));
+  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, fieldDec("kerf")), unit: S.unit}));
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }

@@ -70,6 +70,8 @@ const fromDisp = v => S.unit === "in" ? v * IN : v;
 const parseNum = s => { const x = String(s).trim().replace(/^\u2212/, "-"), v = +x.replace(",", ".");
   return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(x) && isFinite(v) ? v : NaN; };
 const fmt = (mm, d) => num(toDisp(mm), d ?? (S.unit === "in" ? 3 : 1));
+// decimals a setting is shown with, in its field, its error and the kerf notes alike: the kerf finer (#286)
+const fieldDec = k => k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
 const LEN = ["plateW","plateH","kerf","gap","margin"];
 const LEN_NAME = {plateW:"len.plateW", plateH:"len.plateH", kerf:"len.kerf", gap:"len.gap", margin:"len.margin"};
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
@@ -93,7 +95,7 @@ function fieldErr(input, msg, quiet){
 }
 function fillInputs(){
   for (const k of LEN) {
-    const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
+    const dec = fieldDec(k);
     $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
   $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
@@ -114,7 +116,7 @@ $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
   const v = parseNum($(k).value), plate = k === "plateW" || k === "plateH";
   const bad = isNaN(v) ? "field.nan" : plate && v <= 0 ? "field.notPositive" : v < 0 ? "field.negative" : fromDisp(v) > MAX_LEN ? "field.tooLarge" : "";
-  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined), max: fmt(MAX_LEN, 0), unit: S.unit}));
+  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], fieldDec(k)), max: fmt(MAX_LEN, 0), unit: S.unit}));
   if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
@@ -145,7 +147,7 @@ function kerfCalc(){
   fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? t("kcalc.nan") : !isNaN(d) && d <= 0 ? t("kcalc.designedPositive") : "");
   fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? t("kcalc.nan") : !isNaN(m) && m <= 0 ? t("kcalc.measuredPositive") : !isNaN(d) && !isNaN(m) && m > d ? t("kcalc.measuredSmaller") : "");
   if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = t("kcalc.none"); $("kUse").disabled = true; return null; }
-  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, S.unit === "in" ? 4 : 3), unit: S.unit});
+  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, fieldDec("kerf")), unit: S.unit});
   if (out !== $("kOut").textContent) sayLater("kOut", out);   // announced once typing pauses (#166)
   $("kOut").textContent = out; $("kUse").disabled = false; return k;
 }
@@ -423,7 +425,7 @@ function download(data, filename, type){
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function plateFile(pl, notes){
-  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, S.unit === "in" ? 4 : 3), unit: S.unit}));
+  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, fieldDec("kerf")), unit: S.unit}));
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
