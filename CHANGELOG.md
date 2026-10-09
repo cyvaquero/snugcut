@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.4-beta
+
+- A path that goes on drawing after closing (`… Z L0 10`) is cut as drawn (#264). Drawing after Z starts again from
+  the shape's start point, as in SVG, but SnugCut kept it in the closed shape: the DXF cut a side that was never drawn
+  and dropped the real line, and Compensate kerf left the closed shape uncompensated. The SVG export puts the two
+  pieces in separate subpaths too, so the closed one gets the cut order and compensation of any closed shape.
+
 ## 1.3.3-beta
 
 - A part that only contains an unused `<filter>` (common in Inkscape files) or a `<view>` is exported as cut paths
