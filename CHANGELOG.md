@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.25-beta
+
+- `tools/qa_workbooks.py` compares the workbooks' unzipped contents instead of the zip files' bytes, so `--check` no
+  longer reports unchanged workbooks as out of date on a machine whose zlib compresses differently, and a rebuild
+  there doesn't rewrite them (#291). No change to the workbooks.
+
 ## 1.3.24-beta
 
 - `tools/build.py` writes `snugcut.html` with `\n` line endings on every platform, and `--check` compares bytes, so a
