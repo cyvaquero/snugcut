@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.30-beta
+
+- The search status says "1 layout tried", not "1 layouts tried", during the search and when it ends ("Best of 1
+  layout tried.") (#236). Large jobs whose first layout takes longer than the time limit end this way.
+
 ## 1.2.29-beta
 
 - The search's time limit now covers its starting layouts (#234). SnugCut starts by packing the parts in two sorted
