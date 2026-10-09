@@ -51,7 +51,7 @@ function loadSettings(saved){
   const pick = (k, ok) => { if (Object.hasOwn(saved, k) && ok(saved[k])) S[k] = saved[k]; };
   const opts = id => [...$(id).options].map(o => +o.value), num = v => typeof v === "number" && isFinite(v);
   pick("mode", v => v === "shape" || v === "bbox"); pick("unit", v => v === "mm" || v === "in"); pick("format", v => v === "svg" || v === "dxf");
-  for (const k of ["rotStep", "prec", "dpi"]) pick(k, v => opts(k).includes(v));
+  for (const k of ["rotStep", "prec", "dpi", "pool"]) pick(k, v => opts(k).includes(v));
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= 100000);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= 100000);
   for (const k of ["rotate", "outline", "comp"]) pick(k, v => typeof v === "boolean");
@@ -94,7 +94,7 @@ function fillInputs(){
     const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
     $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); showPool(); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
@@ -117,6 +117,9 @@ for (const k of LEN) $(k).addEventListener("input", () => {
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
+// the worker pool (#253): the note on memory shows, and is the field's description, only while the pool is on
+const showPool = () => { const on = S.pool > 1; $("pool-hint").hidden = !on; describe($("pool"), "pool-hint", on); };
+$("pool").onchange = e => { S.pool = +e.target.value; save(); showPool(); restart(); };
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 // the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
 function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }

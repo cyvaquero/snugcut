@@ -9,8 +9,8 @@ Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded order search
-  ("Search 30 s more", Stop). The search runs in background workers, one per processor core but one (at most 4),
-  each trying its own orders, so the page stays responsive and more layouts are tried in the same time.
+  ("Search 30 s more", Stop). The search runs in a background worker, so the page stays responsive; the **Worker
+  pool** setting adds up to 3 more, each trying its own orders.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
@@ -91,6 +91,10 @@ Settings are remembered in this browser (local storage) and restored next time.
 - **Compensate kerf on objects**: see above.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
+- **Worker pool** (True shape): Off (the default) searches in one background worker; 2, 3 or 4 workers try that many
+  orders at once, so more layouts are tried in the same time. Each extra worker uses more memory, about 100 MB on a
+  job of 120 parts, so on a lower-spec computer (little memory or few processor cores) leave it off. Layouts and
+  exports don't depend on it beyond the number of layouts tried.
 - **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
   72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
   `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).
@@ -258,7 +262,7 @@ tags carry a Subresource Integrity hash, so the browser refuses a library file w
 The search runs in Web Workers built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
 workers need their own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`
 allows that one URL), which the browser serves from its cache. Each worker uses memory for its own cache of part
-pairs: on 120 mixed parts, four took about 300 MB more than one. If no worker can be started (an older browser, or a
+pairs: on 120 mixed parts, four took about 300 MB more than one, which is why the pool is off by default. If no worker can be started (an older browser, or a
 page embedding SnugCut with a stricter CSP), the search runs on the page itself, as before.
 
 The script tags and the CSP are kept in `app/index.html`; don't edit them in `snugcut.html`, which is generated. To

@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.38-beta
+
+- The worker pool is now a setting, **Worker pool** (True shape): Off by default, or 2, 3 or 4 workers (#253). Off
+  searches in one background worker, so the page still stays responsive. The pool tries more layouts at once (on the
+  sample parts, 408 in 4 s with 4 workers instead of 101), and while it's on a note says each extra worker uses more
+  memory, about 100 MB on a job of 120 parts, so on a lower-spec computer it should stay off. Choosing fewer workers
+  closes the others and frees their memory. The choice is kept with the other settings.
+
 ## 1.2.37-beta
 
 - The layout search runs in a pool of background workers (#4), one per processor core but one, at most 4, each
