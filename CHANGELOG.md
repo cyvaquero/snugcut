@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.5-beta
+
+- Rounded corners set with CSS (`rx`/`ry` in a style sheet or `style` attribute) are exported rounded, matching the
+  outline used for nesting (#263). The export read only the `rx`/`ry` attributes, so a 100 × 50 mm rect with
+  `rx:20px` was nested rounded but cut square, its corners up to 5.9 mm past the spacing kept around it. CSS that
+  overrides an attribute radius wins, as in the browser.
+
 ## 1.3.4-beta
 
 - A path that goes on drawing after closing (`… Z L0 10`) is cut as drawn (#264). Drawing after Z starts again from
