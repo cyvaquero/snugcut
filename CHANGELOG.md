@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.20-beta
+
+- Plate size, kerf, gap and edge margin refuse values over 100,000 mm with a message under the field ("Plate width
+  can be at most 100000 mm; still using 300 mm."), the same limit saved settings are checked against (#285). Before,
+  150000 was accepted and saved, then silently replaced by the default on the next visit.
+
 ## 1.3.19-beta
 
 - A failed download says so: "The download failed: …" appears as an error notice, for **Download all** and for single

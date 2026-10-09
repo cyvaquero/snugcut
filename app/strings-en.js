@@ -16,6 +16,7 @@ export const EN = {
   "field.nan": "Enter a number; still using {value} {unit}.",
   "field.notPositive": "{field} must be more than 0; still using {value} {unit}.",
   "field.negative": "{field} can't be negative; still using {value} {unit}.",
+  "field.tooLarge": "{field} can be at most {max} {unit}; still using {value} {unit}.",
   "kerf.placeholder": "e.g. {value}",
   "kcalc.nan": "Enter a number.",
   "kcalc.designedPositive": "Designed must be more than 0.",
