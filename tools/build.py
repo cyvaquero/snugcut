@@ -8,7 +8,7 @@
 
 app/index.html, app/snugcut.css, app/app.js, app/strings-en.js and lib/snugcut.js are the source of truth. The page's
 stylesheet link and module script are replaced by the CSS and the JavaScript inline: the library first, then the
-string table, then the app, in one classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
+string table, then the app, in one strict classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
 (no 'unsafe-inline', so injected inline handlers can't run), and 'self' is dropped since nothing is loaded from disk.
 Both runs check the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
 message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
@@ -63,7 +63,8 @@ def build():
     if html.count(link) != 1 or html.count(mod) != 1: fail("app/index.html must have exactly one snugcut.css link and one app.js module script")
     csp = re.search(r'(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(">)', html)
     if not csp: fail("app/index.html has no Content-Security-Policy <meta>")
-    script = "\n(() => {\n" + lib + app + "})();\n"
+    # strict, as app/ is as ES modules, so testing app/ covers the shipped file (#289)
+    script = "\n(() => {\n\"use strict\";\n" + lib + app + "})();\n"
     digest = "'sha256-" + base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode() + "'"
     dirs = []
     for d in csp.group(2).split(";"):
