@@ -24,6 +24,9 @@ const pct = v => nf("%", {style:"percent", maximumFractionDigits:0}).format(Math
 const LANG = "en", STR = EN, PR = new Intl.PluralRules(LANG);
 document.documentElement.lang = LANG;
 const t = (key, v = {}) => Object.hasOwn(STR, key) ? fill(STR[key], v) : (console.error("no text for " + key), key);
+// the same, for markup: escaped as a whole, so a translation (or a file name among the values, passed as is) can't
+// break an attribute or add elements (#298)
+const th = (key, v = {}) => esc(t(key, v));
 function fill(s, v){
   let out = "";
   for (let i = 0; i < s.length;) {
@@ -42,7 +45,7 @@ function fill(s, v){
 // the library's messages in the app's words, with its counts formatted for the locale (README "Library messages")
 setMessages((code, v) => Object.hasOwn(STR, "lib." + code) ? t("lib." + code, {...v, limit: v.limit == null ? "" : nf("g", {useGrouping:true}).format(v.limit),
   list: v.skipped ? v.skipped.map(([type, n]) => `${n} ${type.toLowerCase()}`).join(", ") : ""}) : undefined);
-if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${t("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
+if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${th("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
 // how long a search runs: after each change, and for "Search 30 s more" (whose label is built from MORE_MS) (#290)
 const SEARCH_MS = 4000, MORE_MS = 30000;
 $("more").textContent = t("search.more", {s: MORE_MS / 1000});
@@ -163,7 +166,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
   const token = newRun();
   if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
   const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>${t("status.nesting")}`;
+  $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
   const plateA = S.plateW * S.plateH;
   setRunning(true);
   const t0 = performance.now();
@@ -200,14 +203,14 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
   const el = Math.min(performance.now() - t0, ms);   // a pack that ends past the limit doesn't read "8.7 of 4 s" (#234)
-  $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.st.tried})}`;
+  $("status").innerHTML = `<span class="dot on"></span>${th("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.st.tried})}`;
 }
 let searching = false;
 function setRunning(on, quiet){
   const f = document.activeElement;
   searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.st.tried ? t("status.best", {tried: search.st.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.st.bestScore && search.st.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? th("run.stale") : search && search.st.tried ? th("status.best", {tried: search.st.tried}) : th("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.st.bestScore && search.st.bestScore[0] > search.minPlates ? " " + th("status.longer") : ""}`;
   if (!on && !quiet) say(runSummary());
   if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
@@ -253,9 +256,9 @@ function renderParts(){
   for (const p of parts) {
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
-    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${t(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: esc(S.unit)})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${t("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${t("part.inches")}</option></select></div>` : ""}</div>
-      <div class="qw"><span class="ql" id="ql-${p.uid}">${t("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${t("part.holesTitle")}" aria-label="${t("part.holesLabel", {name: esc(p.name)})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${t("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${t("part.lockTitle")}" aria-label="${t("part.lockLabel", {name: esc(p.name)})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${t("part.removeTitle")}" aria-label="${t("part.removeLabel", {name: esc(p.name)})}">${ICON_X}</button></div>`;
+    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${th(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${th("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${th("part.inches")}</option></select></div>` : ""}</div>
+      <div class="qw"><span class="ql" id="ql-${p.uid}">${th("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
+      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${th("part.lockTitle")}" aria-label="${th("part.lockLabel", {name: p.name})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
@@ -277,7 +280,7 @@ function renderParts(){
     // an invalid entry the user hasn't fixed yet survives the rebuild, error included; it was announced when typed (#240)
     if (p.qtyDraft != null) { q.value = p.qtyDraft; fieldErr(q, t("part.qtyErr", {qty: p.qty}), true); }
   }
-  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${t("parts.none")}</p>`;
+  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${th("parts.none")}</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
   updateCount();
   if (keep) { const r = box.querySelector(`.part[data-uid="${keep.uid}"]`); if (r) r.querySelector(keep.sel).focus(); }
@@ -375,37 +378,37 @@ function drawLayout(){
   $("sParts").textContent = placed;
   // efficiency rating (#138): "6/10" read as "6 out of 10", with the percentage under it
   const E = efficiency(L.plates), cut = E && Math.min(E.offcut.w, E.offcut.h) >= 10 ? E.offcut : null;
-  $("sEff").innerHTML = E ? `<span aria-hidden="true">${E.rating}/10</span><span class="sr-only">${t("stat.eff", {rating: E.rating})}</span>` : "–";
+  $("sEff").innerHTML = E ? `<span aria-hidden="true">${E.rating}/10</span><span class="sr-only">${th("stat.eff", {rating: E.rating})}</span>` : "–";
   $("sEffK").textContent = E ? t("stat.effLabel", {eff: pct(E.eff)}) : t("stat.effNone");
   const msg = text => { const m = document.createElement("div"); m.className = "msg"; m.textContent = text; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
   for (const p of L.oversize) msg(t(!p.lock && canRot ? (bbox ? "layout.oversizeBbox" : "layout.oversizeRot") : "layout.oversize", {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
   if (L.noArea) msg(t("run.noArea"));
   // when nothing was placed, say why only if no message above already does (#84)
-  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${t(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
+  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${th(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const ratio = pl.area / plateA, fill = pct(ratio);
-    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? t("plate.rotated", {name: esc(it.part.name), ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? th("plate.rotated", {name: it.part.name, ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
     // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed
     // one gave the image no description (#168).
-    const alt = t("plate.alt", {i: i+1, n: L.plates.length, parts: pl.items.length, fill});
+    const alt = th("plate.alt", {i: i+1, n: L.plates.length, parts: pl.items.length, fill});
     const groups = new Map();
     for (const it of pl.items) {
       const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
       g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
     }
     const lines = [...groups].map(([p, g]) => g.rot.size
-      ? t("plate.lineRot", {name: esc(p.name), n: g.n, rots: [...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => t("plate.rot", {n, ang: a})).join(", ")})
-      : t("plate.line", {name: esc(p.name), n: g.n}));
+      ? th("plate.lineRot", {name: p.name, n: g.n, rots: [...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => t("plate.rot", {n, ang: a})).join(", ")})
+      : th("plate.line", {name: p.name, n: g.n}));
     const list = lines.map(l => `<li>${l}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">${t("plate.title", {i: i+1, n: L.plates.length})}</h3><div class="m">${t(cut && i === L.plates.length - 1 ? "plate.metaOffcut" : "plate.meta", {parts: pl.items.length, fill, w: fmt(S.plateW), h: fmt(S.plateH), unit: esc(S.unit), cw: cut && fmt(cut.w), ch: cut && fmt(cut.h)})}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="${t("plate.downloadLabel", {format: ext().toUpperCase(), i: i+1, n: L.plates.length})}">${t("plate.download", {format: ext().toUpperCase()})}</button></div>
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">${th("plate.title", {i: i+1, n: L.plates.length})}</h3><div class="m">${th(cut && i === L.plates.length - 1 ? "plate.metaOffcut" : "plate.meta", {parts: pl.items.length, fill, w: fmt(S.plateW), h: fmt(S.plateH), unit: S.unit, cw: cut && fmt(cut.w), ch: cut && fmt(cut.h)})}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="${th("plate.downloadLabel", {format: ext().toUpperCase(), i: i+1, n: L.plates.length})}">${th("plate.download", {format: ext().toUpperCase()})}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="pdesc-${i}" src="${url}"><span id="pdesc-${i}" hidden>${lines.join("; ")}</span><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${Math.round(100 * ratio)}%"></i></div>
-      <details class="plist"><summary>${t("plate.list")}</summary><ul id="plist-${i}">${list}</ul></details>`;
+      <details class="plist"><summary>${th("plate.list")}</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });

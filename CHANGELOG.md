@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.31-beta
+
+- Text from the string table is escaped wherever the app writes it into markup (#298), so a translation containing
+  a quote, `<` or `&` can't break a button's label or tooltip or add elements. File names among the values are now
+  escaped once, with the rest of the text. The English page is unchanged.
+
 ## 1.3.30-beta
 
 - Internal: the library no longer looks through the page for clipper-lib's `<script>` tag to build its search
