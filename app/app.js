@@ -151,9 +151,9 @@ $("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; s
 
 /* ---------- search controller ---------- */
 let search = null;   // {items, bestOrder, bestScore, tried, F}
-async function run(ms, fresh){
+async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
   const token = newRun();
-  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false); return; }
+  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
   const F = binFrame();
   $("status").innerHTML = `<span class="dot on"></span>${t("status.nesting")}`;
   const plateA = S.plateW * S.plateH;
@@ -209,7 +209,7 @@ async function run(ms, fresh){
     if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
     else return;
   } finally {
-    if (isCurrent(token)) setRunning(false);
+    if (isCurrent(token)) setRunning(false, quiet);
   }
 }
 function status(t0, ms, token){
@@ -218,12 +218,12 @@ function status(t0, ms, token){
   $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.tried})}`;
 }
 let searching = false;
-function setRunning(on){
+function setRunning(on, quiet){
   const f = document.activeElement;
   searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
   if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.tried ? t("status.best", {tried: search.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
-  if (!on) say(runSummary());
+  if (!on && !quiet) say(runSummary());
   if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
 // one sentence for screen readers when a run ends (#93)
@@ -486,5 +486,5 @@ const SAMPLES = [
 fillInputs();
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 renderParts();
-run(4000, true);
+run(4000, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();
