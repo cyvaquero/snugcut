@@ -302,6 +302,18 @@ file.onchange = () => { addFiles(file.files); file.value = ""; };
 const builtInComp = (text, dxf) => (dxf
   ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
   : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
+async function readText(f, dxf){
+  // an SVG is decoded as its byte-order mark or XML declaration says (Latin-1 text came out as "Gr��e"), else as
+  // UTF-8, as File.text() always did (#269)
+  const buf = await f.arrayBuffer(), b = new Uint8Array(buf);
+  let label = b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF ? "utf-8" : b[0] === 0xFF && b[1] === 0xFE ? "utf-16le"
+    : b[0] === 0xFE && b[1] === 0xFF ? "utf-16be" : null;
+  if (!label && !dxf) {
+    const m = /^\s*<\?xml[^>]*?\sencoding\s*=\s*["']([A-Za-z0-9._:-]+)["']/.exec(new TextDecoder("latin1").decode(b.subarray(0, 200)));
+    if (m && !/^utf-?16/i.test(m[1])) label = m[1];      // UTF-16 needs its byte-order mark
+  }
+  try { return new TextDecoder(label || "utf-8").decode(buf); } catch(e) { return new TextDecoder("utf-8").decode(buf); }
+}
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
@@ -310,7 +322,7 @@ async function addFiles(list){
   const errs = [], notes = [];                                // errors: files that couldn't be added
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
-    let text = await f.text();
+    let text = await readText(f, isDXF(f));
     const pre = builtInComp(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }

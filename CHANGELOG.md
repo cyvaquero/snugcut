@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.14-beta
+
+- SVG files saved in an encoding other than UTF-8 are read as their XML declaration says (#269): text in a Latin-1
+  or Windows-1252 file came in as `Gr��e` and was engraved that way; it now reads `Größe` and `5€`. Files with a
+  byte-order mark, or no declaration, are read as before.
+
 ## 1.3.13-beta
 
 - A shape inside a group with `opacity` (or in a file with `opacity` on its root) keeps that opacity in the export,
