@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.33-beta
+
+- An invalid quantity you haven't corrected yet (such as `2.5`) stays in its field, with its error, when another
+  setting changes or the units switch (#240). Before, the parts list was rebuilt and the field silently went back to
+  the old number, with the error and `aria-invalid` gone. The error isn't announced a second time.
+
 ## 1.2.32-beta
 
 - Parts are measured in a shadow tree, apart from the page (#239). When SnugCut runs inside another site, that

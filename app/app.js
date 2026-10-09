@@ -82,10 +82,10 @@ function describe(el, id, on, first){
 // field errors (#97): the field gets aria-invalid and a message right after it (its description) saying what's wrong
 // and which value is still in use; both go as soon as the value is valid. A new or changed message is also announced,
 // once typing pauses (#166).
-function fieldErr(input, msg){
+function fieldErr(input, msg, quiet){
   let e = document.getElementById(input.id + "-err");
   if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); describe(input, e.id, false); } return; }
-  if (!e || e.textContent !== msg) sayLater(input.id, msg);
+  if (!quiet && (!e || e.textContent !== msg)) sayLater(input.id, msg);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
   e.textContent = msg; input.setAttribute("aria-invalid", "true"); describe(input, e.id, true, true);
 }
@@ -273,6 +273,7 @@ function renderParts(){
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
       fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
+      if (ok) delete p.qtyDraft; else p.qtyDraft = q.value;   // kept, with its error, when the list is rebuilt (#240)
       if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
     };
     const du = row.querySelector(".du select");
@@ -286,6 +287,8 @@ function renderParts(){
       (nb ? $("parts").querySelector(`.part[data-uid="${nb.uid}"] input`) : drop).focus(); restart();
     };
     box.appendChild(row);
+    // an invalid entry the user hasn't fixed yet survives the rebuild, error included; it was announced when typed (#240)
+    if (p.qtyDraft != null) { q.value = p.qtyDraft; fieldErr(q, t("part.qtyErr", {qty: p.qty}), true); }
   }
   if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${t("parts.none")}</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
@@ -301,7 +304,7 @@ function updateCount(){
 function reunit(p, units){
   try {
     const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
-    Object.assign(np, {fromDXF:true, qty:p.qty, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
