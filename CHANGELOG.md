@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.13-beta
+
+- A shape inside a group with `opacity` (or in a file with `opacity` on its root) keeps that opacity in the export,
+  as the thumbnail already showed (#267). `<g opacity="0.3">` around a blue rect exported it fully opaque; nested
+  opacities multiply, as in a browser.
+
 ## 1.3.12-beta
 
 - DXF layer names are matched without regard to case, as in CAD (#268). An entity on `HIDDEN` whose layer table
