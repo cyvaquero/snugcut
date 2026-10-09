@@ -109,6 +109,7 @@ export const EN = {
   "lib.dxfOut.use": "Not in the DXF: linked copies (<use>) in {name}.",
   "lib.dxfOut.element": "Not in the DXF: <{tag}> elements in {name}.",
   "lib.dxfOut.paint": "Not in the DXF: gradient and pattern colors (exported black) in {name}.",
+  "lib.dxfOut.markers": "Not in the DXF: markers (arrowheads and the like) in {name}.",
   "lib.dxfOut.unreadable": "Not in the DXF: unreadable paths in {name}.",
   "lib.dxfOut.fills": "Filled areas are written as their outlines.",
 };

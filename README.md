@@ -67,9 +67,10 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
   are exported as drawn (in SVG and DXF), with a notice.
 
 **Parts kept as original markup**: a part with text, images, `<use>` copies, gradient or pattern fills, clip paths,
-masks or filters is exported exactly as drawn instead of as cut paths. Such a part nests by its outline only: its kerf
-isn't compensated, it gets no **Nest parts inside the holes** button, its holes count as material in the utilization,
-and its text, images and `<use>` copies can't be written to DXF.
+masks, filters or markers is exported exactly as drawn instead of as cut paths. Such a part nests by its outline only:
+its kerf isn't compensated, it gets no **Nest parts inside the holes** button, its holes count as material in the
+utilization, and its text, images, `<use>` copies and markers can't be written to DXF. Markers (arrowheads, dots)
+get room in the outline up to their full size around the point they sit on.
 
 **Export format: DXF** writes the same plates as DXF R12 (ASCII, mm, origin bottom-left) for CAM software that prefers
 DXF. It has the same cut paths, cut order and joined outlines as the SVG. Circles and circular arcs stay true arcs
@@ -305,7 +306,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `kerf.holeTooNarrow` | | a hole is narrower than the kerf (export note) |
 | `kerf.markup` | | a part's kerf can't be compensated (export note) |
 | `dxfOut.nothing` | | a part has nothing to write to DXF (export note) |
-| `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
+| `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.markers`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
 | `dxfOut.element` | `tag` | `<tag>` elements of a part aren't in the DXF (export note) |
 | `dxfOut.fills` | none | filled areas are written as outlines (export note) |
 
