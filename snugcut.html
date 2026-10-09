@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DuiBSYG+cllOEW4mQv5wh+cA2DyUs9G85x53byI7jfU=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dZ9EiS+0zwUAWySGU9QOoVl84+eJPxkYH/2yx+gwfxQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -263,7 +263,7 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.25-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.26-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -285,6 +285,50 @@ const sig = v => { const r = +v.toPrecision(7); return Object.is(r, -0) ? "0" : 
 const CL = window.ClipperLib;
 let appVersion = "";                    // written into exported files
 const setVersion = v => { appVersion = v; };
+
+/* ---------- messages (#128) ---------- */
+// Every message the library shows a person has a code and values (README "Library messages"). setMessages(fn) lets the
+// caller word them: fn(code, vars, english) returns the text, or anything but a string for the English below.
+// Errors carry the worded text as .message, plus .code and .vars.
+const s_ = (n, one, many) => n === 1 ? one : many;
+const HIDDEN_LAYERS = "frozen, off, non-plotting or Defpoints layers";
+const MESSAGES = {
+  "dxf.binary": v => `${v.name} is a binary DXF. Save it as an ASCII DXF and try again.`,
+  "dxf.unreadable": v => `${v.name} isn't a readable DXF file.`,
+  "dxf.noUnits": v => `${v.name} doesn't say what units it's drawn in, so it was read as ${v.units === "in"
+    ? "inches, as its imperial measurement setting suggests" : "millimeters"}. If that's wrong, change it next to the part in the parts list.`,
+  "dxf.tooManyItems": v => `${v.name} expands to more than ${v.limit.toLocaleString("en-US")} items (blocks and arrays), so it wasn't added.`,
+  "dxf.tooManyPoints": v => `${v.name} draws more than ${v.limit.toLocaleString("en-US")} points (blocks and arrays repeat them), so it wasn't added.`,
+  "dxf.splineDegree": v => `${v.name} has a spline of degree ${v.degree}, but only degrees 1 to 11 can be read, so it wasn't added.`,
+  "dxf.hiddenLeftOut": v => `${v.name}: left out ${v.count} item${s_(v.count, "", "s")} on ${HIDDEN_LAYERS}.`,
+  "dxf.skipped": v => `${v.name}: skipped ${v.skipped.map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")} (only lines, arcs, circles, ellipses, polylines and splines are cut).`,
+  "dxf.nothingToCut": v => `${v.name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space`
+    + (v.hidden ? `; ${v.hidden} item${s_(v.hidden, " is", "s are")} on ${HIDDEN_LAYERS}.` : "."),   // #85
+  "svg.unreadable": v => `${v.name} isn't a readable SVG file.`,
+  "svg.tooManyCopies": v => `${v.name} repeats shapes through linked copies (<use>) more than ${v.limit.toLocaleString("en-US")} times, so it wasn't added.`,
+  "svg.nothingVisible": v => `${v.name} has no visible shapes to place.`,
+  "svg.nothingToCut": v => `${v.name} has no cuttable shapes.`,
+  "svg.noClosedOutline": v => `${v.name} has no closed outline to nest.`,
+  "kerf.holeTooNarrow": v => `A hole in ${v.name} is narrower than the kerf, so it was left as drawn.`,
+  "kerf.markup": v => `${v.name} has text, images, linked copies or effects, so its kerf can't be compensated; it is exported as drawn.`,
+  "dxfOut.nothing": v => `${v.name} has nothing that can be written to DXF.`,
+  "dxfOut.clipping": v => `Not in the DXF: clipping, masks and filters (shapes exported whole) in ${v.name}.`,
+  "dxfOut.text": v => `Not in the DXF: text in ${v.name}.`,
+  "dxfOut.images": v => `Not in the DXF: images in ${v.name}.`,
+  "dxfOut.use": v => `Not in the DXF: linked copies (<use>) in ${v.name}.`,
+  "dxfOut.element": v => `Not in the DXF: <${v.tag}> elements in ${v.name}.`,
+  "dxfOut.paint": v => `Not in the DXF: gradient and pattern colors (exported black) in ${v.name}.`,
+  "dxfOut.unreadable": v => `Not in the DXF: unreadable paths in ${v.name}.`,
+  "dxfOut.fills": () => "Filled areas are written as their outlines.",
+};
+let wording = null;
+const setMessages = fn => { wording = typeof fn === "function" ? fn : null; };
+function msg(code, vars = {}){
+  const en = MESSAGES[code](vars);
+  if (!wording) return en;
+  try { const t = wording(code, vars, en); return typeof t === "string" ? t : en; } catch(e) { return en; }
+}
+const fail = (code, vars) => Object.assign(new Error(msg(code, vars)), {code, vars});
 
 /* ---------- settings (lengths in mm) ---------- */
 const DEFAULTS = {mode:"shape", unit:"mm", plateW:300, plateH:300, kerf:0.1, gap:1, margin:3, rotStep:90, prec:0.25, rotate:true, outline:false, dpi:96, prefix:"", format:"svg", comp:false};
@@ -544,14 +588,14 @@ function aciColor(i){
   return "#" + [f(5), f(3), f(1)].map(c => c.toString(16).padStart(2, "0")).join("");
 }
 function dxfToSVG(text, name, opts = {}){
-  if (/^AutoCAD Binary DXF/.test(text)) throw new Error(`${name} is a binary DXF. Save it as an ASCII DXF and try again.`);
+  if (/^AutoCAD Binary DXF/.test(text)) throw fail("dxf.binary", {name});
   const lines = text.split(/\r\n|\r|\n/), recs = [];
   for (let i = 0; i + 1 < lines.length; i += 2) {
     const c = parseInt(lines[i], 10), v = lines[i + 1].trim();
-    if (isNaN(c)) { if (!lines[i].trim() && i >= lines.length - 2) break; throw new Error(`${name} isn't a readable DXF file.`); }
+    if (isNaN(c)) { if (!lines[i].trim() && i >= lines.length - 2) break; throw fail("dxf.unreadable", {name}); }
     if (c === 0) recs.push({type:v.toUpperCase(), g:[]}); else if (recs.length) recs[recs.length - 1].g.push([c, v]);
   }
-  if (!recs.some(r => r.type === "SECTION")) throw new Error(`${name} isn't a readable DXF file.`);
+  if (!recs.some(r => r.type === "SECTION")) throw fail("dxf.unreadable", {name});
   const str = (r, c, d) => { const p = r.g.find(q => q[0] === c); return p ? p[1] : d; };
   const num = (r, c, d = 0) => { const v = parseFloat(str(r, c)); return isFinite(v) ? v : d; };
   const nums = (r, c) => r.g.filter(q => q[0] === c).map(q => parseFloat(q[1]) || 0);
@@ -591,8 +635,7 @@ function dxfToSVG(text, name, opts = {}){
   const unit = DXF_MM[+header.$INSUNITS], notes = [];
   const units = unit ? null : opts.units || (header.$MEASUREMENT != null && +header.$MEASUREMENT === 0 ? "in" : "mm");
   const k = unit || (units === "in" ? 25.4 : 1);
-  if (!unit && !opts.units) notes.push(`${name} doesn't say what units it's drawn in, so it was read as ${units === "in"
-    ? "inches, as its imperial measurement setting suggests" : "millimeters"}. If that's wrong, change it next to the part in the parts list.`);
+  if (!unit && !opts.units) notes.push(msg("dxf.noUnits", {name, units}));
 
   const out = new Map(), skipped = {};                          // layer → color → path data
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0, onHidden = 0, work = 0, points = 0;
@@ -600,7 +643,7 @@ function dxfToSVG(text, name, opts = {}){
   // sweeps are reduced with a modulo instead of a loop that never ends on huge angles. Points written are counted too,
   // since every array cell repeats its block's whole outline (#160): 2 million take about 2.5 s to read and measure.
   const LIMIT = 250000, PLIMIT = 2000000, TAU = 2 * Math.PI;
-  const tooBig = () => { if (++work > LIMIT) throw new Error(`${name} expands to more than ${LIMIT.toLocaleString("en-US")} items (blocks and arrays), so it wasn't added.`); };
+  const tooBig = () => { if (++work > LIMIT) throw fail("dxf.tooManyItems", {name, limit:LIMIT}); };
   const sweep = (a, b) => { const s = ((b - a) % TAU + TAU) % TAU; return s > 1e-12 ? s : TAU; };   // end after start, at most one turn
   const mul = (A, B) => [A[0]*B[0] + A[2]*B[1], A[1]*B[0] + A[3]*B[1], A[0]*B[2] + A[2]*B[3], A[1]*B[2] + A[3]*B[3], A[0]*B[4] + A[2]*B[5] + A[4], A[1]*B[4] + A[3]*B[5] + A[5]];
   const fmtN = v => { const r = +v.toFixed(4); return Object.is(r, -0) ? "0" : String(r); };
@@ -630,7 +673,7 @@ function dxfToSVG(text, name, opts = {}){
       return;
     }
     const d = [];
-    const P = (x, y) => { if (++points > PLIMIT) throw new Error(`${name} draws more than ${PLIMIT.toLocaleString("en-US")} points (blocks and arrays repeat them), so it wasn't added.`);
+    const P = (x, y) => { if (++points > PLIMIT) throw fail("dxf.tooManyPoints", {name, limit:PLIMIT});
       const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
       x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
     const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
@@ -681,7 +724,7 @@ function dxfToSVG(text, name, opts = {}){
       if (C.length > p && K.length === C.length + p + 1) {
         // CAD programs write degrees up to 11 (3 is usual); de Boor costs O(p²) per point, so a crafted degree of a few
         // hundred took minutes (#159)
-        if (!(Number.isInteger(p) && p >= 1 && p <= 11)) throw new Error(`${name} has a spline of degree ${p}, but only degrees 1 to 11 can be read, so it wasn't added.`);
+        if (!(Number.isInteger(p) && p >= 1 && p <= 11)) throw fail("dxf.splineDegree", {name, degree:p});
         const ev = u => {                                                        // de Boor, rational when weights are given
           let s = p; while (s < C.length - 1 && u >= K[s + 1]) s++;
           const q = []; for (let j = 0; j <= p; j++) { const w = W.length === C.length ? W[s - p + j] : 1; q.push([C[s - p + j][0]*w, C[s - p + j][1]*w, w]); }
@@ -723,10 +766,9 @@ function dxfToSVG(text, name, opts = {}){
   }
   for (const r of group(model)) draw(r, [1, 0, 0, 1, 0, 0], {layer:null, color:null}, 0);
   const sk = Object.entries(skipped);
-  if (onHidden) notes.push(`${name}: left out ${onHidden} item${onHidden === 1 ? "" : "s"} on frozen, off, non-plotting or Defpoints layers.`);
-  if (sk.length) notes.push(`${name}: skipped ${sk.map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")} (only lines, arcs, circles, ellipses, polylines and splines are cut).`);
-  if (!count) throw new Error(`${name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space`
-    + (onHidden ? `; ${onHidden} item${onHidden === 1 ? " is" : "s are"} on frozen, off, non-plotting or Defpoints layers.` : "."));   // #85
+  if (onHidden) notes.push(msg("dxf.hiddenLeftOut", {name, count:onHidden}));
+  if (sk.length) notes.push(msg("dxf.skipped", {name, skipped:sk}));   // [DXF entity type, count]
+  if (!count) throw fail("dxf.nothingToCut", {name, hidden:onHidden});
   const w = Math.max(x1 - x0, 1e-3), h = Math.max(y1 - y0, 1e-3), used = new Set();
   // The browser measures in single precision, so a drawing far from the origin (site coordinates) got a bounding box
   // off by up to a few tenths of a mm (#164). Its coordinates are moved toward the origin by whole meters, which
@@ -762,11 +804,11 @@ function useCopies(root){
 function parseSVG(text, name){
   const doc = new DOMParser().parseFromString(text, "image/svg+xml");
   const root = doc.documentElement;
-  if (doc.getElementsByTagName("parsererror").length || root.localName !== "svg") throw new Error(`${name} isn't a readable SVG file.`);
+  if (doc.getElementsByTagName("parsererror").length || root.localName !== "svg") throw fail("svg.unreadable", {name});
   root.querySelectorAll("script,foreignObject").forEach(n => n.remove());
   // every <use> makes the browser build a copy of what it points to, copies inside copies included, as soon as the
   // part is put in the page: a 2 KB file can ask for millions (#158)
-  if (useCopies(root) > USE_LIMIT) throw new Error(`${name} repeats shapes through linked copies (<use>) more than ${USE_LIMIT.toLocaleString("en-US")} times, so it wasn't added.`);
+  if (useCopies(root) > USE_LIMIT) throw fail("svg.tooManyCopies", {name, limit:USE_LIMIT});
   const stripped = stripExternal(root);
   const all = [root, ...root.querySelectorAll("*")];
   for (const el of all) for (const a of [...el.attributes]) if (/^on/i.test(a.name)) el.removeAttribute(a.name);
@@ -817,7 +859,7 @@ function parseSVG(text, name){
     p.hidden = dropHidden(g);
     if (inl || p.hidden) { mark(false); p.inner = [...g.children].map(n => ser.serializeToString(n)).join(""); mark(true); }
     bb = g.getBBox();
-    if (!bb || (bb.width <= 0 && bb.height <= 0)) throw new Error(`${name} has no visible shapes to place.`);
+    if (!bb || (bb.width <= 0 && bb.height <= 0)) throw fail("svg.nothingVisible", {name});
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
     // sample at ~0.1 mm along curves (unit guess refined by measureScale)
     measureScaleOnly(p);
@@ -826,7 +868,7 @@ function parseSVG(text, name){
     p.flat = extractFlat(g);
     if (!p.flat) { const r = extractFlat(g, true); p.loose = r.items.length ? r.items : null; p.looseSkipped = r.skipped; }   // for DXF export
   } finally { g.remove(); }
-  if (!rings.length) throw new Error(`${name} has no cuttable shapes.`);
+  if (!rings.length) throw fail("svg.nothingToCut", {name});
   p.rings = rings;
   // getBBox works in single precision: a drawing far from its origin (site or GIS exports) gets a box off by up to a
   // few tenths of a unit, and Bounding box mode places parts by it (#213). Far out, take the box from the sampled
@@ -841,7 +883,7 @@ function parseSVG(text, name){
   }
   p.cx = p.bbox.x + p.bbox.width/2; p.cy = p.bbox.y + p.bbox.height/2;
   measureScale(p);
-  if (!p.outers.length) throw new Error(`${name} has no closed outline to nest.`);
+  if (!p.outers.length) throw fail("svg.noClosedOutline", {name});
   const thumbSVG = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${rootAttrs}>${p.inner}</g></svg>`;
   p.thumb = URL.createObjectURL(new Blob([thumbSVG], {type:"image/svg+xml"}));
   return p;
@@ -1036,13 +1078,13 @@ function extractFlat(g, loose){
     const tag = el.localName, cs = getComputedStyle(el);
     if ((cs.clipPath && cs.clipPath !== "none") || (cs.mask && cs.mask !== "none") || (cs.filter && cs.filter !== "none")) {
       if (!loose) return null;
-      skipped.add("clipping, masks and filters (shapes exported whole)");
+      skipped.add("clipping");
     }
     if (FLAT_SKIP.has(tag)) continue;
     if (!FLAT_SHAPES.has(tag)) {                        // text, images, <use>: keep original markup
       if (!loose) return null;
       if (["text","tspan","textPath"].includes(tag)) skipped.add("text"); else if (tag === "image") skipped.add("images");
-      else if (tag === "use") skipped.add("linked copies (<use>)"); else skipped.add(`<${tag}> elements`);
+      else if (tag === "use") skipped.add("use"); else skipped.add("<" + tag);
       continue;
     }
     let hidden = false;
@@ -1051,7 +1093,7 @@ function extractFlat(g, loose){
     let fill = tag === "line" ? "none" : cssColor(cs.fill), stroke = cssColor(cs.stroke);     // a line is never filled
     if (fill === undefined || stroke === undefined) {
       if (!loose) return null;
-      skipped.add("gradient and pattern colors (exported black)");
+      skipped.add("paint");
       if (fill === undefined) fill = "#000000"; if (stroke === undefined) stroke = "#000000";
     }
     if (fill === "none" && stroke === "none") continue;
@@ -1078,7 +1120,7 @@ function extractFlat(g, loose){
       d = "M" + pts.join("L") + (tag === "polygon" ? "Z" : "");
     }
     let segs;
-    try { segs = parsePathD(d); } catch(e) { if (!loose) return null; skipped.add("unreadable paths"); continue; }
+    try { segs = parsePathD(d); } catch(e) { if (!loose) return null; skipped.add("unreadable"); continue; }
     if (!segs.length) continue;
     const scr = el.getScreenCTM(); if (!scr) continue;
     const m = hostInv.multiply(scr);
@@ -1286,7 +1328,7 @@ function kerfPaths(p, gr, M, notes){
     const ccw = CL.Clipper.Orientation(ring); if (!ccw) ring.reverse();
     const off = new CL.ClipperOffset(2, 2); off.AddPath(ring, CL.JoinType.jtRound, CL.EndType.etClosedPolygon);
     const res = new CL.Paths(); off.Execute(res, (sub.depth % 2 ? -c : c) * SC);
-    if (!res.length) { notes && notes.add(`A hole in ${p.name} is narrower than the kerf, so it was left as drawn.`); return null; }
+    if (!res.length) { notes && notes.add(msg("kerf.holeTooNarrow", {name:p.name})); return null; }
     const [sx, sy] = pts[0];
     return res.map(q => {
       if (CL.Clipper.Orientation(q) !== ccw) q.reverse();               // keep the drawn direction
@@ -1296,7 +1338,7 @@ function kerfPaths(p, gr, M, notes){
     });
   });
 }
-const markupNote = (p, notes) => { if (kerfC() && !p.precomp) notes.add(`${p.name} has text, images, linked copies or effects, so its kerf can't be compensated; it is exported as drawn.`); };
+const markupNote = (p, notes) => { if (kerfC() && !p.precomp) notes.add(msg("kerf.markup", {name:p.name})); };
 function partMarkup(p, M, id, fallbackTransform, notes){
   // one <path> when the part's shapes share a style; otherwise one <g> of plain paths with no transforms.
   // Cut order: deepest (innermost) subpaths first, the outline that contains them last.
@@ -1936,13 +1978,13 @@ function plateDXF(plate){
   if (S.outline) emit([[0, 0, 0], [W, 0, 0], [W, H, 0], [0, H, 0]], true, layer("PLATE", "#ff0000"), 1);
   for (const it of cutSequence(plate.items)) {
     const p = it.part, flat = p.flat || p.loose;
-    if (!flat) { notes.add(`${p.name} has nothing that can be written to DXF.`); continue; }
-    if (!p.flat) { markupNote(p, notes); for (const s of p.looseSkipped) notes.add(`Not in the DXF: ${s} in ${p.name}.`); }   // written as drawn, like the SVG
+    if (!flat) { notes.add(msg("dxfOut.nothing", {name:p.name})); continue; }
+    if (!p.flat) { markupNote(p, notes); for (const s of p.looseSkipped) notes.add(s[0] === "<" ? msg("dxfOut.element", {name:p.name, tag:s.slice(1)}) : msg("dxfOut." + s, {name:p.name})); }   // written as drawn, like the SVG
     const [a, b, c, d, e, g] = placeMatrix(it.x, it.y, it.ang, p.kx, p.ky, it.rx, it.ry), sc = Math.sqrt(Math.abs(a*d - b*c));
     const T = (x, y) => [a*x + c*y + e, H - (b*x + d*y + g)];
     for (const gr of cutGroups(p, flat, sc, p.fromDXF)) {
       const col = gr.it.stroke !== "none" ? gr.it.stroke : gr.it.fill;
-      if (gr.fill) notes.add("Filled areas are written as their outlines.");
+      if (gr.fill) notes.add(msg("dxfOut.fills"));
       const L = p.fromDXF && gr.it.lay ? layer(gr.it.lay, col) : layer(col.replace("#", ""), col), aci = aciNear(col);
       const kc = kerfPaths(p, gr, [a, b, c, d, e, g], notes);
       gr.subs.forEach((sub, si) => {
