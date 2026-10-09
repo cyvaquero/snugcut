@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.32-beta
+
+- Parts are measured in a shadow tree, apart from the page (#239). When SnugCut runs inside another site, that
+  site's CSS no longer changes parts: a shape inside a link kept its own `currentColor` black instead of exporting in
+  the site's link color, and a shape with a `hidden` attribute is cut instead of being left out. A part's own CSS can
+  no longer match the page's elements either. `:root` rules in a part still apply (they now match the part's
+  measuring host). A rule that only matched because of the page around the drawing, such as `body rect`, no
+  longer applies, as in an SVG viewer. Existing fixtures export byte-identically.
+
 ## 1.2.31-beta
 
 - **Security:** an uploaded SVG can no longer make the page fetch outside URLs, or put them into the exported plate,

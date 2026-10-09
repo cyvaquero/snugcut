@@ -120,6 +120,10 @@ What happens to imported files:
   URLs hidden in CSS custom properties: a custom property holding a string, and `var()` inside `image-set()`,
   `image()` or `cross-fade()`, are removed; custom properties holding colors or lengths keep working. Embedded
   (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
+- A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
+  page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.
+  `:root` rules still apply to the part; rules that need an HTML page around the drawing, such as `body rect`,
+  don't match.
 
 ## Test cuts
 
