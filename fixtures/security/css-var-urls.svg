@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50mm" height="30mm" viewBox="0 0 50 30">
+<!-- Outside URLs passed through CSS custom properties (#238): none may be fetched or exported. The outline and the
+     right-hand square keep their var() color (red), and that square its var() stroke width (0.5). -->
+<style>:root{--s:"http://beacon.invalid/root.png"} body{background-image:image-set(var(--s) 1x)}
+.a{--t:"http://beacon.invalid/mask.png";mask-image:image-set(var(--t) 1x)}
+.b{--q:"http://beacon.invalid/chain.png";--r:var(--q);mask-image:-webkit-image-set(var(--r) 1x)}
+@property --p{syntax:"*";inherits:true;initial-value:"http://beacon.invalid/property.png"} .c{mask-image:image-set(var(--p) 1x)}
+.d{\2d-e:"http://beacon.invalid/escaped.png"} .d{mask-image:image-set(v\61r(--e) 1x)}
+.ok{--c:#ff0000;--w:0.5;stroke:var(--c)} .w{stroke-width:var(--w)}</style>
+<rect class="a ok" x="0" y="0" width="50" height="30" fill="none" stroke-width="0.2"/>
+<rect class="b" x="5" y="5" width="10" height="10" fill="none" stroke="#000" stroke-width="0.2"/>
+<rect class="c" x="20" y="5" width="10" height="10" fill="none" stroke="#000" stroke-width="0.2"/>
+<rect class="d ok w" x="35" y="5" width="10" height="10" fill="none" stroke="#00f" style="--u:'http://beacon.invalid/attr.png';mask-image:image-set(var(--u) 1x)"/>
+</svg>
