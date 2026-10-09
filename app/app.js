@@ -32,7 +32,17 @@ let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,e
 
 const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
-const fmt = (mm, d) => (+toDisp(mm).toFixed(d ?? (S.unit === "in" ? 3 : 1))).toString();
+// numbers on screen follow the browser's locale ("0,2" in de-DE, "54 %" in fr-FR), in Latin digits and without
+// grouping; exports keep "." whatever the locale (#128)
+const LOC = (() => { try { return new Intl.NumberFormat(navigator.language).resolvedOptions().locale; } catch(e) { return "en-US"; } })();
+const nfs = new Map();
+const nf = (k, o) => nfs.get(k) || nfs.set(k, new Intl.NumberFormat(LOC, {numberingSystem:"latn", useGrouping:false, ...o})).get(k);
+const num = (v, d = 0, min = 0) => { const r = +v.toFixed(d); return nf(`${d}/${min}`, {minimumFractionDigits:min, maximumFractionDigits:d}).format(r === 0 ? 0 : r); };   // rounded as toFixed did, never "-0"
+const pct = v => nf("%", {style:"percent", maximumFractionDigits:0}).format(Math.round(100 * v) / 100);
+// a typed number: "0,2" and "0.2" both mean 0.2 (one decimal mark, either one, no grouping); NaN when it isn't one (#229)
+const parseNum = s => { const t = String(s).trim().replace(/^\u2212/, "-"), v = +t.replace(",", ".");
+  return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(t) && isFinite(v) ? v : NaN; };
+const fmt = (mm, d) => num(toDisp(mm), d ?? (S.unit === "in" ? 3 : 1));
 const LEN = ["plateW","plateH","kerf","gap","margin"];
 const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:"Extra gap", margin:"Edge margin"};
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
@@ -57,27 +67,26 @@ function fieldErr(input, msg){
 function fillInputs(){
   for (const k of LEN) {
     const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
-    $(k).value = +toDisp(S[k]).toFixed(dec); fieldErr($(k));
-    $(k).step = S.unit === "in" ? (k === "kerf" ? "0.001" : "0.125") : (k === "kerf" ? "0.01" : "1");
+    $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
   $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
-  $("kerf").placeholder = S.unit === "in" ? "e.g. 0.004" : "e.g. 0.10";   // 0.10 in would be 2.54 mm (#172)
+  $("kerf").placeholder = "e.g. " + (S.unit === "in" ? num(0.004, 3) : num(0.1, 2, 2));   // 0.10 in would be 2.54 mm (#172)
   $("u-mm").setAttribute("aria-pressed", S.unit === "mm"); $("u-in").setAttribute("aria-pressed", S.unit === "in");
 }
 function setUnit(u){
   if (S.unit === u) return;
-  const conv = v => isNaN(v) ? "" : +(u === "in" ? v / IN : v * IN).toFixed(4);
-  $("kDesign").value = conv(parseFloat($("kDesign").value)); $("kMeasured").value = conv(parseFloat($("kMeasured").value));
+  const conv = v => isNaN(v) ? "" : num(u === "in" ? v / IN : v * IN, 4);
+  $("kDesign").value = conv(parseNum($("kDesign").value)); $("kMeasured").value = conv(parseNum($("kMeasured").value));
   S.unit = u; save(); fillInputs(); kerfCalc(); renderParts(); renderLayout();
 }
 $("u-mm").onclick = () => setUnit("mm");
 $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
-  const v = parseFloat($(k).value), plate = k === "plateW" || k === "plateH";
-  const bad = $(k).value.trim() === "" || isNaN(v) ? "Enter a number" : plate && v <= 0 ? `${LEN_NAME[k]} must be more than 0` : v < 0 ? `${LEN_NAME[k]} can't be negative` : "";
+  const v = parseNum($(k).value), plate = k === "plateW" || k === "plateH";
+  const bad = isNaN(v) ? "Enter a number" : plate && v <= 0 ? `${LEN_NAME[k]} must be more than 0` : v < 0 ? `${LEN_NAME[k]} can't be negative` : "";
   fieldErr($(k), bad && `${bad}; still using ${fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined)} ${S.unit}.`);
   if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
@@ -104,9 +113,9 @@ function filePrefix(){
 function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
 const ext = () => S.format === "dxf" ? "dxf" : "svg";
 function kerfCalc(){
-  const d = parseFloat($("kDesign").value), m = parseFloat($("kMeasured").value);
-  fieldErr($("kDesign"), !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
-  fieldErr($("kMeasured"), !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
+  const d = parseNum($("kDesign").value), m = parseNum($("kMeasured").value), typed = k => $(k).value.trim() !== "";
+  fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? "Enter a number." : !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
+  fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? "Enter a number." : !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
   if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
   const k = fromDisp(d - m), t = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`;
   if (t !== $("kOut").textContent) sayLater("kOut", t);   // announced once typing pauses (#166)
@@ -178,7 +187,7 @@ async function run(ms, fresh){
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
   const el = performance.now() - t0;
-  $("status").innerHTML = `<span class="dot on"></span>Searching… ${(el/1000).toFixed(1)} of ${(ms/1000).toFixed(0)} s · ${search.tried} layouts tried`;
+  $("status").innerHTML = `<span class="dot on"></span>Searching… ${num(el/1000, 1, 1)} of ${num(ms/1000)} s · ${search.tried} layouts tried`;
 }
 let searching = false;
 function setRunning(on){
@@ -195,10 +204,10 @@ function runSummary(){
   if (layout.stale) return "Stopped before a new layout was ready. The plates shown are out of date.";
   if (layout.noArea) return "The edge margin leaves no usable area on the plate.";
   const n = layout.plates.length, placed = layout.plates.reduce((a, b) => a + b.items.length, 0);
-  const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? Math.round(100 * layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : 0;
-  let t = n ? `Nesting finished: ${n} plate${n === 1 ? "" : "s"}, ${fill}% average utilization, ${placed} of ${want} parts placed.` : (want ? "Nesting finished: nothing could be placed." : "No parts to nest.");
+  const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? pct(layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : "";
+  let t = n ? `Nesting finished: ${n} plate${n === 1 ? "" : "s"}, ${fill} average utilization, ${placed} of ${want} parts placed.` : (want ? "Nesting finished: nothing could be placed." : "No parts to nest.");
   const E = n && efficiency(layout.plates);
-  if (E) t += ` Efficiency ${E.rating} out of 10: the parts use ${Math.round(E.eff * 100)}% of the material the job takes up.`;
+  if (E) t += ` Efficiency ${E.rating} out of 10: the parts use ${pct(E.eff)} of the material the job takes up.`;
   if (layout.oversize.length) t += ` ${layout.oversize.length} file${layout.oversize.length === 1 ? " doesn't" : "s don't"} fit on the plate and ${layout.oversize.length === 1 ? "was" : "were"} left out.`;
   return t;
 }
@@ -331,12 +340,12 @@ function drawLayout(){
   const placed = L.plates.reduce((a, b) => a + b.items.length, 0);
   $("sPlates").textContent = L.plates.length || "–";
   $("sMin").textContent = L.minPlates || "–";
-  $("sFill").textContent = L.plates.length ? Math.round(100 * L.plates.reduce((a, b) => a + b.area, 0) / (plateA * L.plates.length)) + "%" : "–";
+  $("sFill").textContent = L.plates.length ? pct(L.plates.reduce((a, b) => a + b.area, 0) / (plateA * L.plates.length)) : "–";
   $("sParts").textContent = placed;
   // efficiency rating (#138): "6/10" read as "6 out of 10", with the percentage under it
   const E = efficiency(L.plates), cut = E && Math.min(E.offcut.w, E.offcut.h) >= 10 ? E.offcut : null;
   $("sEff").innerHTML = E ? `${E.rating}<span aria-hidden="true">/</span><span class="sr-only"> out of </span>10` : "–";
-  $("sEffK").textContent = E ? `Efficiency · ${Math.round(E.eff * 100)}%` : "Efficiency";
+  $("sEffK").textContent = E ? `Efficiency · ${pct(E.eff)}` : "Efficiency";
   const msg = t => { const m = document.createElement("div"); m.className = "msg"; m.textContent = t; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
   for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
@@ -345,13 +354,13 @@ function drawLayout(){
   if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${!parts.length ? "Add SVG or DXF files to see them nested on plates." : !parts.some(p => p.qty) ? "Set a quantity above zero to place parts." : "No parts could be placed."}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
-    const fill = Math.round(100 * pl.area / plateA);
+    const ratio = pl.area / plateA, fill = pct(ratio);
     const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
     // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed
     // one gave the image no description (#168).
-    const alt = `Plate ${i+1} of ${L.plates.length}: ${pl.items.length} part${pl.items.length === 1 ? "" : "s"}, ${fill}% utilization`;
+    const alt = `Plate ${i+1} of ${L.plates.length}: ${pl.items.length} part${pl.items.length === 1 ? "" : "s"}, ${fill} utilization`;
     const groups = new Map();
     for (const it of pl.items) {
       const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
@@ -360,9 +369,9 @@ function drawLayout(){
     const lines = [...groups].map(([p, g]) => `${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}`);
     const list = lines.map(t => `<li>${t}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill}% utilization · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}${cut && i === L.plates.length - 1 ? ` · offcut ${fmt(cut.w)} × ${fmt(cut.h)} ${esc(S.unit)}` : ""}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill} utilization · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}${cut && i === L.plates.length - 1 ? ` · offcut ${fmt(cut.w)} × ${fmt(cut.h)} ${esc(S.unit)}` : ""}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="pdesc-${i}" src="${url}"><span id="pdesc-${i}" hidden>${lines.join("; ")}</span><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
-      <div class="bar" aria-hidden="true"><i style="width:${fill}%"></i></div>
+      <div class="bar" aria-hidden="true"><i style="width:${Math.round(100 * ratio)}%"></i></div>
       <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
