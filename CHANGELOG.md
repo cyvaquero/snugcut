@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.34-beta
+
+- Colors are exported right whatever syntax the file uses (#317, #284). A 50%-transparent fill was cut as fully
+  opaque; it now carries `fill-opacity="0.5"`. `oklch()`, `color()`, `lab()` and other newer forms were written into
+  the SVG as they were and became DXF layers like `OKLCH_0_6_0_2_30_` with the default color; they are now converted
+  to hex (`oklch(0.6 0.2 30)` → `#de3e2d`, DXF layer `DE3E2D`, ACI 22). Fully transparent paint counts as none in
+  every syntax. One color parser replaces the three that disagreed.
+
 ## 1.3.33-beta
 
 - All the text the app shows comes from the string table or carries a page key (#279). The kerf calculator's first
