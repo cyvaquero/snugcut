@@ -176,6 +176,9 @@ async function run(ms, fresh){
       const idx = items.map((_, i) => i);
       const keys = [it => it.envArea, it => { const s = shape(it.part, 0); return Math.max(s.maxX - s.minX, s.maxY - s.minY); }];
       for (const key of keys) {
+        // the time limit covers the starting packs too: on a big job at fine steps one pack can take longer than the
+        // whole search, so the second is skipped once a layout exists and the time is up (#234). run(0) packs both
+        if (search.bestScore && ms && performance.now() - t0 >= ms) break;
         const order = [...idx].sort((a, b) => key(items[b]) - key(items[a]) || items[a].part.uid - items[b].part.uid);
         const bins = await pack(items, order, it => angleList(it.part), token, F);
         search.tried++;
@@ -211,7 +214,7 @@ async function run(ms, fresh){
 }
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
-  const el = performance.now() - t0;
+  const el = Math.min(performance.now() - t0, ms);   // a pack that ends past the limit doesn't read "8.7 of 4 s" (#234)
   $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.tried})}`;
 }
 let searching = false;
