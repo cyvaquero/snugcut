@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.28-beta
+
+- The export QA issues each link a Word workbook in `qa/` (#49, #50, #51, #52, #132, #133): the setup, the app's
+  notes and all 22 tests with their steps and expected results, a results table per test, boxes to paste screenshots
+  into, and a results summary. Testers fill it in and attach it to the issue. The workbooks test **1.2.1-beta**, and
+  every expected size, color, DXF layer and notice was checked against that release: tests 14, 15, 18 and 22 now
+  name the notices it shows (the pin-hole notice, layers left out, the **Drawn in** menu). `tools/qa_workbooks.py`
+  generates them.
+
 ## 1.2.27-beta
 
 - The app's messages come from a string table (`app/strings-en.js`), in whole sentences with placeholders and plural
