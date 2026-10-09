@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.33-beta
+
+- All the text the app shows comes from the string table or carries a page key (#279). The kerf calculator's first
+  "Kerf: –" and the Efficiency label are filled from the table when the page opens instead of being fixed English in
+  the page, the DXF format option has a key, and a search worker that fails without a message of its own reports it
+  through a library message code, `search.workerFailed` ("Nesting stopped after an error: the search worker
+  stopped"). The English page is unchanged.
+
 ## 1.3.32-beta
 
 - The ↗ after links that open a new tab also shows in browsers older than Firefox 128 and Safari 17.4, which the

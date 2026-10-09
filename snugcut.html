@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/uKhgFSKyH3VJIuT4PX2ZN7lEOmkQiHY5li57WOhXOw=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EnN2i6H+SPWBV2OdOaWfMqSBYNPrqBE+z13DdKi5Y28=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -193,7 +193,7 @@ footer a,header p a{color:var(--accent)}
         </div>
         <div class="kerf">
           <label for="kerf" data-t="page.kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" aria-describedby="kerf-hint">
           <p class="hint" id="kerf-hint" data-t="page.kerfHint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
           <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> <span data-t="page.comp">Compensate kerf on objects</span></label>
           <p class="hint" id="comp-hint" data-t="page.compHint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
@@ -209,7 +209,7 @@ footer a,header p a{color:var(--accent)}
               <div class="field"><label for="kDesign" data-t="page.kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
               <div class="field"><label for="kMeasured" data-t="page.kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut"></span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
           </details>
         </div>
         <div class="row">
@@ -234,7 +234,7 @@ footer a,header p a{color:var(--accent)}
           <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
             <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
           <div class="field"><label for="format" data-t="page.format">Export format</label>
-            <select id="format"><option value="svg">SVG</option><option value="dxf">DXF (R12, mm)</option></select></div>
+            <select id="format"><option value="svg">SVG</option><option value="dxf" data-t="page.formatDxf">DXF (R12, mm)</option></select></div>
         </div>
         <p class="hint" data-t="page.downloadsNamed">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
       </section>
@@ -258,12 +258,12 @@ footer a,header p a{color:var(--accent)}
         <div class="stat"><span class="v" id="sMin">–</span><span class="k" data-t="page.statMin">Area minimum</span></div>
         <div class="stat"><span class="v" id="sFill">–</span><span class="k" data-t="page.statFill">Average utilization</span></div>
         <div class="stat"><span class="v" id="sParts">–</span><span class="k" data-t="page.statParts">Parts placed</span></div>
-        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK">Efficiency</span></div>
+        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK"></span></div>
         <div class="sp"></div>
         <button type="button" class="btn primary" id="dlAll" hidden data-t="page.downloadAll">Download all (.zip)</button>
       </div>
       <div class="search" data-only="shape">
-        <span class="st" id="status"><span class="dot on"></span>Nesting…</span>
+        <span class="st" id="status"><span class="dot on"></span></span>
         <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.32-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.33-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -333,6 +333,7 @@ const MESSAGES = {
   "dxfOut.markers": v => `Not in the DXF: markers (arrowheads and the like) in ${v.name}.`,
   "dxfOut.unreadable": v => `Not in the DXF: unreadable paths in ${v.name}.`,
   "dxfOut.fills": () => "Filled areas are written as their outlines.",
+  "search.workerFailed": () => "the search worker stopped",
 };
 let wording = null;
 const setMessages = fn => { wording = typeof fn === "function" ? fn : null; };
@@ -2142,7 +2143,7 @@ function inWorker(w, st, o, parts, byUid){
     }, 50);
     // a worker that fails takes the pool down: every search still running in it is ended too, or its 50 ms watch and
     // listeners would stay until the next run (#288)
-    const bad = e => { const err = new Error(e.message || "search worker failed"); broken = true; pool.forEach(x => x.terminate()); pool = []; [...live].forEach(f => f(err)); };
+    const bad = e => { const err = new Error(e.message || msg("search.workerFailed")); broken = true; pool.forEach(x => x.terminate()); pool = []; [...live].forEach(f => f(err)); };
     const on = e => {
       const m = e.data;
       if (m.id !== id || o.token !== runToken) return;
@@ -2552,6 +2553,7 @@ const EN = {
   "lib.dxfOut.markers": "Not in the DXF: markers (arrowheads and the like) in {name}.",
   "lib.dxfOut.unreadable": "Not in the DXF: unreadable paths in {name}.",
   "lib.dxfOut.fills": "Filled areas are written as their outlines.",
+  "lib.search.workerFailed": "the search worker stopped",
 };
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
@@ -3044,6 +3046,8 @@ const SAMPLES = [
   ["hex-tag.svg", 6, `<svg xmlns="${SVGNS}" width="50mm" height="43.3mm" viewBox="0 0 50 43.3"><polygon points="12.5,0.1 37.5,0.1 49.9,21.65 37.5,43.2 12.5,43.2 0.1,21.65" ${S0}/><circle cx="25" cy="8" r="2" ${S0}/></svg>`],
 ];
 fillInputs();
+// text the app writes into the page from the string table, the first time (#279)
+$("kOut").textContent = t("kcalc.none"); $("sEffK").textContent = t("stat.effNone");
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 startWorker({url: $("clipper-lib").src, integrity: $("clipper-lib").integrity});   // fetched and built while the parts list is drawn (#4)
 renderParts();

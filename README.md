@@ -311,6 +311,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.markers`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
 | `dxfOut.element` | `tag` | `<tag>` elements of a part aren't in the DXF (export note) |
 | `dxfOut.fills` | none | filled areas are written as outlines (export note) |
+| `search.workerFailed` | none | a search worker failed without a message of its own (ends "Nesting stopped after an error: …") |
 
 Exported files themselves (`.` decimals, the `SnugCut v…` and kerf-compensation markers) never change with the wording.
 

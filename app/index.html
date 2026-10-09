@@ -44,7 +44,7 @@
         </div>
         <div class="kerf">
           <label for="kerf" data-t="page.kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" aria-describedby="kerf-hint">
           <p class="hint" id="kerf-hint" data-t="page.kerfHint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
           <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> <span data-t="page.comp">Compensate kerf on objects</span></label>
           <p class="hint" id="comp-hint" data-t="page.compHint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
@@ -60,7 +60,7 @@
               <div class="field"><label for="kDesign" data-t="page.kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
               <div class="field"><label for="kMeasured" data-t="page.kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut"></span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
           </details>
         </div>
         <div class="row">
@@ -85,7 +85,7 @@
           <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
             <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
           <div class="field"><label for="format" data-t="page.format">Export format</label>
-            <select id="format"><option value="svg">SVG</option><option value="dxf">DXF (R12, mm)</option></select></div>
+            <select id="format"><option value="svg">SVG</option><option value="dxf" data-t="page.formatDxf">DXF (R12, mm)</option></select></div>
         </div>
         <p class="hint" data-t="page.downloadsNamed">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
       </section>
@@ -109,12 +109,12 @@
         <div class="stat"><span class="v" id="sMin">–</span><span class="k" data-t="page.statMin">Area minimum</span></div>
         <div class="stat"><span class="v" id="sFill">–</span><span class="k" data-t="page.statFill">Average utilization</span></div>
         <div class="stat"><span class="v" id="sParts">–</span><span class="k" data-t="page.statParts">Parts placed</span></div>
-        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK">Efficiency</span></div>
+        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK"></span></div>
         <div class="sp"></div>
         <button type="button" class="btn primary" id="dlAll" hidden data-t="page.downloadAll">Download all (.zip)</button>
       </div>
       <div class="search" data-only="shape">
-        <span class="st" id="status"><span class="dot on"></span>Nesting…</span>
+        <span class="st" id="status"><span class="dot on"></span></span>
         <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
@@ -124,7 +124,7 @@
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.32-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.33-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
