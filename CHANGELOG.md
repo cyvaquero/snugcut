@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.15-beta
+
+- Markers on a path (arrowheads, dots set with `marker-start`, `marker-mid` or `marker-end`) are no longer lost
+  (#281). The export left them out with no notice, and nesting gave them no room. A part with markers is now kept as
+  original markup, so the SVG export draws them; nesting reserves room for each marker up to its full size around the
+  point it sits on, in both modes; and the DXF export names them in its notes (`dxfOut.markers`).
+
 ## 1.3.14-beta
 
 - SVG files saved in an encoding other than UTF-8 are read as their XML declaration says (#269): text in a Latin-1
