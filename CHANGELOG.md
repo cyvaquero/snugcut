@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.23-beta
+
+- `tools/build.py` drops `'self'` from every CSP directive of `snugcut.html` wherever it stands, not only when a space
+  follows it (#296). The CSP built today is unchanged; a directive ending in `'self'` would have kept it.
+
 ## 1.3.22-beta
 
 - When one worker of the pool fails, the searches still running in the others are ended too (#288). Their 50 ms
