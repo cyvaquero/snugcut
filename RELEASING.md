@@ -12,7 +12,7 @@ one unasked. If the answer is yes:
 - Look at the hot paths: the nesting and layout search, curve sampling, Clipper offsets, building the export, redraws
   and DOM work, and anything parsed or computed more than once.
 - Measure before and after on the files in `fixtures/` (import time, search speed, layouts tried in a fixed time).
-- Exports must stay **byte-for-byte identical**: run the full fixture regression (every fixture, SVG and DXF,
+- Exports must stay **byte-for-byte identical**: run the full [fixture regression](#fixture-regression) (every fixture, SVG and DXF,
   compensation off and on), as CLAUDE.md requires. The SVG format is verified in WeCreat MakeIT.
 - File each finding as a GitHub issue (see section 3 for the format), then merge into `develop` before cutting the
   release branch.
@@ -99,3 +99,47 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
   `tools/qa_workbooks.py`, check each test's expected sizes, colors, layers and notices against the release, run
   `python3 tools/qa_workbooks.py`, and update the version in each issue (on a `feature/` branch after the release is
   tagged).
+
+## Fixture regression
+
+CLAUDE.md requires a structural or refactoring change to leave every export from `snugcut.html` byte-identical, and
+section 1 above requires the same of an optimization. The check compares two builds of `snugcut.html` in a headless
+browser. The scripts that drive it are kept outside the repo; this is what they must do.
+
+**The two builds**
+- Baseline: `snugcut.html` from the branch the change goes into (`git show develop:snugcut.html`).
+- Candidate: `snugcut.html` freshly built from the change with `python3 tools/build.py`.
+
+**Preparing each copy to run from a file** (the same edits to both, in a scratch folder outside the repo)
+- Point the clipper-lib 6.4.2 and jszip 3.10.1 `<script>` tags at local copies of those exact files, and remove their
+  `integrity` and `crossorigin` attributes, the Content-Security-Policy `<meta>` and the Google Fonts `<link>`.
+  Nothing else in the page changes.
+- Replace the page's startup call to `run(…)` (the last statement of its script, after `renderParts()`) with the test
+  below. The page is one script, so the test can call the library and app functions directly.
+- Open it in a fresh browser profile, so no saved `snugcut.settings` changes the defaults. The test prints its results
+  as one JSON string to the console.
+
+**What is exported**, with the default settings otherwise:
+1. Every fixture alone. For each `.svg` and `.dxf` file under `fixtures/` (all folders), with **Compensate kerf on
+   objects** off and then on:
+   - parse it the way an import does (`dxfToSVG` first for DXF, then `parseSVG`);
+   - place it alone, unrotated, at (10, 10) mm on a plate of its own size;
+   - export it with `plateSVG` and with `plateDXF`.
+
+   Keep the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has to
+   match too.
+2. Whole nests of the sample parts the page opens with. Run one pack (`run(0, true)`) and export every plate with the
+   app's own `plateFile`, keeping each file and its notices. Do this six times:
+   - True shape: SVG, then DXF, with compensation off;
+   - True shape: SVG, then DXF, with compensation on;
+   - Bounding box: SVG, then DXF, with compensation off.
+
+   Invalidate the cached geometry each time compensation or the mode changes.
+
+**Comparing**: the two result lists must match entry by entry and byte for byte. Only two things are normalized:
+- the version number in the export comment (`SnugCut v1.3.39-beta` and the like), which every version bump changes;
+- the per-import id prefix (`p<number>_`) that `parseSVG` adds to ids in the markup. It counts imports in the session,
+  so it shifts when the number of sample parts changes.
+
+Report the number of entries compared in each list and the indexes of any that differ. A change that is meant to alter
+exports says which entries changed and why. All other entries must still match.

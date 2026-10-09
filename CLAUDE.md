@@ -32,8 +32,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   its `script-src` on every run, so injected inline handlers can't run. Never add inline `on…=` handlers or
   `javascript:` URLs; attach handlers in `app.js`.
 - **Exports must not change by accident**: a structural or refactoring change must leave SVG and DXF exports from
-  `snugcut.html` byte-identical. Run the fixture regression (every fixture, SVG and DXF, compensation off and on) and
-  report it.
+  `snugcut.html` byte-identical. Run the [fixture regression](RELEASING.md#fixture-regression) (every fixture, SVG
+  and DXF, compensation off and on) and report it.
 - **Verify before claiming a fix works**: run the real code (a headless browser or scripts kept outside the repo) and
   compare before and after; say what was verified and what wasn't. Don't add tooling, dependencies or build steps
   without asking.
