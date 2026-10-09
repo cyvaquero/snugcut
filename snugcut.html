@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8RXegTWfCOauFQkIcMQhFUGLZ2gq6LqJgFiySIVvIWM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GjSJCG59ifE1d5kGSqH2BOIqg5/nCUFgNlfxr5zAKuE=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.1-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1778,14 +1778,21 @@ function nestCore(CL, SC, hooks){
   function container(items, j){
     // the part whose hole item j was placed in (the innermost one), or null: its cuts must all come first (#3)
     const B = items[j], v = B.s.paths[0][0], pt = {X:v.X + B.x, Y:v.Y + B.y};
+    // within this many units of an edge counts as on it: the vertex can land a fraction of a unit past it from rounding
+    const TOL = 4, near = (q, r) => r.some((a, k) => {
+      const b = r[(k + 1) % r.length], dx = b.X - a.X, dy = b.Y - a.Y, l = dx * dx + dy * dy;
+      const t = l ? Math.max(0, Math.min(1, ((q.X - a.X) * dx + (q.Y - a.Y) * dy) / l)) : 0;
+      return Math.hypot(q.X - a.X - t * dx, q.Y - a.Y - t * dy) <= TOL;
+    });
     let best = null, bestA = Infinity;
     items.forEach((A, i) => {
       if (i === j) return;
       A.s.holes.forEach(h => {
         const q = {X:pt.X - A.x, Y:pt.Y - A.y}, [outer, ...islands] = h.paths;
-        // the vertex usually lies exactly on the hole region's edge (placements are its vertices), so the edge counts as
-        // inside; only a point strictly inside an island is out (#151)
-        if (CL.Clipper.PointInPolygon(q, outer) === 0 || islands.some(r => CL.Clipper.PointInPolygon(q, r) === 1)) return;
+        // the vertex usually lies on the hole region's edge (placements are its vertices), so the edge counts as inside
+        // (#151); only a point strictly inside an island is out, and a vertex rounded just past either edge stays on it (#259)
+        if ((CL.Clipper.PointInPolygon(q, outer) === 0 && !near(q, outer))
+          || islands.some(r => CL.Clipper.PointInPolygon(q, r) === 1 && !near(q, r))) return;
         const a = area(outer); if (a < bestA) { bestA = a; best = i; }
       });
     });
