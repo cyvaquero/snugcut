@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Hgkn8dQ7zRhpp1oJXH85gKJwnx5Q/ExZcHpEG97Cbgk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bB2/1dpGPhLFlUR5l2SRTWvOCrJiSFqzJVAEEqovQiM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,7 +276,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.18-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.19-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2470,6 +2470,7 @@ const EN = {
   "run.efficiency": "Efficiency {rating} out of 10: the parts use {eff} of the material the job takes up.",
   "run.oversize": "{n, plural, one {# file doesn't fit on the plate and was left out.} other {# files don't fit on the plate and were left out.}}",
   "notice.nestError": "Nesting stopped after an error: {error}",
+  "notice.exportError": "The download failed: {error}",
   "notice.dismiss": "Dismiss",
   "notice.dismissLabel": "Dismiss: {text}",
   "part.size": "{w} × {h} {unit}",
@@ -2968,19 +2969,25 @@ function plateFile(pl, notes){
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
+// a failed export says so, instead of the button seeming to do nothing (#287)
+const exportFailed = e => { console.error(e); notice(t("notice.exportError", {error: e && e.message || e}), true); };
 function exportPlate(i){
   if (!layout || layout.stale || plateBusy()) return;
-  const notes = new Set();
-  download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
-  toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
+  try {
+    const notes = new Set();
+    download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
+    toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
+  } catch(e) { exportFailed(e); }
 }
 $("dlAll").onclick = async () => {
   if (!layout || layout.stale || !window.JSZip) return;
-  const zip = new JSZip();
-  const notes = new Set();
-  layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
-  download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
+  try {
+    const zip = new JSZip();
+    const notes = new Set();
+    layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
+    download(await zip.generateAsync({type:"blob"}), zipName());
+    toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
+  } catch(e) { exportFailed(e); }
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while

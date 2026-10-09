@@ -425,19 +425,25 @@ function plateFile(pl, notes){
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
+// a failed export says so, instead of the button seeming to do nothing (#287)
+const exportFailed = e => { console.error(e); notice(t("notice.exportError", {error: e && e.message || e}), true); };
 function exportPlate(i){
   if (!layout || layout.stale || plateBusy()) return;
-  const notes = new Set();
-  download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
-  toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
+  try {
+    const notes = new Set();
+    download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
+    toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
+  } catch(e) { exportFailed(e); }
 }
 $("dlAll").onclick = async () => {
   if (!layout || layout.stale || !window.JSZip) return;
-  const zip = new JSZip();
-  const notes = new Set();
-  layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
-  download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
+  try {
+    const zip = new JSZip();
+    const notes = new Set();
+    layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
+    download(await zip.generateAsync({type:"blob"}), zipName());
+    toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
+  } catch(e) { exportFailed(e); }
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
