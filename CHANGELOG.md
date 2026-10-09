@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.17-beta
+
+- In Windows high contrast (forced colors), a pressed **Lock** or **Nest parts inside the holes** button shows the
+  keyboard focus ring (#266). Its pressed state used the same outline as the focus ring, so focused and unfocused
+  looked the same. A pressed button is now filled in the highlight color, as the pressed Nesting mode and Units
+  toggles are, and the focus ring shows around it in the system text color.
+
 ## 1.3.16-beta
 
 - With the worker pool on, a starting layout that Stop (or the time limit) cuts short is packed by "Search 30 s
