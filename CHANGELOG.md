@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.31-beta
+
+- **Security:** an uploaded SVG can no longer make the page fetch outside URLs, or put them into the exported plate,
+  by keeping them in CSS custom properties (#238). A custom property holding a string, and `var()` inside
+  `image-set()`, `image()` or `cross-fade()`, are removed like other outside links (including escaped names and
+  `@property` initial values), and the computed values written into exports are checked again. Before, such a file
+  sent requests when added (one carried another loaded file's name) and its export kept
+  `mask-image:image-set(url("http://…"))`. Custom properties holding colors or lengths keep working, and existing
+  exports are unchanged. New fixture: `security/css-var-urls.svg`.
+
 ## 1.2.30-beta
 
 - The search status says "1 layout tried", not "1 layouts tried", during the search and when it ends ("Best of 1

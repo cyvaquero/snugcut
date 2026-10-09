@@ -116,7 +116,9 @@ it, and then that part counts (parts kept as original markup count their holes a
 What happens to imported files:
 
 - Shapes a browser wouldn't show (hidden, fully transparent, or with no fill and no stroke) are left out.
-- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. Embedded
+- Links to anything outside the file (images, fonts, other files) are removed, so nothing is fetched. That includes
+  URLs hidden in CSS custom properties: a custom property holding a string, and `var()` inside `image-set()`,
+  `image()` or `cross-fade()`, are removed; custom properties holding colors or lengths keep working. Embedded
   (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
 
 ## Test cuts
