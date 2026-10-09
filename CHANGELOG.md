@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.32-beta
+
+- The ↗ after links that open a new tab also shows in browsers older than Firefox 128 and Safari 17.4, which the
+  README lists as supported (#297). They dropped the whole declaration; they now get the plain arrow, and newer
+  browsers keep it out of the link's name as before.
+
 ## 1.3.31-beta
 
 - Text from the string table is escaped wherever the app writes it into markup (#298), so a translation containing
