@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.1-beta
+
+- A part nested in a hole next to an island (the disc left in a frame's window) is now always recognized as in the
+  hole, so it is cut before the part around it (#259). Rounding could put the corner SnugCut checks a fraction of a
+  micrometer inside the island, and the part was then cut after its window had already been cut out. On 10 mixed
+  fixtures with Compensate kerf on, 2 of 15 nested parts were misplaced in the cut order before the fix and none after,
+  across rotations, pool sizes and outline precisions.
+
 ## 1.3.0-beta
 
 - Release 1.3.0-beta: True-shape search in a background worker, with an optional worker pool, plus the 1.2.x changes
