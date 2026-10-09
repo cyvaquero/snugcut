@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.25-beta
+
+- Length fields and the kerf calculator accept `,` as well as `.` as the decimal point. In Chrome, `0,2` used to be read
+  as 2 mm, with no error. Anything else that isn't a number (`1,2,3`, `1.234,5`, letters) gets "Enter a number" and
+  keeps the previous value (#229).
+- Numbers on screen follow the browser's locale: sizes, the kerf, fill and efficiency percentages and the search time
+  read `68,4 × 65,4 mm` and `54 %` in German, for example. English is unchanged, and exports always use `.` (#128).
+
 ## 1.2.24-beta
 
 - Fixture comments give the sizes the app measures: `root-attrs-stroke-only.svg` imports as 99 × 49 mm, and the box of

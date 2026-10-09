@@ -82,6 +82,8 @@ Settings are remembered in this browser (local storage) and restored next time.
 
 - **Nesting mode**: True shape or Bounding box (top right).
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
+  Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
+  German, for example); exported files always use `.`.
 - **Plate width / height**, **Kerf**, **Extra gap**, **Edge margin**: the sheet, the width the cut removes, extra
   spacing between parts, and the empty border around the sheet. "Measure it from a test cut" works out the kerf from a
   designed and a measured size; cut that test with compensation off and no kerf offset in your cutter's software.

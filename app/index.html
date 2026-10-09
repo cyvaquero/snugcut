@@ -32,12 +32,12 @@
         <div class="panel-hd"><h2 id="h-plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units">
           <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
         <div class="row">
-          <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="number" id="plateW" min="1" step="any"></div>
-          <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="number" id="plateH" min="1" step="any"></div>
+          <div class="field"><label for="plateW">Plate width (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateW"></div>
+          <div class="field"><label for="plateH">Plate height (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateH"></div>
         </div>
         <div class="kerf">
           <label for="kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="number" id="kerf" min="0" step="any" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
           <p class="hint" id="kerf-hint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
           <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> Compensate kerf on objects</label>
           <p class="hint" id="comp-hint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
@@ -50,15 +50,15 @@
             <summary>Measure it from a test cut</summary>
             <p class="hint" style="margin-top:6px">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
             <div class="row">
-              <div class="field"><label for="kDesign">Designed (<span class="u">mm</span>)</label><input type="number" id="kDesign" step="any"></div>
-              <div class="field"><label for="kMeasured">Measured (<span class="u">mm</span>)</label><input type="number" id="kMeasured" step="any"></div>
+              <div class="field"><label for="kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
+              <div class="field"><label for="kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled>Use this</button></div>
           </details>
         </div>
         <div class="row">
-          <div class="field"><label for="gap">Extra gap (<span class="u">mm</span>)</label><input type="number" id="gap" min="0" step="any"></div>
-          <div class="field"><label for="margin">Edge margin (<span class="u">mm</span>)</label><input type="number" id="margin" min="0" step="any"></div>
+          <div class="field"><label for="gap">Extra gap (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="gap"></div>
+          <div class="field"><label for="margin">Edge margin (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="margin"></div>
         </div>
         <div class="row" data-only="shape">
           <div class="field"><label for="rotStep">Rotation</label>
@@ -116,7 +116,7 @@
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.24-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span>All processing stays in your browser.</span><span><span id="appver">v1.2.25-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
