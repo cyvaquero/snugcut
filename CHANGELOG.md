@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.41-beta
+
+- The release blind review gains a fifth blind reviewer, **Best practices** (#282), launched with the other four. It
+  checks how the code is written (deprecated APIs, error handling and cleanup, duplicated rules, dead code, the repo's
+  own conventions) and files every finding as `best-practice`, `code-review`, `severity:info`. No change to the app.
+
 ## 1.2.40-beta
 
 - Faster True-shape search, with identical layouts and exports (efficiency review for 1.3.0-beta, #257). A copy of a

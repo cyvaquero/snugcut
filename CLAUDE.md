@@ -64,10 +64,10 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   `main`, tag `<version>` (no `v` prefix), merge back into `develop`) needs the maintainer's approval.
   A major or minor release consolidates `CHANGELOG.md` as described in
   [CHANGELOG consolidation at release](#changelog-consolidation-at-release).
-- **Findings become issues**: every code-review, bug, security, documentation and accessibility finding is filed as a
-  GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md) (plain title; a type
-  label, `code-review` when it came from a review, and one `severity:*` label; Severity, CVE and CWE lines; Repro, Root
-  cause, Fix and Acceptance). Check `gh issue list --state all` for duplicates first. Parked issues get the `deferred`
+- **Findings become issues**: every code-review, bug, security, documentation, accessibility and best-practice finding is
+  filed as a GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md) (plain
+  title; a type label, `code-review` when it came from a review, and one `severity:*` label, always `severity:info` for
+  best-practice findings; Severity, CVE and CWE lines; Repro, Root cause, Fix and Acceptance). Check `gh issue list --state all` for duplicates first. Parked issues get the `deferred`
   label.
 - **QA and hardware**: the maintainer tests physical cuts on a WeCreat Vision Pro (MakeIT) and a Silhouette Cameo 4
   only; anything else can be checked in software only. The export QA issues (LightBurn #49, Bambu Suite #50, xTool
