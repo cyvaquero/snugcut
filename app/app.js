@@ -4,13 +4,45 @@
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
 import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
   fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, mulberry, n4, newRun, pack, parseSVG, plateDXF,
-  plateSVG, rectFits, score, setVersion, shape, toPlates} from "../lib/snugcut.js";
+  plateSVG, rectFits, score, setMessages, setVersion, shape, toPlates} from "../lib/snugcut.js";
+import {EN} from "./strings-en.js";
 
 (() => {
 const $ = id => document.getElementById(id);
 setVersion($("appver").textContent);
 $("changelog").href += "#" + $("appver").textContent.replace(/^v|\./g, "");   // GitHub's anchor for "## 0.1.27" is #0127
-if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">The geometry library didn't load, so shapes can't be nested. Reload the page to try again.</div>`; $("status").textContent = "Geometry engine unavailable"; return; }
+// numbers on screen follow the browser's locale ("0,2" in de-DE, "54 %" in fr-FR), in Latin digits and without
+// grouping; exports keep "." whatever the locale (#128)
+const LOC = (() => { try { return new Intl.NumberFormat(navigator.language).resolvedOptions().locale; } catch(e) { return "en-US"; } })();
+const nfs = new Map();
+const nf = (k, o) => nfs.get(k) || nfs.set(k, new Intl.NumberFormat(LOC, {numberingSystem:"latn", useGrouping:false, ...o})).get(k);
+const num = (v, d = 0, min = 0) => { const r = +v.toFixed(d); return nf(`${d}/${min}`, {minimumFractionDigits:min, maximumFractionDigits:d}).format(r === 0 ? 0 : r); };   // rounded as toFixed did, never "-0"
+const pct = v => nf("%", {style:"percent", maximumFractionDigits:0}).format(Math.round(100 * v) / 100);
+// text (#128): every message app.js shows comes from the string table (strings-en.js) by key, as a whole sentence. The
+// page's own text is in index.html, marked with data-t keys for the translations to come (#129); English is the only
+// language for now.
+const LANG = "en", STR = EN, PR = new Intl.PluralRules(LANG);
+document.documentElement.lang = LANG;
+const t = (key, v = {}) => Object.hasOwn(STR, key) ? fill(STR[key], v) : (console.error("no text for " + key), key);
+function fill(s, v){
+  let out = "";
+  for (let i = 0; i < s.length;) {
+    if (s[i] !== "{") { out += s[i++]; continue; }
+    let j = i, depth = 0;
+    do { if (s[j] === "{") depth++; else if (s[j] === "}") depth--; j++; } while (depth && j < s.length);
+    const body = s.slice(i + 1, j - 1), m = /^(\w+),\s*(plural|select),([\s\S]*)$/.exec(body); i = j;
+    if (!m) { out += Object.hasOwn(v, body) ? v[body] : `{${body}}`; continue; }
+    const x = v[m[1]], cases = {};
+    for (const c of m[3].matchAll(/(=?\w+)\s*\{((?:[^{}]|\{[^{}]*\})*)\}/g)) cases[c[1]] = c[2];
+    const pick = m[2] === "select" ? cases[x] ?? cases.other : cases["=" + x] ?? cases[PR.select(x)] ?? cases.other;
+    out += fill(m[2] === "plural" ? pick.replace(/#/g, num(x)) : pick, v);
+  }
+  return out;
+}
+// the library's messages in the app's words, with its counts formatted for the locale (README "Library messages")
+setMessages((code, v) => Object.hasOwn(STR, "lib." + code) ? t("lib." + code, {...v, limit: v.limit == null ? "" : nf("g", {useGrouping:true}).format(v.limit),
+  list: v.skipped ? v.skipped.map(([type, n]) => `${n} ${type.toLowerCase()}`).join(", ") : ""}) : undefined);
+if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${t("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -32,22 +64,15 @@ let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,e
 
 const toDisp = mm => S.unit === "in" ? mm / IN : mm;
 const fromDisp = v => S.unit === "in" ? v * IN : v;
-// numbers on screen follow the browser's locale ("0,2" in de-DE, "54 %" in fr-FR), in Latin digits and without
-// grouping; exports keep "." whatever the locale (#128)
-const LOC = (() => { try { return new Intl.NumberFormat(navigator.language).resolvedOptions().locale; } catch(e) { return "en-US"; } })();
-const nfs = new Map();
-const nf = (k, o) => nfs.get(k) || nfs.set(k, new Intl.NumberFormat(LOC, {numberingSystem:"latn", useGrouping:false, ...o})).get(k);
-const num = (v, d = 0, min = 0) => { const r = +v.toFixed(d); return nf(`${d}/${min}`, {minimumFractionDigits:min, maximumFractionDigits:d}).format(r === 0 ? 0 : r); };   // rounded as toFixed did, never "-0"
-const pct = v => nf("%", {style:"percent", maximumFractionDigits:0}).format(Math.round(100 * v) / 100);
 // a typed number: "0,2" and "0.2" both mean 0.2 (one decimal mark, either one, no grouping); NaN when it isn't one (#229)
-const parseNum = s => { const t = String(s).trim().replace(/^\u2212/, "-"), v = +t.replace(",", ".");
-  return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(t) && isFinite(v) ? v : NaN; };
+const parseNum = s => { const x = String(s).trim().replace(/^\u2212/, "-"), v = +x.replace(",", ".");
+  return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(x) && isFinite(v) ? v : NaN; };
 const fmt = (mm, d) => num(toDisp(mm), d ?? (S.unit === "in" ? 3 : 1));
 const LEN = ["plateW","plateH","kerf","gap","margin"];
-const LEN_NAME = {plateW:"Plate width", plateH:"Plate height", kerf:"Kerf", gap:"Extra gap", margin:"Edge margin"};
+const LEN_NAME = {plateW:"len.plateW", plateH:"len.plateH", kerf:"len.kerf", gap:"len.gap", margin:"len.margin"};
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
 const later = new Map();
-function sayLater(key, t){ clearTimeout(later.get(key)); later.delete(key); if (t) later.set(key, setTimeout(() => { later.delete(key); say(t); }, 700)); }
+function sayLater(key, text){ clearTimeout(later.get(key)); later.delete(key); if (text) later.set(key, setTimeout(() => { later.delete(key); say(text); }, 700)); }
 // add or remove one id in an element's aria-describedby, keeping the others (such as a hint, #204); an error goes first
 function describe(el, id, on, first){
   const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter(x => x && x !== id);
@@ -73,7 +98,7 @@ function fillInputs(){
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
-  $("kerf").placeholder = "e.g. " + (S.unit === "in" ? num(0.004, 3) : num(0.1, 2, 2));   // 0.10 in would be 2.54 mm (#172)
+  $("kerf").placeholder = t("kerf.placeholder", {value: S.unit === "in" ? num(0.004, 3) : num(0.1, 2, 2)});   // 0.10 in would be 2.54 mm (#172)
   $("u-mm").setAttribute("aria-pressed", S.unit === "mm"); $("u-in").setAttribute("aria-pressed", S.unit === "in");
 }
 function setUnit(u){
@@ -86,8 +111,8 @@ $("u-mm").onclick = () => setUnit("mm");
 $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
   const v = parseNum($(k).value), plate = k === "plateW" || k === "plateH";
-  const bad = isNaN(v) ? "Enter a number" : plate && v <= 0 ? `${LEN_NAME[k]} must be more than 0` : v < 0 ? `${LEN_NAME[k]} can't be negative` : "";
-  fieldErr($(k), bad && `${bad}; still using ${fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined)} ${S.unit}.`);
+  const bad = isNaN(v) ? "field.nan" : plate && v <= 0 ? "field.notPositive" : v < 0 ? "field.negative" : "";
+  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined), unit: S.unit}));
   if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
@@ -114,15 +139,15 @@ function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx"
 const ext = () => S.format === "dxf" ? "dxf" : "svg";
 function kerfCalc(){
   const d = parseNum($("kDesign").value), m = parseNum($("kMeasured").value), typed = k => $(k).value.trim() !== "";
-  fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? "Enter a number." : !isNaN(d) && d <= 0 ? "Designed must be more than 0." : "");
-  fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? "Enter a number." : !isNaN(m) && m <= 0 ? "Measured must be more than 0." : !isNaN(d) && !isNaN(m) && m > d ? "Measured must be smaller than designed: the cut takes material away." : "");
-  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = "Kerf: –"; $("kUse").disabled = true; return null; }
-  const k = fromDisp(d - m), t = `Kerf: ${fmt(k, S.unit === "in" ? 4 : 3)} ${S.unit}`;
-  if (t !== $("kOut").textContent) sayLater("kOut", t);   // announced once typing pauses (#166)
-  $("kOut").textContent = t; $("kUse").disabled = false; return k;
+  fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? t("kcalc.nan") : !isNaN(d) && d <= 0 ? t("kcalc.designedPositive") : "");
+  fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? t("kcalc.nan") : !isNaN(m) && m <= 0 ? t("kcalc.measuredPositive") : !isNaN(d) && !isNaN(m) && m > d ? t("kcalc.measuredSmaller") : "");
+  if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = t("kcalc.none"); $("kUse").disabled = true; return null; }
+  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, S.unit === "in" ? 4 : 3), unit: S.unit});
+  if (out !== $("kOut").textContent) sayLater("kOut", out);   // announced once typing pauses (#166)
+  $("kOut").textContent = out; $("kUse").disabled = false; return k;
 }
 $("kDesign").oninput = kerfCalc; $("kMeasured").oninput = kerfCalc;
-$("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast("Kerf updated"); } };
+$("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast(t("toast.kerfUpdated")); } };
 
 /* ---------- search controller ---------- */
 let search = null;   // {items, bestOrder, bestScore, tried, F}
@@ -130,7 +155,7 @@ async function run(ms, fresh){
   const token = newRun();
   if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false); return; }
   const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>Nesting…`;
+  $("status").innerHTML = `<span class="dot on"></span>${t("status.nesting")}`;
   const plateA = S.plateW * S.plateH;
   setRunning(true);
   const t0 = performance.now();
@@ -178,7 +203,7 @@ async function run(ms, fresh){
       status(t0, ms, token);
     }
   } catch(e) {
-    if (e !== ABORT) { console.error(e); notice("Nesting stopped after an error: " + (e.message || e), true); }
+    if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
     else return;
   } finally {
     if (isCurrent(token)) setRunning(false);
@@ -187,29 +212,29 @@ async function run(ms, fresh){
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
   const el = performance.now() - t0;
-  $("status").innerHTML = `<span class="dot on"></span>Searching… ${num(el/1000, 1, 1)} of ${num(ms/1000)} s · ${search.tried} layouts tried`;
+  $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.tried})}`;
 }
 let searching = false;
 function setRunning(on){
   const f = document.activeElement;
   searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? "Stopped before a new layout was ready. The plates shown are out of date." : search && search.tried ? `Best of ${search.tried} layouts tried.` : "Ready."}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " A longer search may save a plate." : ""}`;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.tried ? t("status.best", {tried: search.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
   if (!on) say(runSummary());
   if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
 // one sentence for screen readers when a run ends (#93)
 function runSummary(){
-  if (!layout) return "Ready.";
-  if (layout.stale) return "Stopped before a new layout was ready. The plates shown are out of date.";
-  if (layout.noArea) return "The edge margin leaves no usable area on the plate.";
+  if (!layout) return t("status.ready");
+  if (layout.stale) return t("run.stale");
+  if (layout.noArea) return t("run.noArea");
   const n = layout.plates.length, placed = layout.plates.reduce((a, b) => a + b.items.length, 0);
   const want = parts.reduce((a, p) => a + p.qty, 0), fill = n ? pct(layout.plates.reduce((a, b) => a + b.area, 0) / (S.plateW * S.plateH * n)) : "";
-  let t = n ? `Nesting finished: ${n} plate${n === 1 ? "" : "s"}, ${fill} average utilization, ${placed} of ${want} parts placed.` : (want ? "Nesting finished: nothing could be placed." : "No parts to nest.");
+  const out = [n ? t("run.finished", {n, fill, placed, want}) : t(want ? "run.nothingPlaced" : "run.noParts")];
   const E = n && efficiency(layout.plates);
-  if (E) t += ` Efficiency ${E.rating} out of 10: the parts use ${pct(E.eff)} of the material the job takes up.`;
-  if (layout.oversize.length) t += ` ${layout.oversize.length} file${layout.oversize.length === 1 ? " doesn't" : "s don't"} fit on the plate and ${layout.oversize.length === 1 ? "was" : "were"} left out.`;
-  return t;
+  if (E) out.push(t("run.efficiency", {rating: E.rating, eff: pct(E.eff)}));
+  if (layout.oversize.length) out.push(t("run.oversize", {n: layout.oversize.length}));
+  return out.join(" ");
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
 $("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(30000, false); };
@@ -238,17 +263,17 @@ function renderParts(){
   for (const p of parts) {
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
-    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${fmt(p.wMM)} × ${fmt(p.hMM)} ${esc(S.unit)}${ok?"":" · too big"}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">Drawn in</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>inches</option></select></div>` : ""}</div>
-      <div class="qw"><span class="ql" id="ql-${p.uid}">Qty</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="Nest other parts inside this part's holes (only if every closed inner outline is cut, not scored)" aria-label="Nest parts inside the holes of ${esc(p.name)}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="No holes to nest parts in" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="Lock orientation (no rotation)" aria-label="Lock orientation of ${esc(p.name)}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="Remove" aria-label="Remove ${esc(p.name)}">${ICON_X}</button></div>`;
+    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${t(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: esc(S.unit)})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${t("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${t("part.inches")}</option></select></div>` : ""}</div>
+      <div class="qw"><span class="ql" id="ql-${p.uid}">${t("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
+      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${t("part.holesTitle")}" aria-label="${t("part.holesLabel", {name: esc(p.name)})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${t("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${t("part.lockTitle")}" aria-label="${t("part.lockLabel", {name: esc(p.name)})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${t("part.removeTitle")}" aria-label="${t("part.removeLabel", {name: esc(p.name)})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
-      fieldErr(q, ok ? "" : `Enter a whole number, 0 or more; still using ${p.qty}.`);
+      fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
       if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
     };
     const du = row.querySelector(".du select");
-    if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(`${np.name} read in ${du.value === "in" ? "inches" : "millimeters"}: ${fmt(np.wMM)} × ${fmt(np.hMM)} ${S.unit}.`); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
+    if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
     if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
     lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
@@ -259,14 +284,14 @@ function renderParts(){
     };
     box.appendChild(row);
   }
-  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">No parts yet. Add SVG or DXF files above.</p>`;
+  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${t("parts.none")}</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
   updateCount();
   if (keep) { const r = box.querySelector(`.part[data-uid="${keep.uid}"]`); if (r) r.querySelector(keep.sel).focus(); }
 }
 function updateCount(){
   const n = parts.reduce((a, p) => a + p.qty, 0);
-  $("partCount").textContent = `${parts.length} file${parts.length===1?"":"s"} · ${n} part${n===1?"":"s"}`;
+  $("partCount").textContent = t("parts.count", {files: parts.length, n});
 }
 // a DXF file that doesn't declare its units is read again in the units the user picks (#90); the part keeps its place,
 // quantity and lock
@@ -296,7 +321,7 @@ const builtInComp = (text, dxf) => (dxf
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
-  if (!files.length) { notice("Only .svg and .dxf files can be added.", true); return; }
+  if (!files.length) { notice(t("files.only"), true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
   const errs = [], notes = [];                                // errors: files that couldn't be added
   const stripped = [], hiddenIn = [];
@@ -306,12 +331,12 @@ async function addFiles(list){
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
-    if (p.hidden) hiddenIn.push(`${p.hidden} from ${p.name}`);
-    if (pre) { p.precomp = true; notes.push(`${f.name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.`); }
+    if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
+    if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
   } catch(e) { errs.push(e.message); } }
-  if (hiddenIn.length) notes.push(`Left out hidden shapes (not shown, so not cut): ${hiddenIn.join(", ")}.`);
-  if (stripped.length) notes.push(`Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from ${stripped.join(", ")}; only what's inside the file is used.`);
-  errs.forEach(t => notice(t, true)); notes.forEach(t => notice(t));
+  if (hiddenIn.length) notes.push(t("files.hidden", {list: hiddenIn.join(", ")}));
+  if (stripped.length) notes.push(t("files.stripped", {list: stripped.join(", ")}));
+  errs.forEach(e => notice(e, true)); notes.forEach(n => notice(n));
   restart();
 }
 $("clear").onclick = () => { removeParts(() => true); restart(); };
@@ -344,35 +369,37 @@ function drawLayout(){
   $("sParts").textContent = placed;
   // efficiency rating (#138): "6/10" read as "6 out of 10", with the percentage under it
   const E = efficiency(L.plates), cut = E && Math.min(E.offcut.w, E.offcut.h) >= 10 ? E.offcut : null;
-  $("sEff").innerHTML = E ? `${E.rating}<span aria-hidden="true">/</span><span class="sr-only"> out of </span>10` : "–";
-  $("sEffK").textContent = E ? `Efficiency · ${pct(E.eff)}` : "Efficiency";
-  const msg = t => { const m = document.createElement("div"); m.className = "msg"; m.textContent = t; msgs.appendChild(m); };
+  $("sEff").innerHTML = E ? `<span aria-hidden="true">${E.rating}/10</span><span class="sr-only">${t("stat.eff", {rating: E.rating})}</span>` : "–";
+  $("sEffK").textContent = E ? t("stat.effLabel", {eff: pct(E.eff)}) : t("stat.effNone");
+  const msg = text => { const m = document.createElement("div"); m.className = "msg"; m.textContent = text; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
-  for (const p of L.oversize) msg(`${p.name} (${fmt(p.wMM)} × ${fmt(p.hMM)} ${S.unit}) doesn't fit inside the plate's margins${!p.lock && canRot ? (bbox ? " in either orientation" : " at any allowed rotation") : ""}. It was left out.`);
-  if (L.noArea) msg("The edge margin leaves no usable area on the plate.");
+  for (const p of L.oversize) msg(t(!p.lock && canRot ? (bbox ? "layout.oversizeBbox" : "layout.oversizeRot") : "layout.oversize", {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
+  if (L.noArea) msg(t("run.noArea"));
   // when nothing was placed, say why only if no message above already does (#84)
-  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${!parts.length ? "Add SVG or DXF files to see them nested on plates." : !parts.some(p => p.qty) ? "Set a quantity above zero to place parts." : "No parts could be placed."}</p>`;
+  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${t(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const ratio = pl.area / plateA, fill = pct(ratio);
-    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${esc(it.part.name)}${it.ang ? ` (rotated ${it.ang}°)` : ""}</title></polygon>`).join("")).join("");
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? t("plate.rotated", {name: esc(it.part.name), ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
     // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed
     // one gave the image no description (#168).
-    const alt = `Plate ${i+1} of ${L.plates.length}: ${pl.items.length} part${pl.items.length === 1 ? "" : "s"}, ${fill} utilization`;
+    const alt = t("plate.alt", {i: i+1, n: L.plates.length, parts: pl.items.length, fill});
     const groups = new Map();
     for (const it of pl.items) {
       const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
       g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
     }
-    const lines = [...groups].map(([p, g]) => `${esc(p.name)} × ${g.n}${g.rot.size ? ` (${[...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => `${n} rotated ${a}°`).join(", ")})` : ""}`);
-    const list = lines.map(t => `<li>${t}</li>`).join("");
+    const lines = [...groups].map(([p, g]) => g.rot.size
+      ? t("plate.lineRot", {name: esc(p.name), n: g.n, rots: [...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => t("plate.rot", {n, ang: a})).join(", ")})
+      : t("plate.line", {name: esc(p.name), n: g.n}));
+    const list = lines.map(l => `<li>${l}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">Plate ${i+1} of ${L.plates.length}</h3><div class="m">${pl.items.length} part${pl.items.length === 1 ? "" : "s"} · ${fill} utilization · ${fmt(S.plateW)} × ${fmt(S.plateH)} ${esc(S.unit)}${cut && i === L.plates.length - 1 ? ` · offcut ${fmt(cut.w)} × ${fmt(cut.h)} ${esc(S.unit)}` : ""}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="Download ${ext().toUpperCase()}, plate ${i+1} of ${L.plates.length}">Download ${ext().toUpperCase()}</button></div>
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">${t("plate.title", {i: i+1, n: L.plates.length})}</h3><div class="m">${t(cut && i === L.plates.length - 1 ? "plate.metaOffcut" : "plate.meta", {parts: pl.items.length, fill, w: fmt(S.plateW), h: fmt(S.plateH), unit: esc(S.unit), cw: cut && fmt(cut.w), ch: cut && fmt(cut.h)})}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="${t("plate.downloadLabel", {format: ext().toUpperCase(), i: i+1, n: L.plates.length})}">${t("plate.download", {format: ext().toUpperCase()})}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="pdesc-${i}" src="${url}"><span id="pdesc-${i}" hidden>${lines.join("; ")}</span><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${Math.round(100 * ratio)}%"></i></div>
-      <details class="plist"><summary>Parts on this plate</summary><ul id="plist-${i}">${list}</ul></details>`;
+      <details class="plist"><summary>${t("plate.list")}</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });
@@ -385,7 +412,7 @@ function showStale(){
   const st = !!(layout && layout.stale), busy = !st && plateBusy();
   $("plates").classList.toggle("stale", st);
   $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st || busy);
-    b.title = st ? "Out of date: wait for the new layout" : busy ? "Searching: stop the search, or use Download all, so every plate comes from the same layout" : ""; });
+    b.title = st ? t("plate.staleTitle") : busy ? t("plate.busyTitle") : ""; });
   $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
@@ -397,7 +424,7 @@ function download(data, filename, type){
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function plateFile(pl, notes){
-  if (kerfC()) notes.add(`Kerf compensation is built in (${fmt(S.kerf / 2, S.unit === "in" ? 4 : 3)} ${S.unit} per side): don't add a kerf offset in your cutter's software.`);
+  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, S.unit === "in" ? 4 : 3), unit: S.unit}));
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
@@ -405,7 +432,7 @@ function exportPlate(i){
   if (!layout || layout.stale || plateBusy()) return;
   const notes = new Set();
   download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
-  toast(`Saved ${fname(i)}`); notes.forEach(t => notice(t));
+  toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
 }
 $("dlAll").onclick = async () => {
   if (!layout || layout.stale || !window.JSZip) return;
@@ -413,32 +440,32 @@ $("dlAll").onclick = async () => {
   const notes = new Set();
   layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
   download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(`Saved ${zipName()}`); notes.forEach(t => notice(t));
+  toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
 // the pointer is over it, and Esc closes it (#94). Warnings and errors go to notice() and stay until dismissed.
 let toastT;
-function toast(t){
-  const el = $("toast"); el.textContent = t; el.hidden = false; say(t); clearTimeout(toastT);
+function toast(text){
+  const el = $("toast"); el.textContent = text; el.hidden = false; say(text); clearTimeout(toastT);
   const wait = ms => { toastT = setTimeout(() => el.matches(":hover") ? wait(1000) : (el.hidden = true), ms); };
-  wait(Math.max(20000, t.length * 100));
+  wait(Math.max(20000, text.length * 100));
 }
 addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) { clearTimeout(toastT); $("toast").hidden = true; } });
 // warnings and errors: one item each in the message list, until dismissed (#94); announced once (#93)
-function notice(t, err){
+function notice(text, err){
   const box = $("notices");
-  if ([...box.children].some(m => m.dataset.text === t)) { say(t, err); return; }   // already on screen
-  const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = t;
-  const s = document.createElement("span"); s.textContent = t;
-  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = "Dismiss";
-  x.setAttribute("aria-label", "Dismiss: " + (t.length > 60 ? t.slice(0, 57) + "…" : t));
+  if ([...box.children].some(m => m.dataset.text === text)) { say(text, err); return; }   // already on screen
+  const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = text;
+  const s = document.createElement("span"); s.textContent = text;
+  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = t("notice.dismiss");
+  x.setAttribute("aria-label", t("notice.dismissLabel", {text: text.length > 60 ? text.slice(0, 57) + "…" : text}));
   x.onclick = () => { const nb = m.nextElementSibling || m.previousElementSibling; m.remove(); (nb ? nb.querySelector(".x") : drop).focus(); };
-  m.append(s, x); box.appendChild(m); say(t, err);
+  m.append(s, x); box.appendChild(m); say(text, err);
 }
 // screen-reader announcements (#93): the live regions stay in the page, and each message is added as a new node so a
 // repeated message is announced again; urgent ones (errors) go to the role="alert" region
-function say(t, urgent){ const p = document.createElement("p"); p.textContent = t; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
+function say(text, urgent){ const p = document.createElement("p"); p.textContent = text; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
 
 /* ---------- sample parts ---------- */
 const S0 = 'fill="none" stroke="#000" stroke-width="0.2"';
@@ -451,7 +478,7 @@ const SAMPLES = [
   ["hex-tag.svg", 6, `<svg xmlns="${SVGNS}" width="50mm" height="43.3mm" viewBox="0 0 50 43.3"><polygon points="12.5,0.1 37.5,0.1 49.9,21.65 37.5,43.2 12.5,43.2 0.1,21.65" ${S0}/><circle cx="25" cy="8" r="2" ${S0}/></svg>`],
 ];
 fillInputs();
-for (const [n, q, t] of SAMPLES) { try { const p = parseSVG(t, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 renderParts();
 run(4000, true);
 })();

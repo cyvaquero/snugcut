@@ -6,10 +6,12 @@
     python3 tools/build.py          write snugcut.html
     python3 tools/build.py --check  exit 1 if snugcut.html is out of date
 
-app/index.html, app/snugcut.css, app/app.js and lib/snugcut.js are the source of truth. The page's stylesheet link
-and module script are replaced by the CSS and the JavaScript inline: the library first, then the app, in one
-classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
+app/index.html, app/snugcut.css, app/app.js, app/strings-en.js and lib/snugcut.js are the source of truth. The page's
+stylesheet link and module script are replaced by the CSS and the JavaScript inline: the library first, then the
+string table, then the app, in one classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
 (no 'unsafe-inline', so injected inline handlers can't run), and 'self' is dropped since nothing is loaded from disk.
+Both runs check the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
+message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
 Python 3 standard library only.
 """
 import base64, hashlib, pathlib, re, sys
@@ -33,9 +35,29 @@ def module_body(src, rel):
     if re.search(r"</script", src, flags=re.I): fail(f"{rel} contains '</script', which would end the inline script")
     return src
 
+def check_text(html, strings, app, lib):
+    defined = re.findall(r'^\s*"([\w.]+)":', strings, flags=re.M)
+    twice = sorted({k for k in defined if defined.count(k) > 1})
+    if twice: fail(f"app/strings-en.js defines {', '.join(twice)} more than once")
+    block = re.search(r"^export const MESSAGES = \{\n(.*?)^\};", lib, flags=re.M | re.S)
+    if not block: fail("lib/snugcut.js has no MESSAGES table")
+    libkeys = {"lib." + c for c in re.findall(r'^\s*"([\w.]+)":', block.group(1), flags=re.M)}
+    keys, prefixes = set(defined), {k.split(".")[0] for k in defined}
+    # keys app.js names: t("key") calls, and any other "prefix.name" literal with a table prefix (picked at run time)
+    named = {k for k in re.findall(r'\bt\(\s*"([\w.]+)"', app) if not k.endswith(".")} | {l for l in re.findall(r'"(\w+(?:\.\w+)+)"', app) if l.split(".")[0] in prefixes}
+    missing = sorted((named | libkeys) - keys)
+    if missing: fail(f"app/strings-en.js has no text for {', '.join(missing)}")
+    unused = sorted(keys - named - libkeys)
+    if unused: fail(f"app/strings-en.js defines {', '.join(unused)}, which nothing uses")
+    page = re.findall(r'\sdata-t(?:-[\w-]+)?="([^"]*)"', html)
+    twice = sorted({k for k in page if page.count(k) > 1})
+    if twice: fail(f"app/index.html uses the data-t key {', '.join(twice)} more than once")
+
 def build():
     html, css = read("app/index.html"), read("app/snugcut.css")
+    check_text(html, read("app/strings-en.js"), read("app/app.js"), read("lib/snugcut.js"))
     lib, app = module_body(read("lib/snugcut.js"), "lib/snugcut.js"), module_body(read("app/app.js"), "app/app.js")
+    lib += module_body(read("app/strings-en.js"), "app/strings-en.js")
     link = '<link rel="stylesheet" href="snugcut.css">\n'
     mod = '<script type="module" src="app.js"></script>\n'
     if html.count(link) != 1 or html.count(mod) != 1: fail("app/index.html must have exactly one snugcut.css link and one app.js module script")
