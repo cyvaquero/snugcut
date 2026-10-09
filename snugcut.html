@@ -137,6 +137,8 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .bar i{display:block;height:100%;background:var(--ok)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}
 .note{font-size:13px;color:var(--muted)}
+/* links that open a new tab say so: a described "Opens in a new tab." and an arrow that screen readers skip (#242) */
+a[target="_blank"]::after{content:"\2197" / "";margin-left:.15em}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .fatal{padding:16px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
 .modesw{display:inline-flex;border:1px solid var(--field);border-radius:8px;overflow:hidden;margin-top:12px;background:var(--surface)}
@@ -163,7 +165,7 @@ footer a,header p a{color:var(--accent)}
   <header>
     <h1>SnugCut</h1>
     <p data-t="page.intro">Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
-    <p data-t="page.source">SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener">issue tracker</a>.</p>
+    <p data-t="page.source">SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener" aria-describedby="newTab">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener" aria-describedby="newTab">issue tracker</a>.</p>
     <ul>
       <li data-t="page.aboutShape"><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
       <li data-t="page.aboutBbox"><b>Bounding box</b> packs rectangles fast.</li>
@@ -263,7 +265,8 @@ footer a,header p a{color:var(--accent)}
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.34-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.35-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>

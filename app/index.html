@@ -16,7 +16,7 @@
   <header>
     <h1>SnugCut</h1>
     <p data-t="page.intro">Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
-    <p data-t="page.source">SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener">issue tracker</a>.</p>
+    <p data-t="page.source">SnugCut is open source: see <a href="https://github.com/cyvaquero/snugcut" target="_blank" rel="noopener" aria-describedby="newTab">SnugCut on GitHub</a>. Found a problem or have a suggestion? Tell us on the <a href="https://github.com/cyvaquero/snugcut/issues" target="_blank" rel="noopener" aria-describedby="newTab">issue tracker</a>.</p>
     <ul>
       <li data-t="page.aboutShape"><b>True shape</b> interlocks parts by their actual outlines and rotates them so objects tuck into each other's gaps.</li>
       <li data-t="page.aboutBbox"><b>Bounding box</b> packs rectangles fast.</li>
@@ -116,7 +116,8 @@
       <div class="plates" id="plates"></div>
     </main>
   </div>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.34-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.2.35-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>

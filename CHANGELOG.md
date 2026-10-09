@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.35-beta
+
+- The four links that open a new tab (SnugCut on GitHub, issue tracker, changelog, license) say so (#242). Screen
+  readers read "Opens in a new tab." as each link's description, and a ↗ arrow after the link shows it on screen;
+  screen readers skip the arrow.
+
 ## 1.2.34-beta
 
 - The result of nesting the sample parts when the page opens is no longer announced to screen readers (#241). It
