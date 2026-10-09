@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.6-beta
+
+- Lengths given as percentages in an SVG (`width="100%"`, `r="20%"`, `x="50%"` on a `<use>` …) resolve against the
+  file's own viewport again, so parts import at their real size (#260). They resolved against SnugCut's 10 px
+  measuring area: a 100 × 50 mm rect drawn as `width="100%" height="100%"` came in as 10 × 10 mm. Percentages are now
+  written out as the values they stand for, so the outline, the thumbnail and the export agree. Gradients, masks,
+  clip paths, patterns, markers and symbols keep their own percentages.
+
 ## 1.3.5-beta
 
 - Rounded corners set with CSS (`rx`/`ry` in a style sheet or `style` attribute) are exported rounded, matching the
