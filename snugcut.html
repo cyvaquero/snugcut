@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VrvPbREnSB+n78S1P49Zoe/EmQRwBXKXv/J+vF2S+1Y=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-k7KvEzBLpWUDfvB40XUMBX09o/6AdqhOoenPNuHjvlw=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.5-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -861,7 +861,7 @@ function parseSVG(text, name){
     // part's elements and change what is measured or exported, and the part's CSS can't match the page's (#239, #63)
     const box = document.createElement("div"); box.setAttribute("aria-hidden", "true");
     box.style.cssText = "all:initial;position:absolute;left:0;top:0;width:0;height:0;pointer-events:none";
-    host = document.createElementNS(SVGNS, "svg"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;width:10px;height:10px;opacity:0;pointer-events:none";
+    host = document.createElementNS(SVGNS, "svg"); host.style.cssText = "all:initial;color-scheme:light;color:#000;position:absolute;left:0;top:0;opacity:0;pointer-events:none";
     box.attachShadow({mode:"closed"}).appendChild(host); document.body.appendChild(box);
   }
   // all:initial + black: parts must not inherit the page's theme color or fonts (currentColor would export as the UI text color, #44).
@@ -871,13 +871,20 @@ function parseSVG(text, name){
   // the root's fill, stroke, font-size, style, … inherit to every shape, so measuring and flattening must see them (#64)
   for (const a of KEEP_ATTRS) if (a !== "class" && root.hasAttribute(a)) g.setAttribute(a, root.getAttribute(a));
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
+  // the file's own viewport, at one px per unit, so percentage lengths resolve as in the file (#260)
+  const px = v => { const m = /^\s*([\d.]+(?:e[-+]?\d+)?)\s*(px|mm|cm|in|pt|pc)?\s*$/i.exec(v || ""), n = m ? parseFloat(m[1]) : NaN;
+    return n > 0 ? n * {px:1, mm:96 / IN, cm:960 / IN, in:96, pt:96 / 72, pc:16}[(m[2] || "px").toLowerCase()] : null; };
+  const vw = vb ? vb[2] : px(root.getAttribute("width")), vh = vb ? vb[3] : px(root.getAttribute("height"));
+  const [W, H] = vw && vh ? [vw, vh] : [10, 10];
+  host.setAttribute("viewBox", `0 0 ${W} ${H}`); host.setAttribute("width", W); host.setAttribute("height", H);
   host.appendChild(g);
   let bb, rings;
   const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, stripped};
   try {
+    const pct = fixPercents(g);
     const inl = inlineSheets(g);
     p.hidden = dropHidden(g);
-    if (inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
+    if (pct || inl || p.hidden) p.inner = [...g.children].map(n => ser.serializeToString(n)).join("");
     bb = g.getBBox();
     if (!bb || (bb.width <= 0 && bb.height <= 0)) throw fail("svg.nothingVisible", {name});
     p.bbox = {x:bb.x, y:bb.y, width:Math.max(bb.width, 1e-6), height:Math.max(bb.height, 1e-6)};
@@ -907,6 +914,23 @@ function parseSVG(text, name){
   const thumbSVG = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${rootAttrs}>${p.inner}</g></svg>`;
   p.thumb = URL.createObjectURL(new Blob([thumbSVG], {type:"image/svg+xml"}));
   return p;
+}
+const PCT_ATTRS = {rect:["x","y","width","height","rx","ry"], circle:["cx","cy","r"], ellipse:["cx","cy","rx","ry"],
+  line:["x1","y1","x2","y2"], image:["x","y","width","height"], use:["x","y","width","height"], svg:["x","y","width","height"]};
+function fixPercents(g){
+  // percentage lengths are written out as the user-unit values they resolve to in the file's viewport, so the outline,
+  // the export, the thumbnail and the plate (each drawn in a different viewport) all agree (#260). Shapes in clip paths,
+  // masks, patterns, markers and symbols are left alone: their percentages can be relative to something else.
+  let n = 0;
+  for (const el of g.querySelectorAll(Object.keys(PCT_ATTRS).join(","))) {
+    if (el.namespaceURI !== SVGNS || el.closest("clipPath,mask,pattern,marker,symbol")) continue;
+    for (const k of PCT_ATTRS[el.localName]) {
+      const a = el.getAttribute(k);
+      if (!a || !/%\s*$/.test(a) || !el[k] || !el[k].baseVal) continue;
+      el.setAttribute(k, String(+el[k].baseVal.value.toPrecision(7))); n++;
+    }
+  }
+  return n;
 }
 const PRES = new Set(["fill","fill-opacity","fill-rule","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin",
   "stroke-miterlimit","stroke-dasharray","stroke-dashoffset","opacity","display","visibility","color","font-family","font-size",
