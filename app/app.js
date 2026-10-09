@@ -2,9 +2,9 @@
 // Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
-import {ABORT, CL, IN, S, SVGNS, angleList, better, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
-  fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, mulberry, n4, newRun, pack, parseSVG, plateDXF,
-  plateSVG, rectFits, score, setMessages, setVersion, shape, toPlates} from "../lib/snugcut.js";
+import {ABORT, CL, IN, S, SVGNS, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
+  fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, n4, newRun, parseSVG, plateDXF,
+  plateSVG, rectFits, searchParts, setMessages, setVersion, shape, startWorker, toPlates} from "../lib/snugcut.js";
 import {EN} from "./strings-en.js";
 
 (() => {
@@ -150,7 +150,7 @@ $("kDesign").oninput = kerfCalc; $("kMeasured").oninput = kerfCalc;
 $("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; save(); fillInputs(); invalidateGeometry(); restart(); toast(t("toast.kerfUpdated")); } };
 
 /* ---------- search controller ---------- */
-let search = null;   // {items, bestOrder, bestScore, tried, F}
+let search = null;   // {items, oversize, minPlates, F, st: the search state, see searchParts}
 async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
   const token = newRun();
   if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
@@ -160,7 +160,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
   setRunning(true);
   const t0 = performance.now();
   try {
-    if (fresh || !search || !search.bestScore) {   // no finished pack yet (stopped during the first one): start over
+    if (fresh || !search || !search.st.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
       for (const p of parts) {
@@ -171,40 +171,17 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
       }
       // the area a part takes from the plate leaves out its holes when other parts may nest in them (#165)
       const minPlates = items.length ? Math.ceil(items.reduce((s, it) => s + it.netArea, 0) / ((F.R - F.L) * (F.B - F.T)) - 1e-9) : 0;
-      search = {items, oversize, minPlates, bestOrder:null, bestScore:null, tried:0, F, rnd:mulberry(7)};
+      search = {items, oversize, minPlates, F, st:{pending:[], seed:7, bestOrder:null, bestScore:null, tried:0}};
       if (!items.length) { layout = {plates:[], oversize, minPlates:0}; renderLayout(); return; }
       const idx = items.map((_, i) => i);
       const keys = [it => it.envArea, it => { const s = shape(it.part, 0); return Math.max(s.maxX - s.minX, s.maxY - s.minY); }];
-      for (const key of keys) {
-        // the time limit covers the starting packs too: on a big job at fine steps one pack can take longer than the
-        // whole search, so the second is skipped once a layout exists and the time is up (#234). run(0) packs both
-        if (search.bestScore && ms && performance.now() - t0 >= ms) break;
-        const order = [...idx].sort((a, b) => key(items[b]) - key(items[a]) || items[a].part.uid - items[b].part.uid);
-        const bins = await pack(items, order, it => angleList(it.part), token, F);
-        search.tried++;
-        const sc = score(bins, plateA);
-        if (!search.bestScore || better(sc, search.bestScore)) { search.bestOrder = order; search.bestScore = sc; layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); }
-        status(t0, ms, token);
-      }
+      search.st.pending = keys.map(key => [...idx].sort((a, b) => key(items[b]) - key(items[a]) || items[a].part.uid - items[b].part.uid));
     }
-    const {items, rnd} = search;
-    if (items.length < 2) return;
-    let cur = search.bestOrder, curScore = search.bestScore;
-    while (performance.now() - t0 < ms) {
-      if (search.bestScore[0] <= search.minPlates && search.bestScore[0] === 1) break;
-      const o = cur.slice(), n = o.length;
-      const moves = 1 + Math.floor(rnd() * 3);
-      for (let m = 0; m < moves; m++) {
-        const a = Math.floor(rnd() * n), b = Math.floor(rnd() * n);
-        if (rnd() < 0.5) [o[a], o[b]] = [o[b], o[a]]; else { const [x] = o.splice(a, 1); o.splice(b, 0, x); }
-      }
-      const bins = await pack(items, o, it => angleList(it.part), token, search.F);
-      search.tried++;
-      const sc = score(bins, plateA);
-      if (!better(curScore, sc)) { cur = o; curScore = sc; }
-      if (better(sc, search.bestScore)) { search.bestOrder = o; search.bestScore = sc; layout = {plates:toPlates(bins), oversize:search.oversize, minPlates:search.minPlates}; renderLayout(); }
-      status(t0, ms, token);
-    }
+    const {items, oversize, minPlates, st} = search;
+    // in the search worker when there is one (#4), else here
+    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token,
+      onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
+      onStep:() => status(t0, ms, token)});
   } catch(e) {
     if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
     else return;
@@ -215,14 +192,14 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
   const el = Math.min(performance.now() - t0, ms);   // a pack that ends past the limit doesn't read "8.7 of 4 s" (#234)
-  $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.tried})}`;
+  $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.st.tried})}`;
 }
 let searching = false;
 function setRunning(on, quiet){
   const f = document.activeElement;
   searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.tried ? t("status.best", {tried: search.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.bestScore && search.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.st.tried ? t("status.best", {tried: search.st.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.st.bestScore && search.st.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
   if (!on && !quiet) say(runSummary());
   if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
@@ -485,6 +462,7 @@ const SAMPLES = [
 ];
 fillInputs();
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+startWorker();   // fetched and built while the parts list is drawn (#4)
 renderParts();
 run(4000, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();
