@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.29-beta
+
+- The search's time limit now covers its starting layouts (#234). SnugCut starts by packing the parts in two sorted
+  orders. On a big job at fine rotation steps one of those packs can take longer than the whole 4 s search, and the
+  second one still ran: 120 mixed parts at 15° steps searched for 17.8 s (21.0 s with parts in holes) while the
+  status read "9.0 of 4 s". Now the second order is skipped once a layout exists and the time is up: 9.2 s and
+  13.4 s, with the same best layouts. The status never shows more time used than the total. Smaller jobs and all
+  exports are unchanged.
+
 ## 1.2.28-beta
 
 - The export QA issues each link a Word workbook in `qa/` (#49, #50, #51, #52, #132, #133): the setup, the app's
