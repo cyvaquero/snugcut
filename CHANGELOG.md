@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.26-beta
+
+- `snugcut.html` runs its script in strict mode, as `app/` already does as ES modules, and so does the search worker's
+  own code (#289). Testing `app/` now covers the shipped file: a mistake that throws in one throws in the other. No
+  change in behavior; exports are byte-identical.
+
 ## 1.3.25-beta
 
 - `tools/qa_workbooks.py` compares the workbooks' unzipped contents instead of the zip files' bytes, so `--check` no
