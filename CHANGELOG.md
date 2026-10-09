@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.3-beta
+
+- A part that only contains an unused `<filter>` (common in Inkscape files) or a `<view>` is exported as cut paths
+  again, so Compensate kerf applies to it (#265). It used to be kept as original markup, uncompensated, with a notice
+  blaming text, images, linked copies or effects. A filter applied to a shape still keeps the part as markup, and the
+  DXF notice no longer lists the filter's inner elements.
+
 ## 1.3.2-beta
 
 - A `<use>` copy of a shape is nested by the shape again, not by its bounding box (#261). Since parts are measured
