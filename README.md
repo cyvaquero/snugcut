@@ -9,7 +9,7 @@ Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded order search
-  ("Search 30 s more", Stop). The search runs in background workers, one per processor core but one (at most 8),
+  ("Search 30 s more", Stop). The search runs in background workers, one per processor core but one (at most 4),
   each trying its own orders, so the page stays responsive and more layouts are tried in the same time.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
@@ -258,7 +258,7 @@ tags carry a Subresource Integrity hash, so the browser refuses a library file w
 The search runs in Web Workers built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
 workers need their own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`
 allows that one URL), which the browser serves from its cache. Each worker uses memory for its own cache of part
-pairs: on 120 mixed parts, eight took about 700 MB more than one. If no worker can be started (an older browser, or a
+pairs: on 120 mixed parts, four took about 300 MB more than one. If no worker can be started (an older browser, or a
 page embedding SnugCut with a stricter CSP), the search runs on the page itself, as before.
 
 The script tags and the CSP are kept in `app/index.html`; don't edit them in `snugcut.html`, which is generated. To

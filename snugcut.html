@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-MlSTWuaiR14qmaX+po2+j4WiJf1X5ccUjY6IEMSY79o=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/3dprjNCw32HgUTW1bkpCWw4SOevYlSrh+jW758nT9o=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1879,8 +1879,9 @@ function searchWorker(self, nestCore, SC){
   };
   self.postMessage({type:"ready"});
 }
-// a pool of workers (#4), one per core but one, at most 8: each walks from the best order with its own seed
-const POOL = Math.max(1, Math.min((typeof navigator !== "undefined" && navigator.hardwareConcurrency || 1) - 1, 8));
+// a pool of workers (#4), one per core but one, at most 4: each walks from the best order with its own seed. Each holds
+// its own cache of part pairs (about 100 MB on 120 mixed parts), so more would cost more memory than they gain
+const POOL = Math.max(1, Math.min((typeof navigator !== "undefined" && navigator.hardwareConcurrency || 1) - 1, 4));
 let workersP = null, workerRun = 0;
 function getWorkers(){
   // resolves to the workers, or null to search on the page; built once per page load
