@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.19-beta
+
+- A failed download says so: "The download failed: …" appears as an error notice, for **Download all** and for single
+  plates (#287). Before, a failure in building the zip or a plate file did nothing visible.
+
 ## 1.3.18-beta
 
 - The Kerf, Designed and Measured fields in the blue kerf box have borders at least 3:1 against the box (#273):

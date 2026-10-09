@@ -38,6 +38,7 @@ export const EN = {
   "run.efficiency": "Efficiency {rating} out of 10: the parts use {eff} of the material the job takes up.",
   "run.oversize": "{n, plural, one {# file doesn't fit on the plate and was left out.} other {# files don't fit on the plate and were left out.}}",
   "notice.nestError": "Nesting stopped after an error: {error}",
+  "notice.exportError": "The download failed: {error}",
   "notice.dismiss": "Dismiss",
   "notice.dismissLabel": "Dismiss: {text}",
   "part.size": "{w} × {h} {unit}",
