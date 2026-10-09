@@ -83,3 +83,7 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
   - delete the release branch, locally and on origin.
 - Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with
   "Fixed in #PR (X.Y.Z)".
+- If export QA issues are still open (#49–#52, #132, #133), move them to the new release: set `VERSION` in
+  `tools/qa_workbooks.py`, check each test's expected sizes, colors, layers and notices against the release, run
+  `python3 tools/qa_workbooks.py`, and update the version in each issue (on a `feature/` branch after the release is
+  tagged).

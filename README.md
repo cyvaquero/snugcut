@@ -230,6 +230,8 @@ SnugCut; the details are in #106 and #181.
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
+| `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
+| `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
