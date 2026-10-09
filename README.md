@@ -252,6 +252,39 @@ output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, a
 build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
 allows its own files with `'self'` instead).
 
+## Library messages
+
+`lib/snugcut.js` words every message it shows a person (import errors and notes, export notes) through a code and its
+values, so a caller can supply its own wording. `setMessages(fn)` installs it: `fn(code, vars, english)` returns the
+text, or anything other than a string to keep the English. Without it, the library uses the English in `MESSAGES`. An
+error the library throws keeps the worded text as `.message` and also carries `.code` and `.vars`. Every message has a
+`name` (the file or part name) unless noted.
+
+| Code | Values | When |
+| --- | --- | --- |
+| `dxf.binary` | | an import is a binary DXF |
+| `dxf.unreadable` | | an import isn't a readable DXF |
+| `dxf.noUnits` | `units` (`"mm"` or `"in"`) | a DXF doesn't declare its units (note) |
+| `dxf.tooManyItems` | `limit` | blocks and arrays expand past the item limit |
+| `dxf.tooManyPoints` | `limit` | blocks and arrays draw past the point limit |
+| `dxf.splineDegree` | `degree` | a spline's degree is outside 1 to 11 |
+| `dxf.hiddenLeftOut` | `count` | items on hidden layers were left out (note) |
+| `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
+| `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
+| `svg.unreadable` | | an import isn't a readable SVG |
+| `svg.tooManyCopies` | `limit` | `<use>` copies past the limit |
+| `svg.nothingVisible` | | an SVG has no visible shapes |
+| `svg.nothingToCut` | | an SVG has no cuttable shapes |
+| `svg.noClosedOutline` | | an SVG has no closed outline |
+| `kerf.holeTooNarrow` | | a hole is narrower than the kerf (export note) |
+| `kerf.markup` | | a part's kerf can't be compensated (export note) |
+| `dxfOut.nothing` | | a part has nothing to write to DXF (export note) |
+| `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
+| `dxfOut.element` | `tag` | `<tag>` elements of a part aren't in the DXF (export note) |
+| `dxfOut.fills` | none | filled areas are written as outlines (export note) |
+
+Exported files themselves (`.` decimals, the `SnugCut v…` and kerf-compensation markers) never change with the wording.
+
 ## Workflow
 
 `app/` and `lib/` are the source; `snugcut.html` is built from them, so it stays a single file you can double-click.
