@@ -266,9 +266,11 @@ tags carry a Subresource Integrity hash, so the browser refuses a library file w
 
 The search runs in Web Workers built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
 workers need their own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`
-allows that one URL), which the browser serves from its cache. Each worker uses memory for its own cache of part
-pairs: on 120 mixed parts, four took about 300 MB more than one, which is why the pool is off by default. If no worker can be started (an older browser, or a
-page embedding SnugCut with a stricter CSP), the search runs on the page itself, as before.
+allows that one URL), which the browser serves from its cache. A program using `lib/snugcut.js` passes that URL and hash
+to `startWorker({url, integrity})`; without them the search runs on the page. Each worker uses memory for its own cache
+of part pairs: on 120 mixed parts, four took about 300 MB more than one, which is why the pool is off by default. If no
+worker can be started (an older browser, or a page embedding SnugCut with a stricter CSP), the search runs on the page
+itself, as before.
 
 The script tags and the CSP are kept in `app/index.html`; don't edit them in `snugcut.html`, which is generated. To
 bump a library version, change its URL in the script tag and in the CSP (clipper-lib's in both `script-src` and

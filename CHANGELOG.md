@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.30-beta
+
+- Internal: the library no longer looks through the page for clipper-lib's `<script>` tag to build its search
+  workers (#295). The app passes the URL and integrity hash to `startWorker({url, integrity})`, from its own
+  `id="clipper-lib"` tag, so renaming or adding scripts can't silently cost the page its worker. No change in
+  behavior.
+
 ## 1.3.29-beta
 
 - Internal: the search's time limits are named once (`SEARCH_MS`, 4 s, and `MORE_MS`, 30 s), the "Search 30 s more"
