@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.34-beta
+
+- The result of nesting the sample parts when the page opens is no longer announced to screen readers (#241). It
+  interrupted whoever was reading the page about 4 s after it loaded. Runs you start (a changed setting, added
+  files, Search 30 s more, Stop) are announced as before.
+
 ## 1.2.33-beta
 
 - An invalid quantity you haven't corrected yet (such as `2.5`) stays in its field, with its error, when another
