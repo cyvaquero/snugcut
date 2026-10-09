@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.22-beta
+
+- When one worker of the pool fails, the searches still running in the others are ended too (#288). Their 50 ms
+  check timers and listeners used to keep running until the next change. No change to what the user sees: the run
+  already stopped with "Nesting stopped after an error".
+
 ## 1.3.21-beta
 
 - A field's error message shows the value in use with as many decimals as the field does (#286): with an edge margin
