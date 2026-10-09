@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.28-beta
+
+- Internal: dead code removed (#294): the dark-theme colors were defined twice (once for a `data-theme` attribute
+  nothing sets), `bounds` was taken from the search core and never used, and the QA workbook generator took a
+  parameter it ignored. No change in behavior: every element's computed colors are identical in light, dark and
+  forced colors, and exports and workbooks are unchanged.
+
 ## 1.3.27-beta
 
 - Internal: helpers that existed in two or three copies in `lib/snugcut.js` now exist once: point in polygon, the

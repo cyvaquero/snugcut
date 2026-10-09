@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sIOGzhJJ1gh2k1Ct9sxPVCQbjOat+5gEF9mhRfjJmj8=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EFvU34pKISY6NVY4DbQuIk4dd2DWpGyJ9r4EpiPSN2E=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,14 +27,10 @@
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+@media (prefers-color-scheme: dark){:root{
   --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f; --field:#5d6b7b;
   --accent:#7390ff; --accent-soft:#1d2747; --accent-fg:#0b1020;
   --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --nohole:#ff6b6b; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0e131a; --surface:#151c25; --sunk:#111821; --fg:#e4e9ef; --muted:#93a0ae; --line:#27323f; --field:#5d6b7b;
-  --accent:#7390ff; --accent-soft:#1d2747; --accent-fg:#0b1020;
-  --plate:#dcc8a2; --plate-edge:#9c8660; --warn:#f0a35c; --nohole:#ff6b6b; --warn-soft:#2f2114; --ok:#5cc792; color-scheme:dark}
 
 html,body{background:var(--bg);color:var(--fg)}
 body{font:15px/1.5 var(--f-body);padding-inline:16px;padding-block:20px 40px}
@@ -276,7 +272,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.27-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.28-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2018,7 +2014,7 @@ function nestCore(CL, SC, hooks){
   return {area, hull, bounds, shape, newBin, addTo, container, score, better, searchLoop, mulberry};
 }
 const core = nestCore(CL, SC, {envOf:p => envelope(p), kerfOf:p => kerfC(p), fillOf:p => fillMM(p), ver:() => geoVer});
-const {area, hull, bounds, container} = core;
+const {area, hull, container} = core;
 const {shape, score, better, mulberry} = core;
 
 /* ---------- placement ---------- */

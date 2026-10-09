@@ -424,7 +424,7 @@ STYLES = (
     + '</w:styles>')
 
 
-def workbook(slug, app, issue, colors, notes):
+def workbook(app, issue, colors, notes):
     sub = lambda t: t.replace("{app}", app).replace("{colors}", colors)
     issue_url = f"{REPO}/issues/{issue}"
     zip_url = f"{REPO}/archive/refs/tags/{VERSION}.zip"
@@ -520,7 +520,7 @@ def main():
     os.makedirs(os.path.join(root, "qa"), exist_ok=True)
     for slug, *rest in APPS:
         path = os.path.join(root, "qa", slug + ".docx")
-        data = workbook(slug, *rest)
+        data = workbook(*rest)
         old = open(path, "rb").read() if os.path.exists(path) else None
         same = old is not None and contents(old) == contents(data)
         if check:
