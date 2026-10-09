@@ -228,7 +228,7 @@ SnugCut; the details are in #106 and #181.
 | -------------------- | ----------------------------------------------------------------------------- |
 | `snugcut.html`       | the app in one file (HTML, CSS and inline JavaScript), **generated** by `tools/build.py` |
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
-| `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library) |
+| `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
@@ -258,7 +258,8 @@ allows its own files with `'self'` instead).
 values, so a caller can supply its own wording. `setMessages(fn)` installs it: `fn(code, vars, english)` returns the
 text, or anything other than a string to keep the English. Without it, the library uses the English in `MESSAGES`. An
 error the library throws keeps the worded text as `.message` and also carries `.code` and `.vars`. Every message has a
-`name` (the file or part name) unless noted.
+`name` (the file or part name) unless noted. The app words them from its string table (`lib.<code>` in
+`app/strings-en.js`), with the limits formatted for the browser's locale.
 
 | Code | Values | When |
 | --- | --- | --- |

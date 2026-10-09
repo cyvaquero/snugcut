@@ -9,6 +9,10 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - `lib/snugcut.js`: the library (import, outlines, nesting, kerf compensation, SVG/DXF export), no UI. ES module.
 - `app/index.html`, `app/snugcut.css`, `app/app.js`: the app split into page, styles and UI code. `app.js` is an ES
   module that imports the library. Served over HTTP only: `file://` (modules don't load) and Node are out of scope.
+- `app/strings-en.js`: the text of every message `app.js` shows, by key (`t("key", {values})`), in whole sentences with
+  `{name}` and `{n, plural, …}` placeholders; the page's own text stays in `index.html`, marked with `data-t` keys
+  (#128). New UI text goes there, never inline. The build fails on a key that is used but missing, or defined but
+  unused.
 - `snugcut.html`: **generated** from `app/` and `lib/` by `python3 tools/build.py`. Never edit it by hand. Edit the
   sources, run the script, and commit the sources and the regenerated `snugcut.html` together;
   `python3 tools/build.py --check` fails when it is out of date.

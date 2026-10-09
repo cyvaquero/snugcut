@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.2.27-beta
+
+- The app's messages come from a string table (`app/strings-en.js`), in whole sentences with placeholders and plural
+  forms, and the page's own text is marked with keys, ready for translations (#129). The English is unchanged.
+- The library's size limits in import errors follow the browser's locale (`250.000` in German).
+- Screen readers read the efficiency rating as "5 out of 10" in one piece.
+- `tools/build.py` stops on a message key that is used but missing, defined but unused, or a page key used twice
+  (#128).
+
 ## 1.2.26-beta
 
 - The library's import and export messages have codes and values, so a program using `lib/snugcut.js` can word them
