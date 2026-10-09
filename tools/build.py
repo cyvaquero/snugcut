@@ -81,9 +81,11 @@ def build():
 if __name__ == "__main__":
     out = build()
     if "--check" in sys.argv[1:]:
-        if not OUT.exists() or OUT.read_text(encoding="utf-8") != out:
+        # compared as bytes and written with \n on every platform, so a Windows build can't turn every line into \r\n
+        # unseen (#292)
+        if not OUT.exists() or OUT.read_bytes() != out.encode("utf-8"):
             fail("snugcut.html is out of date: run python3 tools/build.py")
         print("snugcut.html is up to date")
     else:
-        OUT.write_text(out, encoding="utf-8")
+        OUT.write_text(out, encoding="utf-8", newline="\n")
         print(f"wrote {OUT.relative_to(ROOT)} ({len(out.encode('utf-8'))} bytes)")
