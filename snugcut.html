@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SGUP1vHqxOhEAd9fb+xHjhmInaW8c0ckMuZsMEXUyeQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-epAV39gf4F7kfFjhcmZMo9+eHhTWaeRg1uUTXHsR494=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.2-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.3-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1079,7 +1079,7 @@ function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
   return out;
 }
 const FLAT_SHAPES = new Set(["path","rect","circle","ellipse","line","polyline","polygon"]);
-const FLAT_SKIP = new Set(["g","a","svg","switch","defs","style","title","desc","metadata","linearGradient","radialGradient","stop","symbol","clipPath","mask","pattern","marker","filter"]);
+const FLAT_SKIP = new Set(["g","a","svg","switch","defs","style","title","desc","metadata","linearGradient","radialGradient","stop","symbol","clipPath","mask","pattern","marker","filter","view"]);
 function cssColor(v){
   if (!v || v === "none") return "none";
   if (/^url\(/i.test(v)) return undefined;
@@ -1095,7 +1095,7 @@ function extractFlat(g, loose){
   const out = [], skipped = new Set();
   for (const el of g.querySelectorAll("*")) {
     if (el.namespaceURI !== SVGNS) continue;
-    if (el.closest("defs,clipPath,mask,symbol,pattern,marker")) continue;
+    if (el.closest("defs,clipPath,mask,symbol,pattern,marker,filter")) continue;   // a filter's primitives draw nothing (#265)
     const tag = el.localName, cs = getComputedStyle(el);
     if ((cs.clipPath && cs.clipPath !== "none") || (cs.mask && cs.mask !== "none") || (cs.filter && cs.filter !== "none")) {
       if (!loose) return null;
