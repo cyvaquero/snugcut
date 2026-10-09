@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.0-beta
+
+- Release 1.3.0-beta: True-shape search in a background worker, with an optional worker pool, plus the 1.2.x changes
+  below. The 1.2.x entries are kept as they are until this release is merged into `main`, when they are consolidated
+  into this section.
+
 ## 1.2.40-beta
 
 - Faster True-shape search, with identical layouts and exports (efficiency review for 1.3.0-beta, #257). A copy of a
