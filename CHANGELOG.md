@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.48-beta
+
+- The README gives measured figures for how much the worker pool helps each search method, instead of "about 3×" for
+  Genetic (#352), and dates its Genetic vs Order walk comparison, with a newer 4 s result after the search speedups
+  (#356).
+
 ## 1.3.47-beta
 
 - True-shape searches are faster again (#351): each plate keeps the free space it has for each part shape, and takes
