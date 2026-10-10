@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qWk95+Lg1kEmSb7UgfyAMF8iQWLUMmuR7vIt8FqpNAE=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2/IJs2NYbWm3QzoxfrgODlVBDrb7CA+yWfJMyEchDXY=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -291,7 +291,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.18-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.19-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2797,6 +2797,7 @@ const EN = {
   "parts.none": "No parts yet. Add SVG or DXF files above.",
   "parts.count": "{files, plural, one {# file} other {# files}} · {n, plural, one {# part} other {# parts}}",
   "files.only": "Only .svg and .dxf files can be added.",
+  "files.refused": "{list} {n, plural, one {wasn't} other {weren't}} added: only .svg and .dxf files can be added.",
   "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
   "files.hiddenItem": "{n} from {name}",
   "files.tangled": "{name} has lines that cross each other too many times to trace its outline, so it is nested by the shape around all of it.",
@@ -3219,10 +3220,12 @@ async function readText(f, dxf){
 }
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
-  const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
+  const ok = f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f);
+  const files = [...list].filter(ok), refused = [...list].filter(f => !ok(f)).map(f => f.name);
   if (!files.length) { notice(t("files.only"), true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
-  const errs = [], notes = [];                                // errors: files that couldn't be added
+  // errors: files that couldn't be added, starting with those of another type chosen with valid ones (#372)
+  const errs = refused.length ? [t("files.refused", {n: refused.length, list: refused.join(", ")})] : [], notes = [];
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await readText(f, isDXF(f));

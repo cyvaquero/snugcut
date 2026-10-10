@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.19-beta
+
+- **Fixed:** when files that aren't SVG or DXF are chosen or dropped together with ones that are, a notice now names
+  the ones that weren't added, and screen readers announce it (#372). Before, they were left out without a word.
+
 ## 1.4.18-beta
 
 - **Fixed:** placeholder text in the file prefix and kerf fields is easier to read: it now meets WCAG AA contrast in

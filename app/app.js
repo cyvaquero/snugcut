@@ -364,10 +364,12 @@ async function readText(f, dxf){
 }
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
-  const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
+  const ok = f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f);
+  const files = [...list].filter(ok), refused = [...list].filter(f => !ok(f)).map(f => f.name);
   if (!files.length) { notice(t("files.only"), true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
-  const errs = [], notes = [];                                // errors: files that couldn't be added
+  // errors: files that couldn't be added, starting with those of another type chosen with valid ones (#372)
+  const errs = refused.length ? [t("files.refused", {n: refused.length, list: refused.join(", ")})] : [], notes = [];
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await readText(f, isDXF(f));
