@@ -84,8 +84,14 @@ are left out; filled shapes become outlines. A notice names anything that was le
 
 Settings are remembered in this browser (local storage) and restored next time.
 
+The **Search Options** and **Plate & cutting** boxes open and close from their headings (#344, #347): Search Options
+starts closed and Plate & cutting open, and whether each is open is remembered with the settings. A closed box shows a
+one-line summary under its heading, such as "Order walk, workers off" or "300 × 300 mm, kerf 0.1 mm, SVG", which a
+screen reader hears with the heading's button. Closing Plate & cutting brings the parts list up next to the results;
+the mm/in switch stays in its heading, and a field error opens the box again.
+
 - **Nesting mode**: True shape or Bounding box (top right).
-- **Search** (True shape, its own box above Plate & cutting):
+- **Search Options** (True shape, its own box above Plate & cutting):
   - **Method**: **Order walk** (the default) keeps changing the order the parts are placed in, 1–3 swaps or moves at
     a time, keeps each change that is no worse, and lets every part take its best angle where it lands. **Genetic**
     (#5) keeps 20 layouts, each an order and a fixed angle per part, and breeds new ones from the best of them; with
