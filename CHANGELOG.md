@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.41-beta
+
+- The search pauses every 30 ms however short each layout attempt is (#340). Searching on the page, when no
+  background worker is available, froze it for up to a second at a time (longest gaps 1054 ms and 912 ms in a 3 s
+  search); the longest is now 74 ms. In a worker, a new search right after Stop started at once instead of waiting up
+  to 6 s for the stopped one to notice.
+
 ## 1.3.40-beta
 
 - RELEASING.md describes the fixture regression that CLAUDE.md requires for structural changes (#280): which two

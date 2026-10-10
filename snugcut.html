@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sLCk21eCE77zIKfjdjhfCPMHHDxxKCqP/U7n34spVCk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sjFeg2qUyc/pBdSHnGZHHzvpX12HyYhxJcb6a4qQM58=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +273,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.40-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.41-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1929,12 +1929,14 @@ function nestCore(CL, SC, hooks){
     bin.envArea += s.area - s.holeArea;
     const b = bin.bb; b.x0 = Math.min(b.x0, pos.x + s.minX); b.y0 = Math.min(b.y0, pos.y + s.minY); b.x1 = Math.max(b.x1, pos.x + s.maxX); b.y1 = Math.max(b.y1, pos.y + s.maxY);
   }
+  // when the search last paused: kept across packs, so a run of packs shorter than 30 ms pauses too (#340)
+  let lastPause = 0;
   async function pack(items, order, angPick, F, pause){
     // pause() is awaited about every 30 ms: it lets the page (or the worker's messages) in, and throws to stop the pack
-    const bins = []; let last = performance.now();
+    const bins = [];
     const frameA = (F.R - F.L) * (F.B - F.T);
     // also between rotations: one part at 24 angles against one bin (holes on) ran over a second without a pause (#148)
-    const breathe = async () => { if (performance.now() - last > 30) { await pause(); last = performance.now(); } };
+    const breathe = async () => { if (performance.now() - lastPause > 30) { await pause(); lastPause = performance.now(); } };
     for (const i of order) {
       const it = items[i]; let done = false;
       const angs = angPick(it);
