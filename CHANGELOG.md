@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.46-beta
+
+- True-shape searches try more layouts in the same time, with the same layouts for a given number of tries (#349,
+  #350). A shape with no room on a plate isn't tried there again as more parts go on it, and a layout that starts like
+  a recent one picks up from that one's plates. Layouts tried in a 4 s search of the sample parts: Order walk 168 → 256
+  at 90° and 8 → 16 at 15°; Genetic 564 → 724 at 90° and 227 → 295 at 15°; with 4 workers, Order walk 644 → 981 at 90°
+  and Genetic 266 → 305 at 15°.
+
 ## 1.3.45-beta
 
 - The **Search** box is now **Search Options**, and it and **Plate & cutting** open and close from their headings
