@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aOUUORG5O6JePlSa1LQ/5piww93mZ2D5yj+cUgAKUpU=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qWk95+Lg1kEmSb7UgfyAMF8iQWLUMmuR7vIt8FqpNAE=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.16-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.17-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1388,11 +1388,24 @@ function cutPlan(p, flat = p.flat, byLayer = false){
     sub.pts = pts; sub.bb = [x0, y0, x1, y1];
     sub.closed = pts.length > 2 && (sub.segs[sub.segs.length - 1][0] === "Z" || Math.hypot(a[0] - z[0], a[1] - z[1]) <= 1e-6 * Math.max(x1 - x0, y1 - y0, 1));
   }
+  // depth: the closed subpaths whose box holds this one's (and is larger) and whose ring holds its first point. The
+  // candidates come from a grid of the closed subpaths' boxes, by the cell of this one's top-left corner, which any
+  // box holding it must cover: comparing every pair took a minute for 150,000 pieces (#412). Same count as before.
+  const closed = subs.filter(o => o.closed), G = Math.max(1, Math.min(256, Math.ceil(Math.sqrt(closed.length))));
+  let X0 = Infinity, Y0 = Infinity, X1 = -Infinity, Y1 = -Infinity;
+  for (const o of closed) { X0 = Math.min(X0, o.bb[0]); Y0 = Math.min(Y0, o.bb[1]); X1 = Math.max(X1, o.bb[2]); Y1 = Math.max(Y1, o.bb[3]); }
+  const cw = (X1 - X0) / G || 1, ch = (Y1 - Y0) / G || 1, cell = (v, o, w) => Math.min(G - 1, Math.max(0, Math.floor((v - o) / w)));
+  const grid = new Map();
+  for (const o of closed) for (let gx = cell(o.bb[0], X0, cw); gx <= cell(o.bb[2], X0, cw); gx++) for (let gy = cell(o.bb[1], Y0, ch); gy <= cell(o.bb[3], Y0, ch); gy++) {
+    const k = gx * G + gy; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(o);
+  }
   for (const sub of subs) {
     sub.depth = 0;
-    for (const o of subs) {
-      if (o === sub || !o.closed || !sub.pts.length) continue;
-      const [a0, b0, a1, b1] = sub.bb, [c0, d0, c1, d1] = o.bb;
+    if (!sub.pts.length) continue;
+    const [a0, b0, a1, b1] = sub.bb;
+    for (const o of grid.get(cell(a0, X0, cw) * G + cell(b0, Y0, ch)) || []) {
+      if (o === sub) continue;
+      const [c0, d0, c1, d1] = o.bb;
       if (a0 >= c0 && b0 >= d0 && a1 <= c1 && b1 <= d1 && (a1 - a0) * (b1 - b0) < (c1 - c0) * (d1 - d0) && insideRing(sub.pts[0], o.pts)) sub.depth++;
     }
   }
@@ -1651,6 +1664,14 @@ function tangled(rings){
   return false;
 }
 const TANGLE = 10000, TANGLE_WORK = 2e7, SWEEP = 1e7;
+// Clipper keeps its local minima in a list sorted by Y and inserts each new one by walking the list, so adding n paths in
+// no particular order costs n² (#412): 40,000 pieces took 3 s to import and 150,000 over a minute. Above MANY paths they
+// go in by their lowest point (largest Y, Clipper's bottom), so each insert lands at the head. At or below it the order
+// is left as it was, since the order of equal minima can change where an outline starts: ordinary files keep their
+// exact outlines.
+const MANY = 2000;
+const byBottom = paths => paths.length <= MANY ? paths
+  : paths.map((q, i) => { let m = -Infinity; for (const v of q) if (v.Y > m) m = v.Y; return [m, i, q]; }).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]);
 function buildOutline(p){
   // union of every shape → outer contours only (holes and engraving inside are ignored), in mm centered on the part
   if (!p.rings) return;
@@ -1666,17 +1687,20 @@ function buildOutline(p){
     return;
   }
   const c = new CL.Clipper();
-  const open = [];
+  const open = [], subj = [];
   for (const r of p.rings) {
     const path = toInt(r);
-    if (r.closed && path.length >= 3 && Math.abs(area(path)) > SC * SC * 0.01) c.AddPath(path, CL.PolyType.ptSubject, true);
+    if (r.closed && path.length >= 3 && Math.abs(area(path)) > SC * SC * 0.01) subj.push(path);
     else open.push(path);
   }
+  let res = [];
   if (open.length) {
-    const off = new CL.ClipperOffset(2, 0.05 * SC); off.AddPaths(open, CL.JoinType.jtSquare, CL.EndType.etOpenSquare);
-    const res = new CL.Paths(); off.Execute(res, 0.05 * SC);
-    c.AddPaths(res, CL.PolyType.ptSubject, true);
+    const off = new CL.ClipperOffset(2, 0.05 * SC); off.AddPaths(byBottom(open), CL.JoinType.jtSquare, CL.EndType.etOpenSquare);
+    res = new CL.Paths(); off.Execute(res, 0.05 * SC);
   }
+  const all = subj.concat(res);
+  if (all.length > MANY) c.AddPaths(byBottom(all), CL.PolyType.ptSubject, true);
+  else { for (const q of subj) c.AddPath(q, CL.PolyType.ptSubject, true); if (res.length) c.AddPaths(res, CL.PolyType.ptSubject, true); }
   const tree = new CL.PolyTree();
   c.Execute(CL.ClipType.ctUnion, tree, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
   p.outers = tree.Childs().map(n => n.Contour()).filter(q => q.length >= 3);
@@ -1697,7 +1721,7 @@ function envelope(p){
   }
   simp.forEach(q => { if (!CL.Clipper.Orientation(q)) q.reverse(); });
   const off = new CL.ClipperOffset(2, tol * 0.5);
-  off.AddPaths(simp, CL.JoinType.jtMiter, CL.EndType.etClosedPolygon);
+  off.AddPaths(byBottom(simp), CL.JoinType.jtMiter, CL.EndType.etClosedPolygon);
   let res = new CL.Paths(); off.Execute(res, ((S.kerf + S.gap) / 2 + kerfC(p)) * SC + tol);
   res = res.filter(q => CL.Clipper.Orientation(q)).map(q => rdp(q, tol * 0.15));
   let convex = false;

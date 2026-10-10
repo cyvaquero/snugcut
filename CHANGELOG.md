@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.17-beta
+
+- **Security:** files with tens of thousands of separate pieces are added and downloaded in seconds instead of
+  minutes (#412). Each step took time growing with the square of the pieces: 150,000 short lines in one path took
+  about 94 s; they now take 1.4 s to add, 1.3 s to prepare for nesting and 0.5 s to export (40,000: 3.0 s, 3.4 s and
+  8.3 s before; 0.37 s, 0.32 s and 0.13 s now). Outlines and exports are the same as before.
+
 ## 1.4.16-beta
 
 - **Security:** embedded `data:` images and fonts are kept only when their whole type is an allowed one (#377). A
