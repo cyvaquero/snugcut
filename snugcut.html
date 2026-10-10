@@ -191,10 +191,10 @@ footer a,header p a{color:var(--accent)}
           <div class="field"><label for="search" data-t="page.search">Method</label>
             <select id="search" aria-describedby="search-about"><option value="walk" data-t="page.searchWalk">Order walk</option><option value="ga" data-t="page.searchGa">Genetic</option></select></div>
           <p class="hint" id="search-about" data-t="page.searchAbout">Order walk (the default) keeps changing the order parts are placed in and lets each part take its best angle. Genetic breeds layouts from the best ones found, with each part's angle fixed, so it tries many more layouts; it usually finds better layouts with fine rotation steps and large jobs, but can do slightly worse at 90°.</p>
-          <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search finds better layouts in the same time.</p>
+          <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search usually tries more layouts in the same time; how much depends on the method.</p>
           <div class="field"><label for="pool" data-t="page.pool">Workers</label>
             <select id="pool" aria-describedby="pool-about pool-warn"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select></div>
-          <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave the pool off.</p>
+          <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave Workers off.</p>
         </div>
       </section>
       <section class="panel" aria-labelledby="h-plate">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.5-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>

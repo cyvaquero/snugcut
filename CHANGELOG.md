@@ -4,44 +4,9 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
-## 1.4.5-beta
-
-- Screen readers hear each announcement once (#363). The announcement regions were atomic, so every new message could
-  make a screen reader read again every message from the last 20 s, such as an orientation change repeated with
-  "Nesting finished…". Only the new message is read now, and a repeated message is still announced.
-
-## 1.4.4-beta
-
-- A rect's corner radius given as a percentage in CSS (`rect{rx:20%}`) is nested and exported as the browser draws it
-  (#362): a percentage of the viewport's width for `rx` and height for `ry`. The export drew sharp corners while the
-  nesting kept room for rounded ones of the wrong size (20 units for 20%), so the cut reached past the room reserved
-  for it; on a 120-unit-wide drawing both now use 24. Radii in other units, and percentages in attributes, are
-  unchanged.
-
-## 1.4.3-beta
-
-- Cuts inside a window are made before the window, even when they share a line style with the part's outline (#361).
-  A black outline and a black disc inside a red window cut the window first, so its slug could drop or shift with the
-  disc still uncut; the export now cuts the disc, then the window, then the outline, in SVG and DXF. Files whose cut
-  order was already right export exactly as before.
-
-## 1.4.2-beta
-
-- **Security:** comments and processing instructions in an imported SVG are removed, so they no longer reach the
-  exported SVG (#360). A comment such as `<!--><b>…</b>-->` is inert as XML, but software that reads the export as HTML
-  ended it early and turned the markup inside into live elements. They carry nothing that is cut.
-
-## 1.4.1-beta
-
-- The genetic search no longer leaves out parts that fit the plate only at some angles (#359). It could pin such a part
-  to an angle where it doesn't fit, drop it, and count the layout with fewer plates as better: two 90 × 50 mm parts on a
-  100 × 60 mm plate came out as 1 plate with 1 part, and a 13-part job lost 1–5 parts on every seed. Each part's angles
-  are now only those it fits the plate at, and no search prefers a layout with a part missing to a complete one.
-  Layouts where every angle fits are unchanged.
-
 ## 1.4.0-beta
 
-Release of 1.3.8-beta through 1.3.48-beta.
+Release of 1.3.8-beta through 1.3.48-beta, with the fixes from the release review (1.4.1-beta through 1.4.5-beta).
 
 ### Added
 
@@ -58,9 +23,11 @@ Release of 1.3.8-beta through 1.3.48-beta.
   the three states (#345). Free and locked parts nest exactly as before.
 - A genetic search, as an alternative to the order walk, in True shape (#5). **Method** in **Search Options** picks
   Order walk (the default) or Genetic.
-  - Genetic keeps 20 layouts, each an order and one fixed angle per part, and breeds new ones from the best. Pinning
-    the angles makes each layout quicker to try, so it tries 3–4× as many at 90° steps and up to 20× as many at 15°.
-    When it stops improving, it restarts from shaken copies of its best layout.
+  - Genetic keeps 20 layouts, each an order and one fixed angle per part, and breeds new ones from the best. A part's
+    angles are only those it fits the plate at, and no layout with a part missing beats a complete one (#359).
+    Pinning the angles makes each layout quicker to try: in a 4 s search of the sample parts it tries about 1.6× as
+    many as the order walk at 90° steps and 14× as many at 15°. When it stops improving, it restarts from shaken
+    copies of its best layout.
   - Over 10 jobs (8 seeds, 4 s and 30 s, 90° and 15°, measured on 1.3.42-beta), it did better than the order walk in
     73 runs and worse in 22 with one worker, and 74 and 14 with four. On the nesting fixtures at 15° with one worker
     it used 1.0–1.1 plates on average against 1.9 for the order walk, and it filled the 120-part job with holes much
@@ -124,14 +91,28 @@ Release of 1.3.8-beta through 1.3.48-beta.
   stopped" (#279).
 - The Kerf, Designed and Measured fields in the blue kerf box have borders at least 3:1 against the box (#273):
   4.78:1 in the light theme and 5.50:1 in the dark, up from 2.88:1 and 2.69:1.
-- In Windows high contrast (forced colors), a pressed **Lock** or **Nest parts inside the holes** button shows the
-  keyboard focus ring (#266). A pressed button is now filled in the highlight color, as the pressed Nesting mode and
+- In Windows high contrast (forced colors), the orientation button set to grain or locked, and a pressed **Nest parts
+  inside the holes** button, show the keyboard focus ring (#266, #374). A pressed button is now filled in the highlight color, as the pressed Nesting mode and
   Units toggles are, and the focus ring shows around it in the system text color.
 - The ↗ after links that open a new tab also shows in browsers older than Firefox 128 and Safari 17.4, which the
   README lists as supported (#297).
+- Cuts inside a window are made before the window, even when they share a line style with the part's outline (#361).
+  A black outline and a black disc inside a red window cut the window first, so its slug could drop or shift with the
+  disc still uncut; the export now cuts the disc, then the window, then the outline, in SVG and DXF. Files whose cut
+  order was already right export exactly as before.
+- A rect's corner radius given as a percentage in CSS (`rect{rx:20%}`) is nested and exported as the browser draws it
+  (#362): a percentage of the viewport's width for `rx` and height for `ry`. The export drew sharp corners while the
+  nesting kept room for rounded ones of the wrong size, so the cut reached past the room reserved for it.
+- Screen readers hear each announcement once (#363). The announcement regions were atomic, so a new message could
+  make a screen reader read again every message from the last 20 s.
+- The Workers hint says how much extra workers help depends on the search method, and the memory warning says to leave
+  Workers off instead of "the pool" (#375).
 
 ### Security
 
+- Comments and processing instructions in an imported SVG are removed, so they no longer reach the exported SVG
+  (#360). A comment such as `<!--><b>…</b>-->` is inert as XML, but software that reads the export as HTML ended it
+  early and turned the markup inside into live elements.
 - Crafted outlines no longer freeze the page (#271). A 160 KB SVG zigzag of 20,000 teeth froze the tab for 94 s after
   it was added; the page now blocks for at most 255 ms. A thin outline that the nesting simplifies to a line was grown
   by the spacing point by point: it now keeps a simplified copy within the same tolerance. Lines that cross each other
