@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.4-beta
+
+- A rect's corner radius given as a percentage in CSS (`rect{rx:20%}`) is nested and exported as the browser draws it
+  (#362): a percentage of the viewport's width for `rx` and height for `ry`. The export drew sharp corners while the
+  nesting kept room for rounded ones of the wrong size (20 units for 20%), so the cut reached past the room reserved
+  for it; on a 120-unit-wide drawing both now use 24. Radii in other units, and percentages in attributes, are
+  unchanged.
+
 ## 1.4.3-beta
 
 - Cuts inside a window are made before the window, even when they share a line style with the part's outline (#361).
