@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-skZVfbUjX5YjO2ekWCPd5p3gB7GIt3aY0M73W7q3vyI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sIDxryT+neFTweYdMxybnT1oiuIEzL9ba5cirHXSL3w=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.14-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.15-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -445,7 +445,7 @@ function markerRings(el, T, rings){
   else if (el.localName === "path") {
     let sx = 0, sy = 0; try { for (const sg of parsePathD(el.getAttribute("d") || "")) {
       if (sg[0] === "M") { sx = sg[1]; sy = sg[2]; vs.push([sx, sy]); } else if (sg[0] === "Z") vs.push([sx, sy]); else vs.push(sg.slice(-2)); } } catch(e) {}
-  } else { vs.push(...pointsOf(el)); if (el.localName === "polygon" && vs.length) vs.push(vs[0]); }
+  } else { for (const v of pointsOf(el)) vs.push(v); if (el.localName === "polygon" && vs.length) vs.push(vs[0]); }   // not spread: 200,000 arguments overflowed the stack (#410)
   const sw = parseFloat(cs.strokeWidth) || 1, root = el.getRootNode();
   vs.forEach((v, i) => {
     const ref = on[i === 0 ? 0 : i === vs.length - 1 ? 2 : 1], id = ref && /url\(\s*["']?#([^"')]+)/.exec(ref);
@@ -859,7 +859,7 @@ function dxfToSVG(text, name, opts = {}){
             rx.push(6 * ((Q[j+1][0] - Q[j][0]) / hs[j] - (Q[j][0] - Q[j-1][0]) / hs[j-1])); ry.push(6 * ((Q[j+1][1] - Q[j][1]) / hs[j] - (Q[j][1] - Q[j-1][1]) / hs[j-1])); }
           for (let j = 1; j < b.length; j++) { const m = a[j] / b[j-1]; b[j] -= m * c[j-1]; rx[j] -= m * rx[j-1]; ry[j] -= m * ry[j-1]; }
           const sx = [], sy = []; for (let j = b.length - 1; j >= 0; j--) { sx[j] = (rx[j] - (j + 1 < b.length ? c[j] * sx[j+1] : 0)) / b[j]; sy[j] = (ry[j] - (j + 1 < b.length ? c[j] * sy[j+1] : 0)) / b[j]; }
-          Mx.push(...sx); My.push(...sy);
+          for (let j = 0; j < sx.length; j++) { Mx.push(sx[j]); My.push(sy[j]); }   // not spread: no argument limit (#410)
         }
         Mx.push(0); My.push(0);
         d.push(["M", P(Q[0][0], Q[0][1])]);
@@ -1073,7 +1073,7 @@ function inlineSheets(g){
       const props = [...r.style];
       if (!props.length) continue;
       let els = [];
-      try { els = [...g.querySelectorAll(r.selectorText)]; if ([g, ...ancestors].some(a => a.matches(r.selectorText))) els.push(...g.children); } catch(e) { continue; }
+      try { els = [...g.querySelectorAll(r.selectorText)]; if ([g, ...ancestors].some(a => a.matches(r.selectorText))) for (const c of g.children) els.push(c); } catch(e) { continue; }
       for (const el of els) add(el, props);
       if (r.cssRules && r.cssRules.length) walk(r.cssRules);       // nested rules
     } else if (r.cssRules && !(r instanceof CSSKeyframesRule)) walk(r.cssRules);   // @media, @supports, @layer, …
@@ -1488,7 +1488,7 @@ function cutGroups(p, flat, sc, byLayer = false){
   const order = (x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order;
   const gs = [...groups.values()].map(g => {
     g.subs = g.subs.slice().sort((x, y) => y.depth - x.depth);   // stable sort keeps source order within a depth
-    g.depth = Math.min(...g.subs.map(s => s.depth));
+    g.depth = g.subs.reduce((m, s) => Math.min(m, s.depth), Infinity);   // not Math.min(...): a path of 200,000 subpaths overflowed the stack (#410)
     return g;
   }).sort(order);
   // that order cuts every subpath before the ones around it unless a style spans depths another style sits between: an
@@ -1505,7 +1505,7 @@ function cutGroups(p, flat, sc, byLayer = false){
   const out = [];
   for (const r of runs.sort(order)) {
     const last = out[out.length - 1];
-    if (last && last.src === r.src) { last.subs.push(...r.subs); last.depth = r.depth; } else out.push(r);
+    if (last && last.src === r.src) { for (const x of r.subs) last.subs.push(x); last.depth = r.depth; } else out.push(r);
   }
   return out;
 }
