@@ -102,12 +102,17 @@ the mm/in switch stays in its heading, and a field error opens the box again.
     74 and worse on 14 with four; it saved plates on the nesting fixtures and filled plates noticeably better at 15°
     and on the 120-part jobs. At 90° steps it can do slightly worse: in 4 s searches of the 120-part jobs with one
     worker it filled plates a little less well in most runs, and with four workers it once stayed on 2 plates for a
-    4 s search where Order walk found 1. Both start from the same two sorted orders.
+    4 s search where Order walk found 1. Those tests ran on 1.3.42-beta. Since 1.3.46-beta both methods try more
+    layouts in the same time, Order walk the most (#349, #350, #351); in 4 s searches of the same jobs with one worker
+    (1.3.47-beta), Genetic did better on 33 runs and worse on 9 (#356). Both start from the same two sorted orders.
   - **Workers**: Off (the default) searches in one background worker; 2, 3 or 4 workers try that many layouts at
     once, so more layouts are tried in the same time. Each extra worker uses more memory, about 100 MB on a job of
     120 parts, so on a lower-spec computer (little memory or few processor cores) leave it off; the box says so.
-    Layouts and exports don't depend on it beyond the number of layouts tried. With Genetic, each step waits for the
-    slowest of its layouts, so four workers try about 3× as many layouts as one rather than 4×.
+    Layouts and exports don't depend on it beyond the number of layouts tried. How much it helps depends on the
+    method (#352), measured on the sample parts (1.3.47-beta): with 4 workers Order walk tries 4.2–4.9× as many
+    layouts as one at 90° steps and 2–3.4× at 15°. Genetic waits at each step for the slowest of its layouts, and
+    each worker builds its own cache of part pairs, so it tries 2.5–2.9× as many at 90°, 1.9× at 15° in a 30 s
+    search, and no more than one worker in a 4 s search at 15° (#355).
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
   Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
   German, for example); exported files always use `.`.
