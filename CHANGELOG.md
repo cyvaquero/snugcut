@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.9-beta
+
+- An SVG whose width or height has a sign is sized as browsers size it (#364). `width="+100mm"` is read as 100 mm; it
+  made percentage lengths in the file resolve against the wrong size (a 50% wide rect came out 1.32 mm instead of
+  50 mm). A zero or negative width or height counts as missing, so the size comes from the other one or the viewBox; it
+  gave parts negative sizes, and Bounding box mode stacked every copy off the plate.
+
 ## 1.4.8-beta
 
 - When the search runs on the page (no background worker), a starting layout cut short by Stop or the time limit is

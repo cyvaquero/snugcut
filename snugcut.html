@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-NyFiLLd4iPus/9HEYRMzUIN2X/1pRNmu6LH2kJ+YfCE=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3J28AVvVKRtSycHaaRndtUNETrUddrQJyyHfadAr6n4=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.8-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.9-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -370,9 +370,11 @@ const invalidateGeometry = () => { geoVer++; };   // settings that change outlin
 let host;
 function lenToMM(str, dpi){
   if (!str) return null;
-  const m = /^\s*([-+]?[\d.]+(?:e[-+]?\d+)?)\s*(mm|cm|in|pt|pc|px)?\s*$/i.exec(str);
+  // a leading + is allowed, as in browsers; zero or negative isn't a size, so it counts as missing (#364)
+  const m = /^\s*\+?([\d.]+(?:e[-+]?\d+)?)\s*(mm|cm|in|pt|pc|px)?\s*$/i.exec(str);
   if (!m) return null;
   const v = parseFloat(m[1]), u = (m[2] || "px").toLowerCase();
+  if (!(v > 0)) return null;
   return {mm:v, cm:v*10, in:v*IN, pt:v*IN/72, pc:v*IN/6, px:v*IN/dpi}[u];
 }
 function measureScale(p){
@@ -956,7 +958,7 @@ function parseSVG(text, name){
   for (const a of KEEP_ATTRS) if (a !== "class" && root.hasAttribute(a)) g.setAttribute(a, root.getAttribute(a));
   for (const n of root.childNodes) if (n.nodeType === 1) g.appendChild(document.importNode(n, true));
   // the file's own viewport, at one px per unit, so percentage lengths resolve as in the file (#260)
-  const px = v => { const m = /^\s*([\d.]+(?:e[-+]?\d+)?)\s*(px|mm|cm|in|pt|pc)?\s*$/i.exec(v || ""), n = m ? parseFloat(m[1]) : NaN;
+  const px = v => { const m = /^\s*\+?([\d.]+(?:e[-+]?\d+)?)\s*(px|mm|cm|in|pt|pc)?\s*$/i.exec(v || ""), n = m ? parseFloat(m[1]) : NaN;
     return n > 0 ? n * {px:1, mm:96 / IN, cm:960 / IN, in:96, pt:96 / 72, pc:16}[(m[2] || "px").toLowerCase()] : null; };
   const vw = vb ? vb[2] : px(root.getAttribute("width")), vh = vb ? vb[3] : px(root.getAttribute("height"));
   const [W, H] = vw && vh ? [vw, vh] : [10, 10];
@@ -1110,8 +1112,8 @@ function measureScaleOnly(p){
   else {
     // no viewBox: user units are CSS px (1/96 in) whenever width or height has an absolute unit, as in every viewer;
     // only files sized in px or without units follow the Unitless SVG scale setting (#73)
-    const abs = /^\s*[-+]?[\d.]+(?:e[-+]?\d+)?\s*(?:mm|cm|in|pt|pc)\s*$/i;
-    kx = ky = abs.test(p.wAttr || "") || abs.test(p.hAttr || "") ? IN / 96 : IN / S.dpi;
+    const abs = /^\s*(?:mm|cm|in|pt|pc)\s*$/i, unit = v => { const m = /^\s*\+?[\d.]+(?:e[-+]?\d+)?(.*)$/.exec(v || ""); return m && lenToMM(v, 96) ? m[1] : ""; };
+    kx = ky = abs.test(unit(p.wAttr)) || abs.test(unit(p.hAttr)) ? IN / 96 : IN / S.dpi;
   }
   p.kx = kx; p.ky = ky;
 }
