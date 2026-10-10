@@ -4,6 +4,22 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.42-beta
+
+- A genetic search, as an alternative to the order walk, in True shape (#5). The box above Plate & cutting is now
+  **Search**: **Method** picks Order walk (the default, unchanged) or Genetic, and **Workers** is the worker pool as
+  before.
+  - Genetic keeps 20 layouts, each an order and one fixed angle per part, and breeds new ones from the best. Pinning
+    the angles makes each layout quicker to try, so it tries 3–4× as many at 90° steps and up to 20× as many at 15°.
+    When it stops improving, it restarts from shaken copies of its best layout.
+  - Over 10 jobs (8 seeds, 4 s and 30 s, 90° and 15°), it did better than the order walk in 73 runs and worse in 22
+    with one worker, and 74 and 14 with four. On the nesting fixtures at 15° with one worker it used 1.0–1.1 plates on
+    average against 1.9 for the order walk, and it filled the 120-part job with holes much better (0.828 against
+    0.802 at 90°, 30 s).
+  - It can do slightly worse at 90° steps. The README says where.
+  - It works with the worker pool (one layout per worker per step) and on the page when no worker is available, and
+    "Search 30 s more" continues it.
+
 ## 1.3.41-beta
 
 - The search pauses every 30 ms however short each layout attempt is (#340). Searching on the page, when no

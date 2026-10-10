@@ -8,9 +8,9 @@ Safari 16.4+); those versions are known API support, not tested minimums.
 Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
-  Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded order search
-  ("Search 30 s more", Stop). The search runs in a background worker, so the page stays responsive; the **Worker
-  pool** setting adds up to 3 more, each trying its own orders.
+  Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded search: an order walk by
+  default, or a genetic search ("Search 30 s more", Stop). The search runs in a background worker, so the page stays
+  responsive; the **Workers** setting adds up to 3 more.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
@@ -85,11 +85,23 @@ are left out; filled shapes become outlines. A notice names anything that was le
 Settings are remembered in this browser (local storage) and restored next time.
 
 - **Nesting mode**: True shape or Bounding box (top right).
-- **Worker pool** (True shape, its own box above Plate & cutting): Off (the default) searches in one background
-  worker; 2, 3 or 4 workers try that many orders at once, so more layouts are tried in the same time. Each extra
-  worker uses more memory, about 100 MB on a job of 120 parts, so on a lower-spec computer (little memory or few
-  processor cores) leave it off; the box says so. Layouts and exports don't depend on it beyond the number of layouts
-  tried.
+- **Search** (True shape, its own box above Plate & cutting):
+  - **Method**: **Order walk** (the default) keeps changing the order the parts are placed in, 1–3 swaps or moves at
+    a time, keeps each change that is no worse, and lets every part take its best angle where it lands. **Genetic**
+    (#5) keeps 20 layouts, each an order and a fixed angle per part, and breeds new ones from the best of them; with
+    one angle per part each layout is quicker to try, so it tries many more in the same time. When it stops
+    improving, it starts again from shaken copies of its best layout. In tests over 10 jobs (the sample parts, the
+    nesting and test-cut fixtures, and a 120-part mix with and without nesting in holes, at 90° and 15° steps, 8
+    seeds, 4 s and 30 s), Genetic did better than Order walk on 73 runs and worse on 22 with one worker, and better on
+    74 and worse on 14 with four; it saved plates on the nesting fixtures and filled plates noticeably better at 15°
+    and on the 120-part jobs. At 90° steps it can do slightly worse: in 4 s searches of the 120-part jobs with one
+    worker it filled plates a little less well in most runs, and with four workers it once stayed on 2 plates for a
+    4 s search where Order walk found 1. Both start from the same two sorted orders.
+  - **Workers**: Off (the default) searches in one background worker; 2, 3 or 4 workers try that many layouts at
+    once, so more layouts are tried in the same time. Each extra worker uses more memory, about 100 MB on a job of
+    120 parts, so on a lower-spec computer (little memory or few processor cores) leave it off; the box says so.
+    Layouts and exports don't depend on it beyond the number of layouts tried. With Genetic, each step waits for the
+    slowest of its layouts, so four workers try about 3× as many layouts as one rather than 4×.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
   Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
   German, for example); exported files always use `.`.

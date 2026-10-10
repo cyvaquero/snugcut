@@ -58,7 +58,7 @@ function loadSettings(saved){
   if (!saved || typeof saved !== "object") return;
   const pick = (k, ok) => { if (Object.hasOwn(saved, k) && ok(saved[k])) S[k] = saved[k]; };
   const opts = id => [...$(id).options].map(o => +o.value), num = v => typeof v === "number" && isFinite(v);
-  pick("mode", v => v === "shape" || v === "bbox"); pick("unit", v => v === "mm" || v === "in"); pick("format", v => v === "svg" || v === "dxf");
+  pick("mode", v => v === "shape" || v === "bbox"); pick("search", v => v === "walk" || v === "ga"); pick("unit", v => v === "mm" || v === "in"); pick("format", v => v === "svg" || v === "dxf");
   for (const k of ["rotStep", "prec", "dpi", "pool"]) pick(k, v => opts(k).includes(v));
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= MAX_LEN);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= MAX_LEN);
@@ -104,7 +104,7 @@ function fillInputs(){
     const dec = fieldDec(k);
     $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("search").value = S.search; $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
@@ -128,6 +128,7 @@ for (const k of LEN) $(k).addEventListener("input", () => {
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
 $("pool").onchange = e => { S.pool = +e.target.value; save(); restart(); };     // the worker pool (#253, #255)
+$("search").onchange = e => { S.search = e.target.value; save(); restart(); };   // the search method (#5)
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 // the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
 function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }
@@ -190,7 +191,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
     }
     const {items, oversize, minPlates, st} = search;
     // in the search worker when there is one (#4), else here
-    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token,
+    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token, strategy:S.search,
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
