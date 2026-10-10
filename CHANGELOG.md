@@ -4,47 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
-## 1.3.48-beta
+## 1.4.0-beta
 
-- The README gives measured figures for how much the worker pool helps each search method, instead of "about 3×" for
-  Genetic (#352), and dates its Genetic vs Order walk comparison, with a newer 4 s result after the search speedups
-  (#356).
+Release of 1.3.8-beta through 1.3.48-beta.
 
-## 1.3.47-beta
+### Added
 
-- True-shape searches are faster again (#351): each plate keeps the free space it has for each part shape, and takes
-  away only the parts added since, instead of working it out from every part on the plate each time. Layouts tried in
-  a 4 s search of the sample parts at 90°: Order walk 251 → 603, Genetic 711 → 986, Order walk with 4 workers 985 →
-  2547. The first layout of a 120-part job comes 1.25–1.9× sooner. Layouts can differ from before by rounding (at most
-  1 µm, on 2 of 120 parts in the tests); over 160 timed searches (10 jobs, both methods, 8 seeds) 39 found a better
-  layout and none a worse one.
-
-## 1.3.46-beta
-
-- True-shape searches try more layouts in the same time, with the same layouts for a given number of tries (#349,
-  #350). A shape with no room on a plate isn't tried there again as more parts go on it, and a layout that starts like
-  a recent one picks up from that one's plates. Layouts tried in a 4 s search of the sample parts: Order walk 168 → 256
-  at 90° and 8 → 16 at 15°; Genetic 564 → 724 at 90° and 227 → 295 at 15°; with 4 workers, Order walk 644 → 981 at 90°
-  and Genetic 266 → 305 at 15°.
-
-## 1.3.45-beta
-
-- The **Search** box is now **Search Options**, and it and **Plate & cutting** open and close from their headings
-  (#344, #347). Search Options starts closed and Plate & cutting open; each one's state is remembered with the other
-  settings. A closed box shows a short summary of its settings under the heading ("Genetic, 4 workers",
-  "300 × 300 mm, kerf 0.1 mm (compensated), SVG"), which a screen reader hears with the heading's button. Closing
-  Plate & cutting brings the parts list up beside the results (656 px higher in a 1280 px wide window, 735 px at
-  320 px). The mm/in switch stays usable while it's closed, and an error in one of its fields opens it again.
-
-## 1.3.44-beta
-
-- The Parts panel now explains the padlock button on each part: each click moves to the next setting, free (turns at
-  the Rotation step), grain (0° or 180° only, no turn in Bounding box) and locked (never turns) (#345).
-
-## 1.3.43-beta
-
-- Parts can be set to follow a grain direction (#7). Each part's orientation button now cycles through three states,
-  each with its own icon:
+- Parts can be set to follow a grain direction (#7). Each part's orientation button cycles through three states, each
+  with its own icon:
   - **free**: the part turns at the Rotation step;
   - **grain**: the part turns only end for end, 0° or 180°, so wood grain or brushed metal runs the same way on every
     copy. In Bounding box mode it isn't turned at all.
@@ -52,235 +19,97 @@ a major rewrite of what the app does or how it works.
 
   Both search methods and the worker pool keep grain parts to 0° and 180°. A part left out because it fits only turned
   90° says so. A grain part's outline on the plate preview is labeled "(grain)". The button's name says its state
-  ("Orientation of star.svg: grain, 0° or 180° only"), and a change is announced. Free and locked parts nest exactly
-  as before.
-
-## 1.3.42-beta
-
-- A genetic search, as an alternative to the order walk, in True shape (#5). The box above Plate & cutting is now
-  **Search**: **Method** picks Order walk (the default, unchanged) or Genetic, and **Workers** is the worker pool as
-  before.
+  ("Orientation of star.svg: grain, 0° or 180° only"), and a change is announced. A line under the parts list explains
+  the three states (#345). Free and locked parts nest exactly as before.
+- A genetic search, as an alternative to the order walk, in True shape (#5). **Method** in **Search Options** picks
+  Order walk (the default) or Genetic.
   - Genetic keeps 20 layouts, each an order and one fixed angle per part, and breeds new ones from the best. Pinning
     the angles makes each layout quicker to try, so it tries 3–4× as many at 90° steps and up to 20× as many at 15°.
     When it stops improving, it restarts from shaken copies of its best layout.
-  - Over 10 jobs (8 seeds, 4 s and 30 s, 90° and 15°), it did better than the order walk in 73 runs and worse in 22
-    with one worker, and 74 and 14 with four. On the nesting fixtures at 15° with one worker it used 1.0–1.1 plates on
-    average against 1.9 for the order walk, and it filled the 120-part job with holes much better (0.828 against
-    0.802 at 90°, 30 s).
-  - It can do slightly worse at 90° steps. The README says where.
+  - Over 10 jobs (8 seeds, 4 s and 30 s, 90° and 15°, measured on 1.3.42-beta), it did better than the order walk in
+    73 runs and worse in 22 with one worker, and 74 and 14 with four. On the nesting fixtures at 15° with one worker
+    it used 1.0–1.1 plates on average against 1.9 for the order walk, and it filled the 120-part job with holes much
+    better (0.828 against 0.802 at 90°, 30 s). After the speedups below, in 4 s searches with one worker, it did
+    better in 33 runs and worse in 9 (#356). It can do slightly worse at 90° steps; the README says where.
   - It works with the worker pool (one layout per worker per step) and on the page when no worker is available, and
     "Search 30 s more" continues it.
+- **Search Options** (formerly the worker pool box) and **Plate & cutting** open and close from their headings (#344,
+  #347). Search Options starts closed and Plate & cutting open; each one's state is remembered with the other
+  settings. A closed box shows a short summary of its settings under the heading ("Genetic, 4 workers",
+  "300 × 300 mm, kerf 0.1 mm (compensated), SVG"), which a screen reader hears with the heading's button. Closing
+  Plate & cutting brings the parts list up beside the results (656 px higher in a 1280 px wide window, 735 px at
+  320 px). The mm/in switch stays usable while it's closed, and an error in one of its fields opens it again.
 
-## 1.3.41-beta
+### Changed
+
+- True-shape searches try many more layouts in the same time (#349, #350, #351). A shape with no room on a plate
+  isn't tried there again as more parts go on it, a layout that starts like a recent one picks up from that one's
+  plates, and each plate keeps the free space it has for each part shape, taking away only the parts added since.
+  Layouts tried in a 4 s search of the sample parts, measured in two steps: Order walk 168 → 256 → 603 at 90° and
+  8 → 16 → 22 at 15°; Genetic 564 → 724 → 986 at 90° and 227 → 295 → 317 at 15°; with 4 workers, Order walk
+  644 → 981 → 2547 at 90° and Genetic 266 → 305 → 331 at 15°. The first layout of a 120-part job comes 1.25–1.9×
+  sooner. Layouts can differ from before by rounding (at most 1 µm, on 2 of 120 parts in the tests); over 160 timed
+  searches (10 jobs, both methods, 8 seeds) 39 found a better layout and none a worse one.
+- Plate size, kerf, gap and edge margin refuse values over 100,000 mm with a message under the field ("Plate width
+  can be at most 100000 mm; still using 300 mm."), the same limit saved settings are checked against (#285). Before,
+  150000 was accepted and saved, then silently replaced by the default on the next visit.
+
+### Fixed
 
 - The search pauses every 30 ms however short each layout attempt is (#340). Searching on the page, when no
   background worker is available, froze it for up to a second at a time (longest gaps 1054 ms and 912 ms in a 3 s
   search); the longest is now 74 ms. In a worker, a new search right after Stop started at once instead of waiting up
   to 6 s for the stopped one to notice.
-
-## 1.3.40-beta
-
-- RELEASING.md describes the fixture regression that CLAUDE.md requires for structural changes (#280): which two
-  builds to compare, how each is prepared to run from a file, what is exported (every fixture alone, SVG and DXF,
-  compensation off and on, plus six nests of the sample parts), and the only two differences the comparison ignores.
-
-## 1.3.39-beta
-
-- The README's accessibility section gives the mm / in buttons' measured height, 24 px, instead of 22 px (#277).
-
-## 1.3.38-beta
-
-- The README's Area minimum definition matches the status line in both modes (#276). In True shape, the holes of
-  parts set to nest other parts inside them are left out. In Bounding box mode, it counts the parts' bounding
-  rectangles grown by the spacing.
-
-## 1.3.37-beta
-
-- The blind-review prompt in RELEASING.md now covers the string table (`app/strings-en.js`), RELEASING.md itself, the
-  QA workbook tool and its workbooks, and runs `python3 tools/qa_workbooks.py --check` next to the build check
-  (#278).
-
-## 1.3.36-beta
-
-- CLAUDE.md now says the QA workbooks move to a release once it is tagged, as RELEASING.md does, since the workbooks
-  link the tag's source zip (#275).
-
-## 1.3.35-beta
-
-- QA workbook test 14 says the pin-hole notice appears when the plate is downloaded, which is when the app shows it,
-  instead of when `kerf-test.svg` is added (#274). All six workbooks in `qa/` are regenerated.
-
-## 1.3.34-beta
-
 - Colors are exported right whatever syntax the file uses (#317, #284). A 50%-transparent fill was cut as fully
   opaque; it now carries `fill-opacity="0.5"`. `oklch()`, `color()`, `lab()` and other newer forms were written into
   the SVG as they were and became DXF layers like `OKLCH_0_6_0_2_30_` with the default color; they are now converted
   to hex (`oklch(0.6 0.2 30)` → `#de3e2d`, DXF layer `DE3E2D`, ACI 22). Fully transparent paint counts as none in
-  every syntax. One color parser replaces the three that disagreed.
-
-## 1.3.33-beta
-
-- All the text the app shows comes from the string table or carries a page key (#279). The kerf calculator's first
-  "Kerf: –" and the Efficiency label are filled from the table when the page opens instead of being fixed English in
-  the page, the DXF format option has a key, and a search worker that fails without a message of its own reports it
-  through a library message code, `search.workerFailed` ("Nesting stopped after an error: the search worker
-  stopped"). The English page is unchanged.
-
-## 1.3.32-beta
-
-- The ↗ after links that open a new tab also shows in browsers older than Firefox 128 and Safari 17.4, which the
-  README lists as supported (#297). They dropped the whole declaration; they now get the plain arrow, and newer
-  browsers keep it out of the link's name as before.
-
-## 1.3.31-beta
-
-- Text from the string table is escaped wherever the app writes it into markup (#298), so a translation containing
-  a quote, `<` or `&` can't break a button's label or tooltip or add elements. File names among the values are now
-  escaped once, with the rest of the text. The English page is unchanged.
-
-## 1.3.30-beta
-
-- Internal: the library no longer looks through the page for clipper-lib's `<script>` tag to build its search
-  workers (#295). The app passes the URL and integrity hash to `startWorker({url, integrity})`, from its own
-  `id="clipper-lib"` tag, so renaming or adding scripts can't silently cost the page its worker. No change in
-  behavior.
-
-## 1.3.29-beta
-
-- Internal: the search's time limits are named once (`SEARCH_MS`, 4 s, and `MORE_MS`, 30 s), the "Search 30 s more"
-  label is built from the string table with `MORE_MS`, and the three copies of "drop the layout and search again
-  shortly" are one helper (#290). No change in behavior.
-
-## 1.3.28-beta
-
-- Internal: dead code removed (#294): the dark-theme colors were defined twice (once for a `data-theme` attribute
-  nothing sets), `bounds` was taken from the search core and never used, and the QA workbook generator took a
-  parameter it ignored. No change in behavior: every element's computed colors are identical in light, dark and
-  forced colors, and exports and workbooks are unchanged.
-
-## 1.3.27-beta
-
-- Internal: helpers that existed in two or three copies in `lib/snugcut.js` now exist once: point in polygon, the
-  hidden-ancestor check, the mulberry32 random numbers (now inside the search core and exported from it), the DXF
-  true-color parse, and `25.4` as `IN` (#293). No change in behavior: layouts, random sequences and exports are
-  identical.
-
-## 1.3.26-beta
-
-- `snugcut.html` runs its script in strict mode, as `app/` already does as ES modules, and so does the search worker's
-  own code (#289). Testing `app/` now covers the shipped file: a mistake that throws in one throws in the other. No
-  change in behavior; exports are byte-identical.
-
-## 1.3.25-beta
-
-- `tools/qa_workbooks.py` compares the workbooks' unzipped contents instead of the zip files' bytes, so `--check` no
-  longer reports unchanged workbooks as out of date on a machine whose zlib compresses differently, and a rebuild
-  there doesn't rewrite them (#291). No change to the workbooks.
-
-## 1.3.24-beta
-
-- `tools/build.py` writes `snugcut.html` with `\n` line endings on every platform, and `--check` compares bytes, so a
-  build on Windows can no longer rewrite every line as `\r\n` while `--check` still passes (#292). Output on macOS and
-  Linux is unchanged.
-
-## 1.3.23-beta
-
-- `tools/build.py` drops `'self'` from every CSP directive of `snugcut.html` wherever it stands, not only when a space
-  follows it (#296). The CSP built today is unchanged; a directive ending in `'self'` would have kept it.
-
-## 1.3.22-beta
-
-- When one worker of the pool fails, the searches still running in the others are ended too (#288). Their 50 ms
-  check timers and listeners used to keep running until the next change. No change to what the user sees: the run
-  already stopped with "Nesting stopped after an error".
-
-## 1.3.21-beta
-
-- A field's error message shows the value in use with as many decimals as the field does (#286): with an edge margin
-  of 0.25 mm, typing a letter said "still using 0.3 mm"; it now says 0.25 mm.
-
-## 1.3.20-beta
-
-- Plate size, kerf, gap and edge margin refuse values over 100,000 mm with a message under the field ("Plate width
-  can be at most 100000 mm; still using 300 mm."), the same limit saved settings are checked against (#285). Before,
-  150000 was accepted and saved, then silently replaced by the default on the next visit.
-
-## 1.3.19-beta
-
-- A failed download says so: "The download failed: …" appears as an error notice, for **Download all** and for single
-  plates (#287). Before, a failure in building the zip or a plate file did nothing visible.
-
-## 1.3.18-beta
-
-- The Kerf, Designed and Measured fields in the blue kerf box have borders at least 3:1 against the box (#273):
-  4.78:1 in the light theme and 5.50:1 in the dark, up from 2.88:1 and 2.69:1.
-
-## 1.3.17-beta
-
-- In Windows high contrast (forced colors), a pressed **Lock** or **Nest parts inside the holes** button shows the
-  keyboard focus ring (#266). Its pressed state used the same outline as the focus ring, so focused and unfocused
-  looked the same. A pressed button is now filled in the highlight color, as the pressed Nesting mode and Units
-  toggles are, and the focus ring shows around it in the system text color.
-
-## 1.3.16-beta
-
-- With the worker pool on, a starting layout that Stop (or the time limit) cuts short is packed by "Search 30 s
-  more", as with one worker (#270). It used to be dropped, so Search more went straight to random tries and could
-  miss a better starting layout.
-
-## 1.3.15-beta
-
+  every syntax.
 - Markers on a path (arrowheads, dots set with `marker-start`, `marker-mid` or `marker-end`) are no longer lost
   (#281). The export left them out with no notice, and nesting gave them no room. A part with markers is now kept as
   original markup, so the SVG export draws them; nesting reserves room for each marker up to its full size around the
   point it sits on, in both modes; and the DXF export names them in its notes (`dxfOut.markers`).
-
-## 1.3.14-beta
-
 - SVG files saved in an encoding other than UTF-8 are read as their XML declaration says (#269): text in a Latin-1
   or Windows-1252 file came in as `Gr��e` and was engraved that way; it now reads `Größe` and `5€`. Files with a
   byte-order mark, or no declaration, are read as before.
-
-## 1.3.13-beta
-
 - A shape inside a group with `opacity` (or in a file with `opacity` on its root) keeps that opacity in the export,
   as the thumbnail already showed (#267). `<g opacity="0.3">` around a blue rect exported it fully opaque; nested
   opacities multiply, as in a browser.
-
-## 1.3.12-beta
-
 - DXF layer names are matched without regard to case, as in CAD (#268). An entity on `HIDDEN` whose layer table
   entry is `Hidden` (frozen) was cut, in black, with no "left out" notice; now it is left out with the notice, and an
   entity on `ENGRAVE` takes the color of layer `Engrave` instead of black.
+- With the worker pool on, a starting layout that Stop (or the time limit) cuts short is packed by "Search 30 s
+  more", as with one worker (#270). It used to be dropped, so Search more went straight to random tries and could
+  miss a better starting layout.
+- A failed download says so: "The download failed: …" appears as an error notice, for **Download all** and for single
+  plates (#287). Before, a failure in building the zip or a plate file did nothing visible.
+- A field's error message shows the value in use with as many decimals as the field does (#286): with an edge margin
+  of 0.25 mm, typing a letter said "still using 0.3 mm"; it now says 0.25 mm.
+- A search worker that fails without a message of its own says "Nesting stopped after an error: the search worker
+  stopped" (#279).
+- The Kerf, Designed and Measured fields in the blue kerf box have borders at least 3:1 against the box (#273):
+  4.78:1 in the light theme and 5.50:1 in the dark, up from 2.88:1 and 2.69:1.
+- In Windows high contrast (forced colors), a pressed **Lock** or **Nest parts inside the holes** button shows the
+  keyboard focus ring (#266). A pressed button is now filled in the highlight color, as the pressed Nesting mode and
+  Units toggles are, and the focus ring shows around it in the system text color.
+- The ↗ after links that open a new tab also shows in browsers older than Firefox 128 and Safari 17.4, which the
+  README lists as supported (#297).
 
-## 1.3.11-beta
+### Security
 
-- **Security:** crafted outlines no longer freeze the page (#271). A 160 KB SVG zigzag of 20,000 teeth froze the tab
-  for 94 s after it was added; the page now blocks for at most 255 ms. A thin outline that the nesting simplifies to a
-  line was grown by the spacing point by point: it now keeps a simplified copy within the same tolerance. Lines that
-  cross each other more than 10,000 times, or open zigzags with thousands of turns, would take Clipper seconds to
-  minutes to trace (a DXF spline crossing itself took 22 s at 2,000 control points): such a part is nested by the
-  shape around all of it, with a notice, and exported as drawn. A file whose curves would be sampled into more than
-  2,000,000 points is refused with a message (`svg.tooManyPoints`). Ordinary files measure and nest exactly as before.
-
-## 1.3.10-beta
-
-- **Security:** a crafted SVG with a long run of `--name:` text in a style sheet or an attribute no longer freezes the
-  page while it is added (#272). The check for CSS custom properties holding a string backtracked quadratically: a
-  300 KB file took 8.7 s, and 1 MB would take about 95 s. It now checks one declaration at a time, with the same
-  results: that file is added in 14 ms.
-
-## 1.3.9-beta
-
-- The blind review's **Best practices** reviewer covers project structure, build and dependency hygiene, testability
-  and operational defaults too, and cites a source for each practice (#306). Its findings stay at info severity, and
-  one that shares a root cause with another reviewer's finding is merged into it. No change to the app.
-
-## 1.3.8-beta
-
-- The release blind review gains a fifth blind reviewer, **Best practices** (#282), launched with the other four. It
-  checks how the code is written (deprecated APIs, error handling and cleanup, duplicated rules, dead code, the repo's
-  own conventions) and files every finding as `best-practice`, `code-review`, `severity:info`. No change to the app.
+- Crafted outlines no longer freeze the page (#271). A 160 KB SVG zigzag of 20,000 teeth froze the tab for 94 s after
+  it was added; the page now blocks for at most 255 ms. A thin outline that the nesting simplifies to a line was grown
+  by the spacing point by point: it now keeps a simplified copy within the same tolerance. Lines that cross each other
+  more than 10,000 times, or open zigzags with thousands of turns, would take Clipper seconds to minutes to trace (a
+  DXF spline crossing itself took 22 s at 2,000 control points): such a part is nested by the shape around all of it,
+  with a notice, and exported as drawn. A file whose curves would be sampled into more than 2,000,000 points is
+  refused with a message (`svg.tooManyPoints`). Ordinary files measure and nest exactly as before.
+- A crafted SVG with a long run of `--name:` text in a style sheet or an attribute no longer freezes the page while it
+  is added (#272). The check for CSS custom properties holding a string backtracked quadratically: a 300 KB file took
+  8.7 s, and 1 MB would take about 95 s. It now checks one declaration at a time, with the same results: that file is
+  added in 14 ms.
+- Text from the string table, and file names among its values, is escaped wherever the app writes it into markup
+  (#298), so a translation containing a quote, `<` or `&` can't break a button's label or tooltip or add elements.
 
 ## 1.3.0-beta
 
