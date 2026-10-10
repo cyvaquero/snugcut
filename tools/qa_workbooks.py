@@ -15,7 +15,7 @@ Python 3, standard library only.
 import io, os, re, sys, zipfile
 from xml.sax.saxutils import escape
 
-VERSION = "1.2.1-beta"   # the release under test: the tag whose source zip testers download
+VERSION = "1.4.0-beta"   # the release under test: the tag whose source zip testers download
 REPO = "https://github.com/cyvaquero/snugcut"
 
 APPS = [
@@ -246,7 +246,8 @@ TESTS = [
         (22, "Kerf, DXF", "#36, #32", [
             "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects** again.",
             "Add `test-cuts/kerf-test.svg`, download the plate and import it. The download says kerf compensation is "
-            "built in and that filled areas are written as their outlines.",
+            "built in, that filled areas are written as their outlines, and that a hole in `kerf-test.svg` is narrower "
+            "than the kerf, so it was left as drawn (the pin hole).",
             "Afterwards set kerf back to 0.1 mm, untick compensation and set **Export format** back to SVG.",
         ], [
             "The same sizes as test 14: a 20.2 × 20.2 mm outline, a 9.8 mm square hole and a 5.8 mm round hole.",
