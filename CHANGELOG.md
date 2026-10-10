@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.3-beta
+
+- Cuts inside a window are made before the window, even when they share a line style with the part's outline (#361).
+  A black outline and a black disc inside a red window cut the window first, so its slug could drop or shift with the
+  disc still uncut; the export now cuts the disc, then the window, then the outline, in SVG and DXF. Files whose cut
+  order was already right export exactly as before.
+
 ## 1.4.2-beta
 
 - **Security:** comments and processing instructions in an imported SVG are removed, so they no longer reach the

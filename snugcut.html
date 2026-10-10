@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WPPNwqz52eurx6LDfsgWp9bgBCpLgQfFSSRNbkOhcmI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fafLautF3z1RV137VbP1+eNOGvcQ+f/zsocYXI+svvk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.2-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.3-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1463,11 +1463,29 @@ function cutGroups(p, flat, sc, byLayer = false){
     if (!groups.has(key)) groups.set(key, {it, fill:it.fill !== "none", order:groups.size, subs:[]});
     groups.get(key).subs.push(sub);
   }
-  return [...groups.values()].map(g => {
+  const order = (x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order;
+  const gs = [...groups.values()].map(g => {
     g.subs = g.subs.slice().sort((x, y) => y.depth - x.depth);   // stable sort keeps source order within a depth
     g.depth = Math.min(...g.subs.map(s => s.depth));
     return g;
-  }).sort((x, y) => y.depth - x.depth || x.fill - y.fill || x.order - y.order);
+  }).sort(order);
+  // that order cuts every subpath before the ones around it unless a style spans depths another style sits between: an
+  // outline and an island in black with a red window between them cut the window first, island still inside (#361).
+  // Then each style is split into runs of one depth, ordered deepest first, and neighboring runs of a style rejoined.
+  let lo = Infinity, ok = true;
+  for (const g of gs) { if (g.subs[0].depth > lo) { ok = false; break; } lo = Math.min(lo, g.depth); }
+  if (ok) return gs;
+  const runs = [];
+  for (const g of gs) for (const s of g.subs) {
+    const r = runs.find(r => r.src === g && r.depth === s.depth);
+    if (r) r.subs.push(s); else runs.push({src:g, it:g.it, fill:g.fill, order:g.order, depth:s.depth, subs:[s]});
+  }
+  const out = [];
+  for (const r of runs.sort(order)) {
+    const last = out[out.length - 1];
+    if (last && last.src === r.src) { last.subs.push(...r.subs); last.depth = r.depth; } else out.push(r);
+  }
+  return out;
 }
 function flattenCubic(p0, p1, p2, p3, tol, pts, depth = 0){
   // adaptive subdivision until the control points are within tol of the chord; pushes the end points of the pieces
