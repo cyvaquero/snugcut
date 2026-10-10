@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.13-beta
+
+- **Security:** a DXF block array no longer re-reads its insert's settings for every cell (#370). A 180 KB file with a
+  300 × 300 array and 20,000 padding codes took 4.6 s to add; it now takes 0.09 s, with the same result. One that
+  passes the 250,000-item limit is refused in 0.06 s instead of 6 s.
+
 ## 1.4.12-beta
 
 - **Security:** a crafted DXF spline is refused as soon as it passes the 2,000,000-point limit (#369). Its points were
