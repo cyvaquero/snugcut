@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.2-beta
+
+- **Security:** comments and processing instructions in an imported SVG are removed, so they no longer reach the
+  exported SVG (#360). A comment such as `<!--><b>…</b>-->` is inert as XML, but software that reads the export as HTML
+  ended it early and turned the markup inside into live elements. They carry nothing that is cut.
+
 ## 1.4.1-beta
 
 - The genetic search no longer leaves out parts that fit the plate only at some angles (#359). It could pin such a part
