@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.1-beta
+
+- The genetic search no longer leaves out parts that fit the plate only at some angles (#359). It could pin such a part
+  to an angle where it doesn't fit, drop it, and count the layout with fewer plates as better: two 90 × 50 mm parts on a
+  100 × 60 mm plate came out as 1 plate with 1 part, and a 13-part job lost 1–5 parts on every seed. Each part's angles
+  are now only those it fits the plate at, and no search prefers a layout with a part missing to a complete one.
+  Layouts where every angle fits are unchanged.
+
 ## 1.4.0-beta
 
 Release of 1.3.8-beta through 1.3.48-beta.

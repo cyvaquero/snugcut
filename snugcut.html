@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-984cg7BbbugYtgmsuxZVQYQ7IHK2QqH+YaG2vnMaki4=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mStiPi0yCJSfkmFfmJLqubroNUCBMvd6cihJqF25meU=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.1-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -2027,7 +2027,12 @@ function nestCore(CL, SC, hooks){
     if (memos.length > MEMO_MAX) memos.shift();
     return bins;
   }
-  function score(bins, plateA){ let sq = 0; for (const b of bins) { const u = b.area / plateA; sq += u*u; } return [bins.length, -sq]; }
+  // [plates, −Σ fill²]: fewer plates first, then fuller ones. n, the number of items packed: a layout that left any out
+  // counts a million plates per missing item, so no search can prefer it to a complete one (#359)
+  function score(bins, plateA, n){
+    let sq = 0, placed = 0; for (const b of bins) { const u = b.area / plateA; sq += u*u; placed += b.items.length; }
+    return [bins.length + (n != null && placed < n ? (n - placed) * 1e6 : 0), -sq];
+  }
   const better = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1] - 1e-9);
   function container(items, j){
     // the part whose hole item j was placed in (the innermost one), or null: its cuts must all come first (#3)
@@ -2072,7 +2077,7 @@ function nestCore(CL, SC, hooks){
       const order = st.pending.shift();
       const bins = await pack(items, order, angPick, F, pause);
       st.tried++;
-      const sc = score(bins, plateA);
+      const sc = score(bins, plateA, items.length);
       if (!st.bestScore || better(sc, st.bestScore)) { st.bestOrder = order; st.bestScore = sc; o.onBest(bins, sc); }
       o.onStep();
     }
@@ -2089,7 +2094,7 @@ function nestCore(CL, SC, hooks){
       if (o.onDraw) o.onDraw();
       const bins = await pack(items, ord, angPick, F, pause);
       st.tried++;
-      const sc = score(bins, plateA);
+      const sc = score(bins, plateA, items.length);
       if (!better(curScore, sc)) { cur = ord; curScore = sc; }
       if (better(sc, st.bestScore)) { st.bestOrder = ord; st.bestScore = sc; o.onBest(bins, sc); }
       o.onStep();
@@ -2111,11 +2116,16 @@ function nestCore(CL, SC, hooks){
   async function gaLoop(st, o){
     const {items, F, plateA, minPlates, ms, t0, angPick, pause} = o;
     const batch = o.batch || 1, n = items.length, idx = new Map(items.map((it, i) => [it, i]));
-    const all = items.map(it => angPick(it));
+    // each item's candidate angles: only those it fits an empty plate at, so a pinned angle never leaves it out (#359)
+    const fitting = new Map(), all = items.map(it => {
+      const A = angPick(it), key = A.join() + "|" + it.part.uid;
+      if (!fitting.has(key)) fitting.set(key, A.filter(a => bestPos(newBin(), shape(it.part, a), F)));
+      return fitting.get(key);
+    });
     const local = async ind => {
       const chosen = new Array(n), pick = it => { const k = idx.get(it), g = ind.genes[k]; return g == null ? all[k] : [g]; };
       const bins = await pack(items, ind.order, pick, F, pause, chosen);
-      return {score:score(bins, plateA), chosen, bins};
+      return {score:score(bins, plateA, n), chosen, bins};
     };
     const evaluate = async inds => {
       let rs;
@@ -2270,7 +2280,7 @@ function searchWorker(self, nestCore, SC){
         const {items, F, plateA} = job, chosen = new Array(items.length);
         const pick = it => { const g = m.genes[job.idx.get(it)]; return g == null ? it.part.angs : [g]; };
         const bins = await core.pack(items, m.order, pick, F, pause(m.id), chosen);
-        self.postMessage({type:"packed", id:m.id, score:core.score(bins, plateA), chosen, bins:placements(bins)});
+        self.postMessage({type:"packed", id:m.id, score:core.score(bins, plateA, items.length), chosen, bins:placements(bins)});
       } catch(err) { if (err !== ABORT) self.postMessage({type:"error", id:m.id, message:String(err && err.message || err)}); }
       return;
     }
