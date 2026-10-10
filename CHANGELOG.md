@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.47-beta
+
+- True-shape searches are faster again (#351): each plate keeps the free space it has for each part shape, and takes
+  away only the parts added since, instead of working it out from every part on the plate each time. Layouts tried in
+  a 4 s search of the sample parts at 90°: Order walk 251 → 603, Genetic 711 → 986, Order walk with 4 workers 985 →
+  2547. The first layout of a 120-part job comes 1.25–1.9× sooner. Layouts can differ from before by rounding (at most
+  1 µm, on 2 of 120 parts in the tests); over 160 timed searches (10 jobs, both methods, 8 seeds) 39 found a better
+  layout and none a worse one.
+
 ## 1.3.46-beta
 
 - True-shape searches try more layouts in the same time, with the same layouts for a given number of tries (#349,
