@@ -245,7 +245,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the orientation icon is an open
   lock, wavy grain lines or a closed lock to match (grain and locked filled like a pressed toggle), the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
   behind the parts' own colors, so they stay visible in dark themes.
-- **Contrast**: text meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
+- **Contrast**: text, including placeholder text, meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
   the plate edge, the "no holes" icon and the guide lines on the plate previews are at least 3:1. Text buttons have
   faint borders and are recognized by their labels.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
