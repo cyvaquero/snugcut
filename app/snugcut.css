@@ -79,7 +79,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 }
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
-.icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.icon[aria-pressed=true],.icon.lk:not([data-state=free]){background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 /* stand-in: the part has no holes (#141). Subdued, but its slashed frame says "no holes", so it keeps 3:1 against its
    background in both themes (#176) */
 .icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.75;cursor:default}
@@ -138,8 +138,8 @@ footer a,header p a{color:var(--accent)}
 @media (forced-colors: active){
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
   /* filled like the pressed toggles, so the outline stays free for the focus ring (#266) */
-  .icon[aria-pressed=true]{background:Highlight;color:HighlightText;border-color:Highlight;forced-color-adjust:none}
-  .icon[aria-pressed=true]:focus-visible{outline-color:CanvasText}
+  .icon[aria-pressed=true],.icon.lk:not([data-state=free]){background:Highlight;color:HighlightText;border-color:Highlight;forced-color-adjust:none}
+  .icon[aria-pressed=true]:focus-visible,.icon.lk:not([data-state=free]):focus-visible{outline-color:CanvasText}
   .icon.nohole{color:GrayText;border-color:GrayText;opacity:1}
   /* the parts are drawn in their own colors inside <img>, so keep the tan plate behind them: forced colors turned it
      into Canvas, black on black in dark themes (#157) */

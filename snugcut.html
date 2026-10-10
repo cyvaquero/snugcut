@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fv1J9WLGqxI4HY0P6XPdmdUz6CT4fXSqV67j5tMZNvA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5zLwVIGl4FIVm6zZagJ3FBPPfv0zXKlnCKame/edevg=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -93,7 +93,7 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 }
 .ql{font-size:11px;line-height:1;color:var(--muted)}
 .icon{width:28px;height:28px;border-radius:6px;border:1px solid var(--field);background:var(--surface);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
-.icon[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.icon[aria-pressed=true],.icon.lk:not([data-state=free]){background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 /* stand-in: the part has no holes (#141). Subdued, but its slashed frame says "no holes", so it keeps 3:1 against its
    background in both themes (#176) */
 .icon.nohole{color:var(--nohole);border-color:var(--nohole);opacity:.75;cursor:default}
@@ -152,8 +152,8 @@ footer a,header p a{color:var(--accent)}
 @media (forced-colors: active){
   .unitsw button[aria-pressed=true],.modesw button[aria-pressed=true]{background:Highlight;color:HighlightText;forced-color-adjust:none}
   /* filled like the pressed toggles, so the outline stays free for the focus ring (#266) */
-  .icon[aria-pressed=true]{background:Highlight;color:HighlightText;border-color:Highlight;forced-color-adjust:none}
-  .icon[aria-pressed=true]:focus-visible{outline-color:CanvasText}
+  .icon[aria-pressed=true],.icon.lk:not([data-state=free]){background:Highlight;color:HighlightText;border-color:Highlight;forced-color-adjust:none}
+  .icon[aria-pressed=true]:focus-visible,.icon.lk:not([data-state=free]):focus-visible{outline-color:CanvasText}
   .icon.nohole{color:GrayText;border-color:GrayText;opacity:1}
   /* the parts are drawn in their own colors inside <img>, so keep the tan plate behind them: forced colors turned it
      into Canvas, black on black in dark themes (#157) */
@@ -276,7 +276,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.42-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.43-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -937,7 +937,7 @@ function parseSVG(text, name){
   host.setAttribute("viewBox", `0 0 ${W} ${H}`); host.setAttribute("width", W); host.setAttribute("height", H);
   host.appendChild(g);
   let bb, rings;
-  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, stripped};
+  const p = {uid, name, inner, rootAttrs, vb, wAttr:root.getAttribute("width"), hAttr:root.getAttribute("height"), par:root.getAttribute("preserveAspectRatio"), qty:1, lock:false, grain:false, stripped};
   try {
     const pct = fixPercents(g);
     const inl = inlineSheets(g);
@@ -2168,8 +2168,10 @@ const isCurrent = token => token === runToken;
 // yield to the page between pack chunks. The ~4 ms that nested setTimeout(0) idles is what lets the page paint: an
 // unclamped yield (a message) left it painting about twice a second during a search (#146)
 const tick = () => new Promise(r => setTimeout(r, 0));
+// a part's angles: one locked keeps 0°, one with grain (wood, brushed metal) turns only end for end, 0° or 180° (#7)
 const angleList = p => {
   if (p.lock || !S.rotStep) return [0];
+  if (p.grain) return [0, 180];
   const out = []; for (let a = 0; a < 360; a += S.rotStep) out.push(a); return out;
 };
 /* both modes produce plates of placements: {part, x, y (mm), ang (deg), rx, ry (anchor, user units), env (preview polygons, mm)} */
@@ -2429,7 +2431,7 @@ function computeRectLayout(parts){
   for (const p of parts) {
     if (!p.qty) continue;
     if (!rectFits(p)) { oversize.push(p); continue; }
-    for (let k = 0; k < p.qty; k++) items.push({part:p, w:p.wMM + s + 2*kerfC(p), h:p.hMM + s + 2*kerfC(p), area:p.wMM*p.hMM, rot:S.rotate && !p.lock});
+    for (let k = 0; k < p.qty; k++) items.push({part:p, w:p.wMM + s + 2*kerfC(p), h:p.hMM + s + 2*kerfC(p), area:p.wMM*p.hMM, rot:S.rotate && !p.lock && !p.grain});
   }
   const noArea = S.plateW - 2*S.margin <= 0 || S.plateH - 2*S.margin <= 0;
   if (!items.length || W <= 0 || H <= 0) return {plates:[], oversize, minPlates:0, noArea};
@@ -2481,7 +2483,8 @@ function efficiency(plates){
 function rectFits(p){
   const bw = S.plateW - 2*S.margin - 2*kerfC(p), bh = S.plateH - 2*S.margin - 2*kerfC(p);
   const a = p.wMM <= bw + 1e-9 && p.hMM <= bh + 1e-9;
-  const b = !p.lock && S.rotate && p.hMM <= bw + 1e-9 && p.wMM <= bh + 1e-9;
+  // a grain part isn't turned 90° either: 180° gives the same rectangle, so it keeps 0° (#7)
+  const b = !p.lock && !p.grain && S.rotate && p.hMM <= bw + 1e-9 && p.wMM <= bh + 1e-9;
   return a || b;
 }
 
@@ -2669,8 +2672,8 @@ const EN = {
   "part.holesTitle": "Nest other parts inside this part's holes (only if every closed inner outline is cut, not scored)",
   "part.holesLabel": "Nest parts inside the holes of {name}",
   "part.noHoles": "No holes to nest parts in",
-  "part.lockTitle": "Lock orientation (no rotation)",
-  "part.lockLabel": "Lock orientation of {name}",
+  "part.orientTitle": "{state, select, free {Free to rotate. Click for grain: 0° or 180° only} grain {Grain: 0° or 180° only. Click to lock: no rotation} other {Locked: no rotation. Click to free it}}",
+  "part.orientLabel": "Orientation of {name}: {state, select, free {free to rotate} grain {grain, 0° or 180° only} other {locked, no rotation}}",
   "part.removeTitle": "Remove",
   "part.removeLabel": "Remove {name}",
   "part.readIn": "{name} read in {units, select, in {inches} other {millimeters}}: {w} × {h} {unit}.",
@@ -2687,11 +2690,14 @@ const EN = {
   "stat.effNone": "Efficiency",
   "layout.oversize": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins. It was left out.",
   "layout.oversizeBbox": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins in either orientation. It was left out.",
+  "layout.oversizeGrain": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins at 0° or 180°, the only angles its grain allows. It was left out.",
+  "layout.oversizeGrainBbox": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins without turning it 90°, which its grain doesn't allow. It was left out.",
   "layout.oversizeRot": "{name} ({w} × {h} {unit}) doesn't fit inside the plate's margins at any allowed rotation. It was left out.",
   "layout.addFiles": "Add SVG or DXF files to see them nested on plates.",
   "layout.setQty": "Set a quantity above zero to place parts.",
   "layout.nonePlaced": "No parts could be placed.",
   "plate.rotated": "{name} (rotated {ang}°)",
+  "plate.grain": "{name} (grain{ang, select, 0 {} other {, rotated {ang}°}})",
   "plate.alt": "Plate {i} of {n}: {parts, plural, one {# part} other {# parts}}, {fill} utilization",
   "plate.line": "{name} × {n}",
   "plate.lineRot": "{name} × {n} ({rots})",
@@ -2975,6 +2981,16 @@ function restart(){ restartSoon(250, true); }
 const ICON_LOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 // open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
 const ICON_UNLOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
+// grain (#7): wavy lines along X, a third shape, so each orientation state shows without color
+const ICON_GRAIN = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4.5c2-1.5 4 1.5 6 0s4 1.5 6 0M2 8c2-1.5 4 1.5 6 0s4 1.5 6 0M2 11.5c2-1.5 4 1.5 6 0s4 1.5 6 0"/></svg>`;
+// a part's orientation (#7): free to rotate, grain (0° or 180° only), or locked (0°); the button cycles through them
+// in that order. Three states don't fit aria-pressed, so the button's name says the state, and a change is announced
+const orient = p => p.lock ? "lock" : p.grain ? "grain" : "free";
+const ORIENT_ICON = {free:ICON_UNLOCK, grain:ICON_GRAIN, lock:ICON_LOCK};
+const orientBtn = (el, p) => {
+  const state = orient(p); el.dataset.state = state; el.innerHTML = ORIENT_ICON[state];
+  el.title = t("part.orientTitle", {state}); el.setAttribute("aria-label", t("part.orientLabel", {name: p.name, state}));
+};
 // a part's holes open to other parts (#3): an empty frame when off, a frame with a part inside when on
 const ICON_HOLE = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="5.5" y="5.5" width="5" height="5" rx="1" stroke-dasharray="2 1.5"/></svg>`;
 const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
@@ -2991,7 +3007,7 @@ function renderParts(){
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${th(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${th("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${th("part.inches")}</option></select></div>` : ""}</div>
       <div class="qw"><span class="ql" id="ql-${p.uid}">${th("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${th("part.lockTitle")}" aria-label="${th("part.lockLabel", {name: p.name})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
+      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk"></button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
@@ -3003,7 +3019,11 @@ function renderParts(){
     if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
     if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; restartSoon(250); };
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; restartSoon(250); };
+    orientBtn(lk, p);
+    lk.onclick = () => {
+      const next = {free:"grain", grain:"lock", lock:"free"}[orient(p)];
+      p.grain = next === "grain"; p.lock = next === "lock"; orientBtn(lk, p); say(lk.getAttribute("aria-label")); restartSoon(250);
+    };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -3023,11 +3043,11 @@ function updateCount(){
   $("partCount").textContent = t("parts.count", {files: parts.length, n});
 }
 // a DXF file that doesn't declare its units is read again in the units the user picks (#90); the part keeps its place,
-// quantity and lock
+// quantity and orientation
 function reunit(p, units){
   try {
     const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
-    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, grain:p.grain, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
@@ -3115,14 +3135,15 @@ function drawLayout(){
   $("sEffK").textContent = E ? t("stat.effLabel", {eff: pct(E.eff)}) : t("stat.effNone");
   const msg = text => { const m = document.createElement("div"); m.className = "msg"; m.textContent = text; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
-  for (const p of L.oversize) msg(t(!p.lock && canRot ? (bbox ? "layout.oversizeBbox" : "layout.oversizeRot") : "layout.oversize", {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
+  const tooBig = p => p.lock || !canRot ? "layout.oversize" : p.grain ? (bbox ? "layout.oversizeGrainBbox" : "layout.oversizeGrain") : bbox ? "layout.oversizeBbox" : "layout.oversizeRot";
+  for (const p of L.oversize) msg(t(tooBig(p), {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
   if (L.noArea) msg(t("run.noArea"));
   // when nothing was placed, say why only if no message above already does (#84)
   if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${th(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const ratio = pl.area / plateA, fill = pct(ratio);
-    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? th("plate.rotated", {name: it.part.name, ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.part.grain ? th("plate.grain", {name: it.part.name, ang: it.ang}) : it.ang ? th("plate.rotated", {name: it.part.name, ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
     // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed

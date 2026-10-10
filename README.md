@@ -120,8 +120,12 @@ Settings are remembered in this browser (local storage) and restored next time.
   more than one plate.
 - **Export format**: SVG, or DXF (R12, mm).
 
-In the parts list, each file has a **quantity** (0 leaves it out), a **Lock orientation** button that stops that part
-from rotating, and a remove button. A few sample parts are loaded at first; they go away when you add your own files.
+In the parts list, each file has a **quantity** (0 leaves it out), an **orientation** button, and a remove button.
+The orientation button cycles through three states, each with its own icon: **free** (an open lock: the part turns at
+the Rotation step), **grain** (wavy lines: the part only turns end for end, 0° or 180°, so wood grain or brushed metal
+runs the same way on every copy; in Bounding box mode it isn't turned at all, since 180° gives the same rectangle), and
+**locked** (a closed lock: 0° only) (#7). A part left out because it fits only turned another way says so, and a
+grain part's outline on the plate preview is labeled "(grain)". A few sample parts are loaded at first; they go away when you add your own files.
 
 **Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
 not on parts kept as original markup);
@@ -155,7 +159,7 @@ What happens to imported files:
 is cut and blue `#0000ff` is score; set any black filled marks to engrave or turn them off. Cut each test from the
 material and with the speed and power you will use, because the kerf changes with all three. Set "Edge margin" and
 "Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), untick **Allow
-90° rotation** (Bounding box), or press each piece's **Lock orientation** button in the parts list.
+90° rotation** (Bounding box), or set each piece's orientation button to locked in the parts list.
 
 | File | Size | What it tells you |
 |---|---|---|
@@ -227,14 +231,16 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use. The kerf field and the "Compensate kerf on objects" checkbox are also described by their
   hints.
-- **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the lock icon is open or closed to
-  match, the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
+- **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the orientation icon is an open
+  lock, wavy grain lines or a closed lock to match (grain and locked filled like a pressed toggle), the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
   behind the parts' own colors, so they stay visible in dark themes.
 - **Contrast**: text meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
   the plate edge, the "no holes" icon and the guide lines on the plate previews are at least 3:1. Text buttons have
   faint borders and are recognized by their labels.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
-  visible "Qty" label, and every button has its own name ("Lock orientation of star.svg", "Download SVG, plate 1 of 2").
+  visible "Qty" label, and every button has its own name ("Orientation of star.svg: grain, 0° or 180° only", "Download SVG, plate 1 of 2").
+  The orientation button has three states, which `aria-pressed` can't express, so its name says the current one and a
+  change is announced.
   Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
   (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
