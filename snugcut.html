@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RnqmxlYbP+1tYSfzD8Z4wtqJDgkrJG7Lo44GrjNrbNQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZXkztReHfpXbJVgX/KK6s7ontn+j/0wXQiezFNJRJk0=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.10-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.11-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2646,12 +2646,15 @@ function plateDXF(plate){
     if (Math.abs(dd) < 1e-12) return null;
     const a2 = ax*ax + ay*ay, b2 = bx*bx + by*by, c2 = cx*cx + cy*cy;
     const ox = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / dd, oy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / dd, r = Math.hypot(ax - ox, ay - oy);
-    const tol = 0.0005 + 3.5e-4 * r;                                      // a cubic quarter circle is within 2.7e-4 × r of the true arc
-    for (const t of [0.15, 0.3, 0.7, 0.85]) { const q = B(t); if (Math.abs(Math.hypot(q[0] - ox, q[1] - oy) - r) > tol) return null; }
-    const tx = p1[0] - p0[0], ty = p1[1] - p0[1];
-    if (Math.abs(tx * (ax - ox) + ty * (ay - oy)) > 0.01 * Math.hypot(tx, ty) * r) return null;   // tangent must be perpendicular to the radius
     const ang = (x, y) => Math.atan2(y - oy, x - ox), wrap = v => v - 2 * Math.PI * Math.round(v / (2 * Math.PI));
     const th = wrap(ang(bx, by) - ang(ax, ay)) + wrap(ang(cx, cy) - ang(bx, by));
+    // the cubic must be the standard cubic of that arc (control points 4/3·tan(θ/4)·r along the tangents) to within
+    // 0.01 mm, the precision the file promises (#366): a tolerance growing with the radius took curves that are only
+    // nearly circular, a 100 × 99.9 mm ellipse quarter 0.036 mm off, as arcs. True circles and arcs, which every SVG
+    // arc, circle and rounded corner is drawn with, match it to rounding
+    const k = 4 / 3 * Math.tan(th / 4), q1 = [ax - k * (ay - oy), ay + k * (ax - ox)], q2 = [cx + k * (cy - oy), cy - k * (cx - ox)];
+    const S = t => { const u = 1 - t; return [u*u*u*ax + 3*u*u*t*q1[0] + 3*u*t*t*q2[0] + t*t*t*cx, u*u*u*ay + 3*u*u*t*q1[1] + 3*u*t*t*q2[1] + t*t*t*cy]; };
+    for (const t of [0.15, 0.3, 0.5, 0.7, 0.85]) { const q = B(t), w = S(t); if (Math.hypot(q[0] - w[0], q[1] - w[1]) > 0.01) return null; }
     return Math.tan(th / 4);
   };
   if (S.outline) emit([[0, 0, 0], [W, 0, 0], [W, H, 0], [0, H, 0]], true, layer("PLATE", "#ff0000"), 1);
