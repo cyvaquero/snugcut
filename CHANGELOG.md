@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.14-beta
+
+- **Security:** the points SnugCut adds around markers count against the 2,000,000-point limit for a file's curves
+  (#376). Each marker added 8 points uncounted, so a file under the limit could bring 8× as many again: five
+  60,000-point polylines with a marker on every point (2.7 million in all) were added. It is now refused with the
+  limit's message.
+
 ## 1.4.13-beta
 
 - **Security:** a DXF block array no longer re-reads its insert's settings for every cell (#370). A 180 KB file with a
