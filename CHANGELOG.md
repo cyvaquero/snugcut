@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.5-beta
+
+- Screen readers hear each announcement once (#363). The announcement regions were atomic, so every new message could
+  make a screen reader read again every message from the last 20 s, such as an orientation change repeated with
+  "Nesting finished…". Only the new message is read now, and a repeated message is still announced.
+
 ## 1.4.4-beta
 
 - A rect's corner radius given as a percentage in CSS (`rect{rx:20%}`) is nested and exported as the browser draws it

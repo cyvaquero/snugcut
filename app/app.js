@@ -517,6 +517,8 @@ function notice(text, err){
 }
 // screen-reader announcements (#93): the live regions stay in the page, and each message is added as a new node so a
 // repeated message is announced again; urgent ones (errors) go to the role="alert" region
+// each message is its own node in the live region, kept 20 s so a repeat is still announced; the regions aren't atomic
+// (status and alert are by default), so only the new node is read, not every message still there (#363)
 function say(text, urgent){ const p = document.createElement("p"); p.textContent = text; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
 
 /* ---------- sample parts ---------- */
