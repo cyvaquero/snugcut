@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.12-beta
+
+- **Security:** a crafted DXF spline is refused as soon as it passes the 2,000,000-point limit (#369). Its points were
+  all computed and stored before the limit was checked: a 55 KB spline took 3.0 s and 523 MB before being refused, and
+  longer ones grew from there. It is now refused after 1.4 s and 117 MB. Splines under the limit are read as before.
+
 ## 1.4.11-beta
 
 - The DXF export writes a curve as a true arc only when it is within 0.01 mm of one, as the file promises (#366). The

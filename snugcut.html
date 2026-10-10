@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZXkztReHfpXbJVgX/KK6s7ontn+j/0wXQiezFNJRJk0=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-phjzeyha0WgZQqGzMABm96ske+AXWPDERJLircfN3N0=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.11-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.12-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -823,6 +823,12 @@ function dxfToSVG(text, name, opts = {}){
             q[j] = q[j].map((v, z) => (1 - al) * q[j - 1][z] + al * v); }
           return [q[p][0] / q[p][2], q[p][1] / q[p][2]];
         };
+        // the points are counted against the limit as they are made, not only when poly() takes them: a crafted spline
+        // with thousands of spans could compute and store tens of millions first (#369). A file refused here would have
+        // been refused by poly() anyway, only later
+        const full = () => fail("dxf.tooManyPoints", {name, limit:PLIMIT});
+        let spans = 0; for (let s = p; s < C.length; s++) if (K[s + 1] > K[s]) spans++;
+        if (points + spans * 16 + 1 > PLIMIT) throw full();
         const us = [], lo = K[p], hi = K[C.length];
         for (let s = p; s < C.length; s++) { if (K[s + 1] <= K[s]) continue; for (let j = 0; j < 16; j++) us.push(K[s] + (K[s + 1] - K[s]) * j / 16); }
         us.push(hi - (hi - lo) * 1e-9);
@@ -834,7 +840,7 @@ function dxfToSVG(text, name, opts = {}){
           return Math.hypot(m[0] - a[0] - t * dx, m[1] - a[1] - t * dy); };
         const refine = (u0, a, u1, b, depth) => {
           const um = (u0 + u1) / 2, m = ev(um);
-          if (depth < 10 && off(a, b, m) > tol) { refine(u0, a, um, m, depth + 1); pts.push(m); refine(um, m, u1, b, depth + 1); }
+          if (depth < 10 && off(a, b, m) > tol) { refine(u0, a, um, m, depth + 1); pts.push(m); if (points + pts.length > PLIMIT) throw full(); refine(um, m, u1, b, depth + 1); }
         };
         const at = us.map(ev);
         at.forEach((q, j) => { if (j) refine(us[j - 1], at[j - 1], us[j], q, 0); pts.push(q); });
