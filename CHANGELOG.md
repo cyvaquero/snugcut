@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.10-beta
+
+- Path data that doesn't start with a moveto (`d="C 10 30 …"`) is treated as browsers treat it, as drawing nothing
+  (#365). It made the DXF download fail ("The download failed"), and the SVG download too with kerf compensation or
+  holes nesting on; without them, the SVG export merged it into the outline's path data, so the outline wasn't drawn
+  either. The rest of the part now exports as usual.
+
 ## 1.4.9-beta
 
 - An SVG whose width or height has a sign is sized as browsers size it (#364). `width="+100mm"` is read as 100 mm; it
