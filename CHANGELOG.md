@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.11-beta
+
+- The DXF export writes a curve as a true arc only when it is within 0.01 mm of one, as the file promises (#366). The
+  check allowed more on larger curves (0.35 mm at a 1 m radius), so a 100 × 99.9 mm ellipse quarter (0.036 mm off) or
+  a shallow curve 300 mm long became circular arcs; they are now written as short straight segments within
+  0.01 mm. Circles, arcs and rounded corners are still written as arcs.
+
 ## 1.4.10-beta
 
 - Path data that doesn't start with a moveto (`d="C 10 30 …"`) is treated as browsers treat it, as drawing nothing
