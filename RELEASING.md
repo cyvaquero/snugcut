@@ -12,7 +12,7 @@ one unasked. If the answer is yes:
 - Look at the hot paths: the nesting and layout search, curve sampling, Clipper offsets, building the export, redraws
   and DOM work, and anything parsed or computed more than once.
 - Measure before and after on the files in `fixtures/` (import time, search speed, layouts tried in a fixed time).
-- Exports must stay **byte-for-byte identical**: run the full fixture regression (every fixture, SVG and DXF,
+- Exports must stay **byte-for-byte identical**: run the full [fixture regression](#fixture-regression) (every fixture, SVG and DXF,
   compensation off and on), as CLAUDE.md requires. The SVG format is verified in WeCreat MakeIT.
 - File each finding as a GitHub issue (see section 3 for the format), then merge into `develop` before cutting the
   release branch.
@@ -37,26 +37,38 @@ asks for a review. Every verified finding becomes a GitHub issue.
 <details>
 <summary>Blind review prompt (paste into Claude Code on the release branch)</summary>
 
-Run a full blind review of this repo (SnugCut: `lib/snugcut.js`, `app/`, the generated `snugcut.html`, `tools/build.py`, docs and fixtures) on the current branch, then open GitHub issues for every verified finding.
+Run a full blind review of this repo (SnugCut: `lib/snugcut.js`, `app/` (including the string table `app/strings-en.js`), the generated `snugcut.html`, `tools/build.py`, `tools/qa_workbooks.py` and the QA workbooks it generates in `qa/`, docs and fixtures) on the current branch, then open GitHub issues for every verified finding.
 
 #### 1. Reviews: blind subagents, run in parallel
-Launch 4 independent subagents in ONE message, in the background. Give each the project context (stack, entry points, the verified SVG export format, the "must not change" rules, American English) and nothing about known issues. Every subagent:
+Launch 5 independent subagents in ONE message, in the background. Give each the project context (stack, entry points, the verified SVG export format, the "must not change" rules, American English) and nothing about known issues. Every subagent:
 - is strictly READ-ONLY on the repo (no edits, commits, branches or pushes) and puts scratch files in its own folder under the scratchpad;
 - is BLIND: it must not read git history/log/diffs, GitHub issues or PRs (no `gh`), CHANGELOG history of prior fixes, or anything under ~/.claude. It judges the code as it is now;
-- reads ALL of lib/snugcut.js and app/ (and checks that snugcut.html is current with `python3 tools/build.py --check`) and verifies findings concretely where it can: run the real functions in headless Chrome (file:// via CDP; use a scratch copy with local or stubbed libs if needed) or a node script, otherwise trace with specific inputs;
+- reads ALL of lib/snugcut.js and app/ (and checks that snugcut.html and the QA workbooks are current with `python3 tools/build.py --check` and `python3 tools/qa_workbooks.py --check`) and verifies findings concretely where it can: run the real functions in headless Chrome (file:// via CDP; use a scratch copy with local or stubbed libs if needed) or a node script, otherwise trace with specific inputs;
 - reports each finding with: one-line title (the defect), severity (critical/high/medium/low/info), category, location (function + line numbers), concrete repro (minimal SVG/DXF snippet where relevant, expected vs actual), root cause, proposed fix, and status (CONFIRMED by running / CONFIRMED by trace / PLAUSIBLE), most severe first. It drops style nits and speculation, groups instances with one root cause, and ends with a short list of what it checked that held up.
 
-The four reviewers:
+The five reviewers:
 1. **Code correctness**: wrong output, crashes, lost parts, units/scale, overlaps in nesting, export geometry, DXF import/export, kerf/gap/margin math, rotation, UI state/race bugs, edge cases. The SVG export format is verified in WeCreat MakeIT and must not change, but wrong values inside it are in scope.
-2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, fixtures/**/README.md and the UI text in app/index.html and app/app.js (labels, hints, messages, footer) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
+2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, RELEASING.md, fixtures/**/README.md, the UI text (the page text in app/index.html and every message in app/strings-en.js: labels, hints, messages, footer) and the QA workbook tests in tools/qa_workbooks.py (steps and expected results) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
 3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report what the CSP or sanitizer fully blocks; name the defense instead.
 4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503 including the 501.1 web-app exception, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colors, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors, and the accessibility documentation. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
+5. **Best practices**: code that works but departs from established practice for its stack and tools (web platform, JavaScript, CSS, Python), where the gap carries a concrete risk (a future bug, a maintenance trap, an API that will break). Every finding is `severity:info`. Look at:
+   - idiomatic use of the language and platform APIs: deprecated, superseded or non-standard APIs (against the browser minimums in the README), and built-ins that were reimplemented;
+   - project structure and module boundaries: DOM or UI code in `lib/`, page globals reached from the worker code, `snugcut.html` and `app/` behaving differently;
+   - maintainability: the same rule implemented twice (with different results now or likely later), limits and constants defined in more than one place, dead code, misleading names or comments that contradict the code;
+   - consistency with the repo's own rules in CLAUDE.md and RELEASING.md: SPDX header on every source file, every UI string through `app/strings-en.js` or `data-t`, no inline handlers or `javascript:` URLs, lengths in mm internally, settings validated on load, `tools/*.py` standard-library only and small;
+   - build and dependency hygiene: pinned library versions with SRI, a reproducible `build.py` and `qa_workbooks.py` output and `--check`;
+   - testability: what the fixtures and checks don't cover;
+   - error handling and operational defaults: swallowed errors, unhandled promise rejections, workers, object URLs, listeners and timers not released, safe failure modes and clear error messages;
+   - HTML and CSS hygiene: valid markup, unique ids, colors through the CSS variables.
+
+   Cite the source of each practice: official docs (MDN, the specs, the Python docs), the tool's own guidance, or the repo's rules. No formatting or naming-taste nits that a formatter or a preference would settle. Anything that causes wrong output, a vulnerability or an accessibility failure belongs to reviewers 1–4, not here.
 
 #### 2. Verify and deduplicate (you, not a subagent)
 - Check every finding against the code yourself (grep/sed the cited lines) before filing. Drop or correct anything that doesn't hold, and say what you dropped and why.
 - List all existing issues (`gh issue list --state all --limit 300`) and skip or cross-reference duplicates. The list includes `deferred` issues: match against them too, so parked work isn't filed again as new.
 - Merge findings that describe the same defect across reviewers into one issue. Group trivially related doc gaps only when they share one fix.
 - Calibrate severity across reviewers: wrong output reaching users or other systems (exports, cutters) ranks above cosmetic issues.
+- Best-practice findings stay at `severity:info`: calibration never raises them. If another reviewer found the same root cause, merge into that finding and keep its severity.
 
 #### 3. Open the issues
 Match the format of the existing review issues (read #17 and #46 first). Each body contains:
@@ -66,7 +78,7 @@ Match the format of the existing review issues (read #17 and #46 first). Each bo
 - `## Repro`, `## Root cause` (or `## Evidence` for docs), `## Fix`, and `## Acceptance` where useful, with line numbers
 - for accessibility: the WCAG SC + level and the 508 provision on their own line
 
-Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements). Write the bodies to scratch files with quoted heredocs (`<<'EOF'`), so `$(…)` and backticks in code samples never run, and keep a TSV manifest (id, title, labels). Create the issues from the repo directory in severity order with `gh issue create --body-file <absolute path>`. Use placeholders for links between new issues, then fill them in with `gh issue edit` once their numbers exist.
+Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`; best-practice findings get `best-practice` as their type) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements; best-practice findings are always `severity:info`). Write the bodies to scratch files with quoted heredocs (`<<'EOF'`), so `$(…)` and backticks in code samples never run, and keep a TSV manifest (id, title, labels). Create the issues from the repo directory in severity order with `gh issue create --body-file <absolute path>`. Use placeholders for links between new issues, then fill them in with `gh issue edit` once their numbers exist.
 
 #### 4. Report
 Summarize by severity with a `#NN:Exact title` link to every new issue, call out the release blockers, list merged and dropped findings, and list any decisions that need the maintainer. If the WCAG/508 differences matter beyond single findings, open one `accessibility,documentation,code-review,severity:info` issue summarizing them.
@@ -87,3 +99,47 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
   `tools/qa_workbooks.py`, check each test's expected sizes, colors, layers and notices against the release, run
   `python3 tools/qa_workbooks.py`, and update the version in each issue (on a `feature/` branch after the release is
   tagged).
+
+## Fixture regression
+
+CLAUDE.md requires a structural or refactoring change to leave every export from `snugcut.html` byte-identical, and
+section 1 above requires the same of an optimization. The check compares two builds of `snugcut.html` in a headless
+browser. The scripts that drive it are kept outside the repo; this is what they must do.
+
+**The two builds**
+- Baseline: `snugcut.html` from the branch the change goes into (`git show develop:snugcut.html`).
+- Candidate: `snugcut.html` freshly built from the change with `python3 tools/build.py`.
+
+**Preparing each copy to run from a file** (the same edits to both, in a scratch folder outside the repo)
+- Point the clipper-lib 6.4.2 and jszip 3.10.1 `<script>` tags at local copies of those exact files, and remove their
+  `integrity` and `crossorigin` attributes, the Content-Security-Policy `<meta>` and the Google Fonts `<link>`.
+  Nothing else in the page changes.
+- Replace the page's startup call to `run(…)` (the last statement of its script, after `renderParts()`) with the test
+  below. The page is one script, so the test can call the library and app functions directly.
+- Open it in a fresh browser profile, so no saved `snugcut.settings` changes the defaults. The test prints its results
+  as one JSON string to the console.
+
+**What is exported**, with the default settings otherwise:
+1. Every fixture alone. For each `.svg` and `.dxf` file under `fixtures/` (all folders), with **Compensate kerf on
+   objects** off and then on:
+   - parse it the way an import does (`dxfToSVG` first for DXF, then `parseSVG`);
+   - place it alone, unrotated, at (10, 10) mm on a plate of its own size;
+   - export it with `plateSVG` and with `plateDXF`.
+
+   Keep the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has to
+   match too.
+2. Whole nests of the sample parts the page opens with. Run one pack (`run(0, true)`) and export every plate with the
+   app's own `plateFile`, keeping each file and its notices. Do this six times:
+   - True shape: SVG, then DXF, with compensation off;
+   - True shape: SVG, then DXF, with compensation on;
+   - Bounding box: SVG, then DXF, with compensation off.
+
+   Invalidate the cached geometry each time compensation or the mode changes.
+
+**Comparing**: the two result lists must match entry by entry and byte for byte. Only two things are normalized:
+- the version number in the export comment (`SnugCut v1.3.39-beta` and the like), which every version bump changes;
+- the per-import id prefix (`p<number>_`) that `parseSVG` adds to ids in the markup. It counts imports in the session,
+  so it shifts when the number of sample parts changes.
+
+Report the number of entries compared in each list and the indexes of any that differ. A change that is meant to alter
+exports says which entries changed and why. All other entries must still match.

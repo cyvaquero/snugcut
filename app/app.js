@@ -24,6 +24,9 @@ const pct = v => nf("%", {style:"percent", maximumFractionDigits:0}).format(Math
 const LANG = "en", STR = EN, PR = new Intl.PluralRules(LANG);
 document.documentElement.lang = LANG;
 const t = (key, v = {}) => Object.hasOwn(STR, key) ? fill(STR[key], v) : (console.error("no text for " + key), key);
+// the same, for markup: escaped as a whole, so a translation (or a file name among the values, passed as is) can't
+// break an attribute or add elements (#298)
+const th = (key, v = {}) => esc(t(key, v));
 function fill(s, v){
   let out = "";
   for (let i = 0; i < s.length;) {
@@ -42,7 +45,14 @@ function fill(s, v){
 // the library's messages in the app's words, with its counts formatted for the locale (README "Library messages")
 setMessages((code, v) => Object.hasOwn(STR, "lib." + code) ? t("lib." + code, {...v, limit: v.limit == null ? "" : nf("g", {useGrouping:true}).format(v.limit),
   list: v.skipped ? v.skipped.map(([type, n]) => `${n} ${type.toLowerCase()}`).join(", ") : ""}) : undefined);
-if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${t("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
+if (!CL) { $("plates").innerHTML = `<div class="fatal" role="alert">${th("fatal.noClipper")}</div>`; $("status").textContent = t("status.noEngine"); return; }
+// how long a search runs: after each change, and for "Search 30 s more" (whose label is built from MORE_MS) (#290)
+const SEARCH_MS = 4000, MORE_MS = 30000;
+$("more").textContent = t("search.more", {s: MORE_MS / 1000});
+// the longest length a field takes, in mm: the fields refuse more, and a saved value past it is ignored on load (#285)
+const MAX_LEN = 100000;
+// the rail panels' open state (#344, #347): page-only, saved with the settings; the library never reads it
+Object.assign(S, {openSearch:false, openPlate:true});
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -50,14 +60,14 @@ function loadSettings(saved){
   if (!saved || typeof saved !== "object") return;
   const pick = (k, ok) => { if (Object.hasOwn(saved, k) && ok(saved[k])) S[k] = saved[k]; };
   const opts = id => [...$(id).options].map(o => +o.value), num = v => typeof v === "number" && isFinite(v);
-  pick("mode", v => v === "shape" || v === "bbox"); pick("unit", v => v === "mm" || v === "in"); pick("format", v => v === "svg" || v === "dxf");
+  pick("mode", v => v === "shape" || v === "bbox"); pick("search", v => v === "walk" || v === "ga"); pick("unit", v => v === "mm" || v === "in"); pick("format", v => v === "svg" || v === "dxf");
   for (const k of ["rotStep", "prec", "dpi", "pool"]) pick(k, v => opts(k).includes(v));
-  for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= 100000);
-  for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= 100000);
-  for (const k of ["rotate", "outline", "comp"]) pick(k, v => typeof v === "boolean");
+  for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= MAX_LEN);
+  for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= MAX_LEN);
+  for (const k of ["rotate", "outline", "comp", "openSearch", "openPlate"]) pick(k, v => typeof v === "boolean");
   pick("prefix", v => typeof v === "string" && v.length <= 200);
 }
-const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
+const save = () => { panelSummary(); try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
 let parts = [];
 let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea, stale}
@@ -68,6 +78,8 @@ const fromDisp = v => S.unit === "in" ? v * IN : v;
 const parseNum = s => { const x = String(s).trim().replace(/^\u2212/, "-"), v = +x.replace(",", ".");
   return /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?$/i.test(x) && isFinite(v) ? v : NaN; };
 const fmt = (mm, d) => num(toDisp(mm), d ?? (S.unit === "in" ? 3 : 1));
+// decimals a setting is shown with, in its field, its error and the kerf notes alike: the kerf finer (#286)
+const fieldDec = k => k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
 const LEN = ["plateW","plateH","kerf","gap","margin"];
 const LEN_NAME = {plateW:"len.plateW", plateH:"len.plateH", kerf:"len.kerf", gap:"len.gap", margin:"len.margin"};
 // say t once the user stops typing for a moment; a later call with the same key replaces it, and one without text cancels it
@@ -86,15 +98,17 @@ function fieldErr(input, msg, quiet){
   let e = document.getElementById(input.id + "-err");
   if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); describe(input, e.id, false); } return; }
   if (!quiet && (!e || e.textContent !== msg)) sayLater(input.id, msg);
+  const bd = input.closest(".panel-bd");   // an error in a closed panel opens it (#347)
+  if (bd?.hidden) setPanel(bd.id.slice(2), true);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
   e.textContent = msg; input.setAttribute("aria-invalid", "true"); describe(input, e.id, true, true);
 }
 function fillInputs(){
   for (const k of LEN) {
-    const dec = k === "kerf" ? (S.unit === "in" ? 4 : 3) : (S.unit === "in" ? 3 : 2);
+    const dec = fieldDec(k);
     $(k).value = num(toDisp(S[k]), dec); fieldErr($(k));
   }
-  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
+  $("rotStep").value = String(S.rotStep); $("prec").value = String(S.prec); $("pool").value = String(S.pool); $("search").value = S.search; $("dpi").value = String(S.dpi); $("outline").checked = S.outline; $("rotate").checked = S.rotate; $("kerfComp").checked = !!S.comp; showCompWarn(); $("prefix").value = S.prefix; $("format").value = S.format === "dxf" ? "dxf" : "svg"; prefixEx();
   document.body.dataset.mode = S.mode;
   $("m-shape").setAttribute("aria-pressed", S.mode === "shape"); $("m-bbox").setAttribute("aria-pressed", S.mode === "bbox");
   document.querySelectorAll(".u").forEach(e => e.textContent = S.unit);
@@ -111,16 +125,34 @@ $("u-mm").onclick = () => setUnit("mm");
 $("u-in").onclick = () => setUnit("in");
 for (const k of LEN) $(k).addEventListener("input", () => {
   const v = parseNum($(k).value), plate = k === "plateW" || k === "plateH";
-  const bad = isNaN(v) ? "field.nan" : plate && v <= 0 ? "field.notPositive" : v < 0 ? "field.negative" : "";
-  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], k === "kerf" ? (S.unit === "in" ? 4 : 3) : undefined), unit: S.unit}));
+  const bad = isNaN(v) ? "field.nan" : plate && v <= 0 ? "field.notPositive" : v < 0 ? "field.negative" : fromDisp(v) > MAX_LEN ? "field.tooLarge" : "";
+  fieldErr($(k), bad && t(bad, {field: t(LEN_NAME[k]), value: fmt(S[k], fieldDec(k)), max: fmt(MAX_LEN, 0), unit: S.unit}));
   if (!bad) { S[k] = fromDisp(v); save(); if (k === "kerf" || k === "gap") invalidateGeometry(); restart(); }
 });
 $("rotStep").onchange = e => { S.rotStep = +e.target.value; save(); restart(); };
 $("prec").onchange = e => { S.prec = +e.target.value; save(); invalidateGeometry(); restart(); };
 $("pool").onchange = e => { S.pool = +e.target.value; save(); restart(); };     // the worker pool (#253, #255)
+$("search").onchange = e => { S.search = e.target.value; save(); restart(); };   // the search method (#5)
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 // the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
 function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }
+// the rail panels open and close from their headings, remembered like the other settings (#344, #347). Closed, a short
+// summary of the panel's settings shows under the heading and describes the toggle; open, the fields say it all.
+const PANELS = {pool:"openSearch", plate:"openPlate"};
+function panelSummary(){
+  $("sum-pool").textContent = t("panel.searchSummary", {method: S.search, n: S.pool});
+  $("sum-plate").textContent = t("panel.plateSummary", {w: num(toDisp(S.plateW), fieldDec("plateW")), h: num(toDisp(S.plateH), fieldDec("plateH")),
+    kerf: num(toDisp(S.kerf), fieldDec("kerf")), unit: S.unit, comp: String(!!S.comp), format: S.format});
+}
+function setPanel(id, open){
+  const tg = $("t-" + id);
+  if (open !== undefined && open !== S[PANELS[id]]) { S[PANELS[id]] = open; save(); }
+  open = S[PANELS[id]];
+  tg.setAttribute("aria-expanded", open); $("b-" + id).hidden = !open; $("sum-" + id).hidden = open;
+  describe(tg, "sum-" + id, !open);
+}
+for (const id in PANELS) { $("t-" + id).onclick = () => setPanel(id, !S[PANELS[id]]); setPanel(id); }
+panelSummary();
 $("kerfComp").onchange = e => { S.comp = e.target.checked; showCompWarn(); if (S.comp) say($("compWarn").querySelector("b").textContent); save(); invalidateGeometry(); restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
@@ -143,7 +175,7 @@ function kerfCalc(){
   fieldErr($("kDesign"), isNaN(d) && typed("kDesign") ? t("kcalc.nan") : !isNaN(d) && d <= 0 ? t("kcalc.designedPositive") : "");
   fieldErr($("kMeasured"), isNaN(m) && typed("kMeasured") ? t("kcalc.nan") : !isNaN(m) && m <= 0 ? t("kcalc.measuredPositive") : !isNaN(d) && !isNaN(m) && m > d ? t("kcalc.measuredSmaller") : "");
   if (isNaN(d) || isNaN(m) || d <= 0 || m <= 0 || m > d) { sayLater("kOut"); $("kOut").textContent = t("kcalc.none"); $("kUse").disabled = true; return null; }
-  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, S.unit === "in" ? 4 : 3), unit: S.unit});
+  const k = fromDisp(d - m), out = t("kcalc.result", {value: fmt(k, fieldDec("kerf")), unit: S.unit});
   if (out !== $("kOut").textContent) sayLater("kOut", out);   // announced once typing pauses (#166)
   $("kOut").textContent = out; $("kUse").disabled = false; return k;
 }
@@ -156,7 +188,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
   const token = newRun();
   if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
   const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>${t("status.nesting")}`;
+  $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
   const plateA = S.plateW * S.plateH;
   setRunning(true);
   const t0 = performance.now();
@@ -180,7 +212,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
     }
     const {items, oversize, minPlates, st} = search;
     // in the search worker when there is one (#4), else here
-    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token,
+    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token, strategy:S.search,
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
@@ -193,14 +225,14 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
 function status(t0, ms, token){
   if (!isCurrent(token)) return;
   const el = Math.min(performance.now() - t0, ms);   // a pack that ends past the limit doesn't read "8.7 of 4 s" (#234)
-  $("status").innerHTML = `<span class="dot on"></span>${t("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.st.tried})}`;
+  $("status").innerHTML = `<span class="dot on"></span>${th("status.searching", {elapsed: num(el/1000, 1, 1), total: num(ms/1000), tried: search.st.tried})}`;
 }
 let searching = false;
 function setRunning(on, quiet){
   const f = document.activeElement;
   searching = on; showStale();
   $("stop").hidden = !on; $("more").setAttribute("aria-disabled", on || !search || !search.items.length);
-  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? t("run.stale") : search && search.st.tried ? t("status.best", {tried: search.st.tried}) : t("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.st.bestScore && search.st.bestScore[0] > search.minPlates ? " " + t("status.longer") : ""}`;
+  if (!on) $("status").innerHTML = `<span class="dot"></span>${layout && layout.stale ? th("run.stale") : search && search.st.tried ? th("status.best", {tried: search.st.tried}) : th("status.ready")}${layout && layout.plates.length && !layout.stale && search && search.st.bestScore && search.st.bestScore[0] > search.minPlates ? " " + th("status.longer") : ""}`;
   if (!on && !quiet) say(runSummary());
   if (on && f === $("more")) $("stop").focus(); else if (!on && f === $("stop")) $("more").focus();   // they hand focus to each other (#95)
 }
@@ -218,18 +250,30 @@ function runSummary(){
   return out.join(" ");
 }
 $("stop").onclick = () => { newRun(); setRunning(false); };
-$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(30000, false); };
+$("more").onclick = () => { if ($("more").getAttribute("aria-disabled") !== "true") run(MORE_MS, false); };
 let tmr;
 // a change to the parts or settings: the plates on screen no longer match, so they can't be downloaded until a new pack replaces them,
 // and the old search can't be continued
 function staleLayout(){ search = null; if (layout) { layout.stale = true; showStale(); } }
-function restart(){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { renderParts(); run(4000, true); }, 250); }
+// a change drops the layout on screen and searches again after a short pause, so typing doesn't start a search per key
+function restartSoon(ms, rerender){ clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => { if (rerender) renderParts(); run(SEARCH_MS, true); }, ms); }
+function restart(){ restartSoon(250, true); }
 
 /* ---------- parts list ---------- */
 // icons are hidden from assistive tech: the buttons they sit in are named by aria-label (#178)
 const ICON_LOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 // open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
 const ICON_UNLOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
+// grain (#7): wavy lines along X, a third shape, so each orientation state shows without color
+const ICON_GRAIN = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4.5c2-1.5 4 1.5 6 0s4 1.5 6 0M2 8c2-1.5 4 1.5 6 0s4 1.5 6 0M2 11.5c2-1.5 4 1.5 6 0s4 1.5 6 0"/></svg>`;
+// a part's orientation (#7): free to rotate, grain (0° or 180° only), or locked (0°); the button cycles through them
+// in that order. Three states don't fit aria-pressed, so the button's name says the state, and a change is announced
+const orient = p => p.lock ? "lock" : p.grain ? "grain" : "free";
+const ORIENT_ICON = {free:ICON_UNLOCK, grain:ICON_GRAIN, lock:ICON_LOCK};
+const orientBtn = (el, p) => {
+  const state = orient(p); el.dataset.state = state; el.innerHTML = ORIENT_ICON[state];
+  el.title = t("part.orientTitle", {state}); el.setAttribute("aria-label", t("part.orientLabel", {name: p.name, state}));
+};
 // a part's holes open to other parts (#3): an empty frame when off, a frame with a part inside when on
 const ICON_HOLE = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="5.5" y="5.5" width="5" height="5" rx="1" stroke-dasharray="2 1.5"/></svg>`;
 const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
@@ -244,21 +288,25 @@ function renderParts(){
   for (const p of parts) {
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
-    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${t(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: esc(S.unit)})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${t("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${t("part.inches")}</option></select></div>` : ""}</div>
-      <div class="qw"><span class="ql" id="ql-${p.uid}">${t("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${t("part.holesTitle")}" aria-label="${t("part.holesLabel", {name: esc(p.name)})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${t("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${t("part.lockTitle")}" aria-label="${t("part.lockLabel", {name: esc(p.name)})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${t("part.removeTitle")}" aria-label="${t("part.removeLabel", {name: esc(p.name)})}">${ICON_X}</button></div>`;
+    row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${th(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${th("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${th("part.inches")}</option></select></div>` : ""}</div>
+      <div class="qw"><span class="ql" id="ql-${p.uid}">${th("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
+      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk"></button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
       fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
       if (ok) delete p.qtyDraft; else p.qtyDraft = q.value;   // kept, with its error, when the list is rebuilt (#240)
-      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 350); }
+      if (ok) { p.qty = parseInt(q.value, 10); updateCount(); restartSoon(350); }
     };
     const du = row.querySelector(".du select");
     if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
-    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; clearTimeout(tmr); newRun(); staleLayout(); tmr = setTimeout(() => run(4000, true), 250); };
+    if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; restartSoon(250); };
+    orientBtn(lk, p);
+    lk.onclick = () => {
+      const next = {free:"grain", grain:"lock", lock:"free"}[orient(p)];
+      p.grain = next === "grain"; p.lock = next === "lock"; orientBtn(lk, p); say(lk.getAttribute("aria-label")); restartSoon(250);
+    };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -268,7 +316,7 @@ function renderParts(){
     // an invalid entry the user hasn't fixed yet survives the rebuild, error included; it was announced when typed (#240)
     if (p.qtyDraft != null) { q.value = p.qtyDraft; fieldErr(q, t("part.qtyErr", {qty: p.qty}), true); }
   }
-  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${t("parts.none")}</p>`;
+  if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${th("parts.none")}</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
   updateCount();
   if (keep) { const r = box.querySelector(`.part[data-uid="${keep.uid}"]`); if (r) r.querySelector(keep.sel).focus(); }
@@ -278,11 +326,11 @@ function updateCount(){
   $("partCount").textContent = t("parts.count", {files: parts.length, n});
 }
 // a DXF file that doesn't declare its units is read again in the units the user picks (#90); the part keeps its place,
-// quantity and lock
+// quantity and orientation
 function reunit(p, units){
   try {
     const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
-    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, grain:p.grain, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
@@ -302,6 +350,18 @@ file.onchange = () => { addFiles(file.files); file.value = ""; };
 const builtInComp = (text, dxf) => (dxf
   ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
   : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
+async function readText(f, dxf){
+  // an SVG is decoded as its byte-order mark or XML declaration says (Latin-1 text came out as "Gr��e"), else as
+  // UTF-8, as File.text() always did (#269)
+  const buf = await f.arrayBuffer(), b = new Uint8Array(buf);
+  let label = b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF ? "utf-8" : b[0] === 0xFF && b[1] === 0xFE ? "utf-16le"
+    : b[0] === 0xFE && b[1] === 0xFF ? "utf-16be" : null;
+  if (!label && !dxf) {
+    const m = /^\s*<\?xml[^>]*?\sencoding\s*=\s*["']([A-Za-z0-9._:-]+)["']/.exec(new TextDecoder("latin1").decode(b.subarray(0, 200)));
+    if (m && !/^utf-?16/i.test(m[1])) label = m[1];      // UTF-16 needs its byte-order mark
+  }
+  try { return new TextDecoder(label || "utf-8").decode(buf); } catch(e) { return new TextDecoder("utf-8").decode(buf); }
+}
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
   const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
@@ -310,12 +370,13 @@ async function addFiles(list){
   const errs = [], notes = [];                                // errors: files that couldn't be added
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
-    let text = await f.text();
+    let text = await readText(f, isDXF(f));
     const pre = builtInComp(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
+    if (p.tangled) notes.push(t("files.tangled", {name: p.name}));
     if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
   } catch(e) { errs.push(e.message); } }
   if (hiddenIn.length) notes.push(t("files.hidden", {list: hiddenIn.join(", ")}));
@@ -353,37 +414,38 @@ function drawLayout(){
   $("sParts").textContent = placed;
   // efficiency rating (#138): "6/10" read as "6 out of 10", with the percentage under it
   const E = efficiency(L.plates), cut = E && Math.min(E.offcut.w, E.offcut.h) >= 10 ? E.offcut : null;
-  $("sEff").innerHTML = E ? `<span aria-hidden="true">${E.rating}/10</span><span class="sr-only">${t("stat.eff", {rating: E.rating})}</span>` : "–";
+  $("sEff").innerHTML = E ? `<span aria-hidden="true">${E.rating}/10</span><span class="sr-only">${th("stat.eff", {rating: E.rating})}</span>` : "–";
   $("sEffK").textContent = E ? t("stat.effLabel", {eff: pct(E.eff)}) : t("stat.effNone");
   const msg = text => { const m = document.createElement("div"); m.className = "msg"; m.textContent = text; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
-  for (const p of L.oversize) msg(t(!p.lock && canRot ? (bbox ? "layout.oversizeBbox" : "layout.oversizeRot") : "layout.oversize", {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
+  const tooBig = p => p.lock || !canRot ? "layout.oversize" : p.grain ? (bbox ? "layout.oversizeGrainBbox" : "layout.oversizeGrain") : bbox ? "layout.oversizeBbox" : "layout.oversizeRot";
+  for (const p of L.oversize) msg(t(tooBig(p), {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
   if (L.noArea) msg(t("run.noArea"));
   // when nothing was placed, say why only if no message above already does (#84)
-  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${t(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
+  if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${th(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const ratio = pl.area / plateA, fill = pct(ratio);
-    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? t("plate.rotated", {name: esc(it.part.name), ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.part.grain ? th("plate.grain", {name: it.part.name, ang: it.ang}) : it.ang ? th("plate.rotated", {name: it.part.name, ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
     // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed
     // one gave the image no description (#168).
-    const alt = t("plate.alt", {i: i+1, n: L.plates.length, parts: pl.items.length, fill});
+    const alt = th("plate.alt", {i: i+1, n: L.plates.length, parts: pl.items.length, fill});
     const groups = new Map();
     for (const it of pl.items) {
       const g = groups.get(it.part) || {n:0, rot:new Map()}, a = ((Math.round(it.ang) % 360) + 360) % 360;
       g.n++; if (a) g.rot.set(a, (g.rot.get(a) || 0) + 1); groups.set(it.part, g);
     }
     const lines = [...groups].map(([p, g]) => g.rot.size
-      ? t("plate.lineRot", {name: esc(p.name), n: g.n, rots: [...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => t("plate.rot", {n, ang: a})).join(", ")})
-      : t("plate.line", {name: esc(p.name), n: g.n}));
+      ? th("plate.lineRot", {name: p.name, n: g.n, rots: [...g.rot].sort((a, b) => a[0] - b[0]).map(([a, n]) => t("plate.rot", {n, ang: a})).join(", ")})
+      : th("plate.line", {name: p.name, n: g.n}));
     const list = lines.map(l => `<li>${l}</li>`).join("");
     const card = document.createElement("article"); card.className = "plate"; card.setAttribute("aria-labelledby", `plate-${i}-h`);   // named by its heading (#102)
-    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">${t("plate.title", {i: i+1, n: L.plates.length})}</h3><div class="m">${t(cut && i === L.plates.length - 1 ? "plate.metaOffcut" : "plate.meta", {parts: pl.items.length, fill, w: fmt(S.plateW), h: fmt(S.plateH), unit: esc(S.unit), cw: cut && fmt(cut.w), ch: cut && fmt(cut.h)})}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="${t("plate.downloadLabel", {format: ext().toUpperCase(), i: i+1, n: L.plates.length})}">${t("plate.download", {format: ext().toUpperCase()})}</button></div>
+    card.innerHTML = `<div class="hd"><div><h3 class="t" id="plate-${i}-h">${th("plate.title", {i: i+1, n: L.plates.length})}</h3><div class="m">${th(cut && i === L.plates.length - 1 ? "plate.metaOffcut" : "plate.meta", {parts: pl.items.length, fill, w: fmt(S.plateW), h: fmt(S.plateH), unit: S.unit, cw: cut && fmt(cut.w), ch: cut && fmt(cut.h)})}</div></div><button type="button" data-i="${i}" class="btn small" aria-label="${th("plate.downloadLabel", {format: ext().toUpperCase(), i: i+1, n: L.plates.length})}">${th("plate.download", {format: ext().toUpperCase()})}</button></div>
       <div class="sheet" style="aspect-ratio:${S.plateW}/${S.plateH}"><img alt="${alt}" aria-describedby="pdesc-${i}" src="${url}"><span id="pdesc-${i}" hidden>${lines.join("; ")}</span><svg viewBox="0 0 ${n4(S.plateW)} ${n4(S.plateH)}" preserveAspectRatio="none" aria-hidden="true">${mg}${env}</svg></div>
       <div class="bar" aria-hidden="true"><i style="width:${Math.round(100 * ratio)}%"></i></div>
-      <details class="plist"><summary>${t("plate.list")}</summary><ul id="plist-${i}">${list}</ul></details>`;
+      <details class="plist"><summary>${th("plate.list")}</summary><ul id="plist-${i}">${list}</ul></details>`;
     card.querySelector("button").onclick = () => exportPlate(i);
     box.appendChild(card);
   });
@@ -408,23 +470,29 @@ function download(data, filename, type){
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function plateFile(pl, notes){
-  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, S.unit === "in" ? 4 : 3), unit: S.unit}));
+  if (kerfC()) notes.add(t("export.compNote", {value: fmt(S.kerf / 2, fieldDec("kerf")), unit: S.unit}));
   if (ext() === "svg") return plateSVG(pl, {notes});
   const r = plateDXF(pl); r.notes.forEach(n => notes.add(n)); return r.dxf;
 }
+// a failed export says so, instead of the button seeming to do nothing (#287)
+const exportFailed = e => { console.error(e); notice(t("notice.exportError", {error: e && e.message || e}), true); };
 function exportPlate(i){
   if (!layout || layout.stale || plateBusy()) return;
-  const notes = new Set();
-  download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
-  toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
+  try {
+    const notes = new Set();
+    download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
+    toast(t("toast.saved", {file: fname(i)})); notes.forEach(n => notice(n));
+  } catch(e) { exportFailed(e); }
 }
 $("dlAll").onclick = async () => {
   if (!layout || layout.stale || !window.JSZip) return;
-  const zip = new JSZip();
-  const notes = new Set();
-  layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
-  download(await zip.generateAsync({type:"blob"}), zipName());
-  toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
+  try {
+    const zip = new JSZip();
+    const notes = new Set();
+    layout.plates.forEach((pl, i) => zip.file(fname(i), plateFile(pl, notes)));
+    download(await zip.generateAsync({type:"blob"}), zipName());
+    toast(t("toast.saved", {file: zipName()})); notes.forEach(n => notice(n));
+  } catch(e) { exportFailed(e); }
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
@@ -449,6 +517,8 @@ function notice(text, err){
 }
 // screen-reader announcements (#93): the live regions stay in the page, and each message is added as a new node so a
 // repeated message is announced again; urgent ones (errors) go to the role="alert" region
+// each message is its own node in the live region, kept 20 s so a repeat is still announced; the regions aren't atomic
+// (status and alert are by default), so only the new node is read, not every message still there (#363)
 function say(text, urgent){ const p = document.createElement("p"); p.textContent = text; $(urgent ? "sayAlert" : "sayPolite").appendChild(p); setTimeout(() => p.remove(), 20000); }
 
 /* ---------- sample parts ---------- */
@@ -462,8 +532,10 @@ const SAMPLES = [
   ["hex-tag.svg", 6, `<svg xmlns="${SVGNS}" width="50mm" height="43.3mm" viewBox="0 0 50 43.3"><polygon points="12.5,0.1 37.5,0.1 49.9,21.65 37.5,43.2 12.5,43.2 0.1,21.65" ${S0}/><circle cx="25" cy="8" r="2" ${S0}/></svg>`],
 ];
 fillInputs();
+// text the app writes into the page from the string table, the first time (#279)
+$("kOut").textContent = t("kcalc.none"); $("sEffK").textContent = t("stat.effNone");
 for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
-startWorker();   // fetched and built while the parts list is drawn (#4)
+startWorker({url: $("clipper-lib").src, integrity: $("clipper-lib").integrity});   // fetched and built while the parts list is drawn (#4)
 renderParts();
-run(4000, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
+run(SEARCH_MS, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
 })();

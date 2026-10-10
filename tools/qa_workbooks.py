@@ -186,9 +186,9 @@ TESTS = [
     ("Kerf compensation", None, [
         (14, "Kerf, SVG", "#36", [
             "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects**.",
-            "Add `test-cuts/kerf-test.svg`. A notice says a hole is narrower than the kerf and was left as drawn: "
-            "that's the pin hole.",
-            "Download the plate and import it. The download says kerf compensation is built in.",
+            "Add `test-cuts/kerf-test.svg`.",
+            "Download the plate and import it. The download says kerf compensation is built in, and that a hole is "
+            "narrower than the kerf and was left as drawn: that's the pin hole.",
             "Leave kerf and compensation as they are for test 22.",
         ], [
             "A red 20.2 × 20.2 mm outline, a red 9.8 mm square hole and a red 5.8 mm round hole.",
@@ -424,7 +424,7 @@ STYLES = (
     + '</w:styles>')
 
 
-def workbook(slug, app, issue, colors, notes):
+def workbook(app, issue, colors, notes):
     sub = lambda t: t.replace("{app}", app).replace("{colors}", colors)
     issue_url = f"{REPO}/issues/{issue}"
     zip_url = f"{REPO}/archive/refs/tags/{VERSION}.zip"
@@ -503,6 +503,16 @@ def workbook(slug, app, issue, colors, notes):
     return d.package(f"SnugCut export QA: {app}")
 
 
+def contents(data):
+    # a workbook's parts, unzipped: compared instead of the zip's bytes, which differ between zlib builds (zlib-ng
+    # deflates the same input differently), so --check and a rebuild don't flag or rewrite unchanged workbooks (#291)
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            return [(i.filename, z.read(i)) for i in z.infolist()]
+    except (zipfile.BadZipFile, TypeError):
+        return None
+
+
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     check = "--check" in sys.argv[1:]
@@ -510,12 +520,13 @@ def main():
     os.makedirs(os.path.join(root, "qa"), exist_ok=True)
     for slug, *rest in APPS:
         path = os.path.join(root, "qa", slug + ".docx")
-        data = workbook(slug, *rest)
+        data = workbook(*rest)
         old = open(path, "rb").read() if os.path.exists(path) else None
+        same = old is not None and contents(old) == contents(data)
         if check:
-            if old != data:
+            if not same:
                 stale.append(path)
-        elif old != data:
+        elif not same:
             open(path, "wb").write(data)
             print("wrote", os.path.relpath(path, root))
     if check:

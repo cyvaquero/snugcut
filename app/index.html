@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js" integrity="sha384-oV9/r5hoq7qHFHfbghYwt50E2fe8J20vXRW0eIGQl20k40zMEAhSXMCh9ANASVB9" crossorigin="anonymous"></script>
+<script id="clipper-lib" src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js" integrity="sha384-oV9/r5hoq7qHFHfbghYwt50E2fe8J20vXRW0eIGQl20k40zMEAhSXMCh9ANASVB9" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="snugcut.css">
 
@@ -29,65 +29,72 @@
   <div class="layout">
     <div class="rail">
       <section class="panel" aria-labelledby="h-pool" data-only="shape">
-        <div class="panel-hd"><h2 id="h-pool" data-t="page.poolHeading">Worker pool</h2></div>
-        <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search finds better layouts in the same time.</p>
-        <div class="field"><label for="pool" data-t="page.pool">Workers</label>
-          <select id="pool" aria-describedby="pool-about pool-warn"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select></div>
-        <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave the pool off.</p>
+        <div class="panel-hd"><h2 id="h-pool"><button type="button" class="disc" id="t-pool" aria-expanded="false" aria-controls="b-pool"><span data-t="page.searchHeading">Search Options</span></button></h2><span class="psum" id="sum-pool"></span></div>
+        <div class="panel-bd" id="b-pool" hidden>
+          <div class="field"><label for="search" data-t="page.search">Method</label>
+            <select id="search" aria-describedby="search-about"><option value="walk" data-t="page.searchWalk">Order walk</option><option value="ga" data-t="page.searchGa">Genetic</option></select></div>
+          <p class="hint" id="search-about" data-t="page.searchAbout">Order walk (the default) keeps changing the order parts are placed in and lets each part take its best angle. Genetic breeds layouts from the best ones found, with each part's angle fixed, so it tries many more layouts; it usually finds better layouts with fine rotation steps and large jobs, but can do slightly worse at 90°.</p>
+          <p class="hint" id="pool-about" data-t="page.poolAbout">Extra background workers try more layouts at once, so a search usually tries more layouts in the same time; how much depends on the method.</p>
+          <div class="field"><label for="pool" data-t="page.pool">Workers</label>
+            <select id="pool" aria-describedby="pool-about pool-warn"><option value="1" data-t="page.poolOff">Off</option><option value="2" data-t="page.pool2">2 workers</option><option value="3" data-t="page.pool3">3 workers</option><option value="4" data-t="page.pool4">4 workers</option></select></div>
+          <p class="msg" id="pool-warn" data-t="page.poolWarn">Each extra worker uses more memory, about 100 MB on a job of 120 parts. On a lower-spec computer (little memory or few processor cores), leave Workers off.</p>
+        </div>
       </section>
       <section class="panel" aria-labelledby="h-plate">
-        <div class="panel-hd"><h2 id="h-plate" data-t="page.plate">Plate &amp; cutting</h2><span class="unitsw" role="group" aria-label="Units" data-t-aria-label="page.units">
-          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span></div>
-        <div class="row">
-          <div class="field"><label for="plateW" data-t="page.plateW">Plate width (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateW"></div>
-          <div class="field"><label for="plateH" data-t="page.plateH">Plate height (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateH"></div>
-        </div>
-        <div class="kerf">
-          <label for="kerf" data-t="page.kerf">Kerf (<span class="u">mm</span>)</label>
-          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" placeholder="e.g. 0.10" aria-describedby="kerf-hint">
-          <p class="hint" id="kerf-hint" data-t="page.kerfHint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
-          <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> <span data-t="page.comp">Compensate kerf on objects</span></label>
-          <p class="hint" id="comp-hint" data-t="page.compHint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
-          <div class="msg" id="compWarn" hidden><b data-t="page.compWarn">The kerf is now built into your downloads.</b><ul>
-            <li data-t="page.compWarn1"><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
-            <li data-t="page.compWarn2">Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
-            <li data-t="page.compWarn3">Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
-            <li data-t="page.compWarn4">Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
-          <details>
-            <summary data-t="page.measure">Measure it from a test cut</summary>
-            <p class="hint" style="margin-top:6px" data-t="page.measureHint">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
-            <div class="row">
-              <div class="field"><label for="kDesign" data-t="page.kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
-              <div class="field"><label for="kMeasured" data-t="page.kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut">Kerf: –</span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
-          </details>
-        </div>
-        <div class="row">
-          <div class="field"><label for="gap" data-t="page.gap">Extra gap (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="gap"></div>
-          <div class="field"><label for="margin" data-t="page.margin">Edge margin (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="margin"></div>
-        </div>
-        <div class="row" data-only="shape">
-          <div class="field"><label for="rotStep" data-t="page.rotation">Rotation</label>
-            <select id="rotStep"><option value="0" data-t="page.rot0">None</option><option value="180" data-t="page.rot180">180° flips</option><option value="90" data-t="page.rot90">90° steps</option><option value="45" data-t="page.rot45">45° steps</option><option value="30" data-t="page.rot30">30° steps</option><option value="15" data-t="page.rot15">15° steps</option></select></div>
-          <div class="field"><label for="prec" data-t="page.precision">Outline precision</label>
-            <select id="prec"><option value="0.25" data-t="page.precStandard">Standard (0.25 mm)</option><option value="0.1" data-t="page.precFine">Fine (0.1 mm)</option></select></div>
-        </div>
-        <div class="row">
-          <div class="field"><label for="dpi" data-t="page.dpi">Unitless SVG scale</label>
-            <select id="dpi"><option value="96" data-t="page.dpi96">96 px/in (Inkscape)</option><option value="72" data-t="page.dpi72">72 px/in (Illustrator)</option><option value="90" data-t="page.dpi90">90 px/in (old Inkscape)</option></select></div>
-          <div class="field" style="justify-content:flex-end;gap:8px">
-            <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> <span data-t="page.rotate">Allow 90° rotation</span></label>
-            <label class="check"><input type="checkbox" id="outline"> <span data-t="page.outline">Plate outline in export</span></label>
+        <div class="panel-hd"><h2 id="h-plate"><button type="button" class="disc" id="t-plate" aria-expanded="true" aria-controls="b-plate"><span data-t="page.plate">Plate &amp; cutting</span></button></h2><span class="unitsw" role="group" aria-label="Units" data-t-aria-label="page.units">
+          <button type="button" id="u-mm" aria-pressed="true">mm</button><button type="button" id="u-in" aria-pressed="false">in</button></span><span class="psum" id="sum-plate" hidden></span></div>
+        <div class="panel-bd" id="b-plate">
+          <div class="row">
+            <div class="field"><label for="plateW" data-t="page.plateW">Plate width (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateW"></div>
+            <div class="field"><label for="plateH" data-t="page.plateH">Plate height (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="plateH"></div>
           </div>
+          <div class="kerf">
+            <label for="kerf" data-t="page.kerf">Kerf (<span class="u">mm</span>)</label>
+            <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kerf" aria-describedby="kerf-hint">
+            <p class="hint" id="kerf-hint" data-t="page.kerfHint">Width of material the cut removes (beam, blade or bit). Added to the spacing between parts so neighboring cuts never overlap.</p>
+            <label class="check"><input type="checkbox" id="kerfComp" aria-describedby="comp-hint"> <span data-t="page.comp">Compensate kerf on objects</span></label>
+            <p class="hint" id="comp-hint" data-t="page.compHint">Moves closed cut paths by half the kerf (outlines out, holes in) in the downloaded files, so parts come out at their drawn size. Filled areas and open lines stay as drawn.</p>
+            <div class="msg" id="compWarn" hidden><b data-t="page.compWarn">The kerf is now built into your downloads.</b><ul>
+              <li data-t="page.compWarn1"><b>Turn off kerf offset in your cutter's software.</b> The downloaded files already include it, so leaving it on applies the kerf twice: parts come out a full kerf too big and holes a full kerf too small.</li>
+              <li data-t="page.compWarn2">Measure the kerf for this material and these settings; a wrong kerf makes every part the wrong size.</li>
+              <li data-t="page.compWarn3">Compensated curves are written as fine straight segments, so circles are no longer true arcs in a DXF.</li>
+              <li data-t="page.compWarn4">Files downloaded with compensation are marked. If you add one here again, it is not compensated a second time.</li></ul></div>
+            <details>
+              <summary data-t="page.measure">Measure it from a test cut</summary>
+              <p class="hint" style="margin-top:6px" data-t="page.measureHint">Cut a square with <b>Compensate kerf on objects</b> off and no kerf offset in your cutter's software, then measure the piece that drops out.</p>
+              <div class="row">
+                <div class="field"><label for="kDesign" data-t="page.kDesign">Designed (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kDesign"></div>
+                <div class="field"><label for="kMeasured" data-t="page.kMeasured">Measured (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="kMeasured"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><span class="note" id="kOut"></span><button type="button" class="btn small" id="kUse" disabled data-t="page.use">Use this</button></div>
+            </details>
+          </div>
+          <div class="row">
+            <div class="field"><label for="gap" data-t="page.gap">Extra gap (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="gap"></div>
+            <div class="field"><label for="margin" data-t="page.margin">Edge margin (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="margin"></div>
+          </div>
+          <div class="row" data-only="shape">
+            <div class="field"><label for="rotStep" data-t="page.rotation">Rotation</label>
+              <select id="rotStep"><option value="0" data-t="page.rot0">None</option><option value="180" data-t="page.rot180">180° flips</option><option value="90" data-t="page.rot90">90° steps</option><option value="45" data-t="page.rot45">45° steps</option><option value="30" data-t="page.rot30">30° steps</option><option value="15" data-t="page.rot15">15° steps</option></select></div>
+            <div class="field"><label for="prec" data-t="page.precision">Outline precision</label>
+              <select id="prec"><option value="0.25" data-t="page.precStandard">Standard (0.25 mm)</option><option value="0.1" data-t="page.precFine">Fine (0.1 mm)</option></select></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="dpi" data-t="page.dpi">Unitless SVG scale</label>
+              <select id="dpi"><option value="96" data-t="page.dpi96">96 px/in (Inkscape)</option><option value="72" data-t="page.dpi72">72 px/in (Illustrator)</option><option value="90" data-t="page.dpi90">90 px/in (old Inkscape)</option></select></div>
+            <div class="field" style="justify-content:flex-end;gap:8px">
+              <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> <span data-t="page.rotate">Allow 90° rotation</span></label>
+              <label class="check"><input type="checkbox" id="outline"> <span data-t="page.outline">Plate outline in export</span></label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
+              <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
+            <div class="field"><label for="format" data-t="page.format">Export format</label>
+              <select id="format"><option value="svg">SVG</option><option value="dxf" data-t="page.formatDxf">DXF (R12, mm)</option></select></div>
+          </div>
+          <p class="hint" data-t="page.downloadsNamed">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
         </div>
-        <div class="row">
-          <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
-            <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
-          <div class="field"><label for="format" data-t="page.format">Export format</label>
-            <select id="format"><option value="svg">SVG</option><option value="dxf">DXF (R12, mm)</option></select></div>
-        </div>
-        <p class="hint" data-t="page.downloadsNamed">Downloads are named <span id="prefixEx">plate-01-of-03.svg</span></p>
       </section>
 
       <section class="panel" aria-labelledby="h-parts">
@@ -99,6 +106,7 @@
           <span class="note" id="partCount"></span>
           <button type="button" class="btn small" id="clear" data-t="page.removeAll">Remove all</button>
         </div>
+        <p class="hint" style="margin-top:8px" data-t="page.orientHint">The padlock button on each part sets how it may turn; each click moves to the next setting. <b>Free</b> (open padlock): turns at the Rotation step. <b>Grain</b> (wavy lines): only 0° or 180°, so the grain of wood or brushed metal runs the same way on every copy; in Bounding box it doesn't turn. <b>Locked</b> (closed padlock): never turns.</p>
       </section>
     </div>
 
@@ -109,13 +117,13 @@
         <div class="stat"><span class="v" id="sMin">–</span><span class="k" data-t="page.statMin">Area minimum</span></div>
         <div class="stat"><span class="v" id="sFill">–</span><span class="k" data-t="page.statFill">Average utilization</span></div>
         <div class="stat"><span class="v" id="sParts">–</span><span class="k" data-t="page.statParts">Parts placed</span></div>
-        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK">Efficiency</span></div>
+        <div class="stat"><span class="v" id="sEff">–</span><span class="k" id="sEffK"></span></div>
         <div class="sp"></div>
         <button type="button" class="btn primary" id="dlAll" hidden data-t="page.downloadAll">Download all (.zip)</button>
       </div>
       <div class="search" data-only="shape">
-        <span class="st" id="status"><span class="dot on"></span>Nesting…</span>
-        <button type="button" class="btn small" id="more" data-t="page.more">Search 30 s more</button>
+        <span class="st" id="status"><span class="dot on"></span></span>
+        <button type="button" class="btn small" id="more">Search 30 s more</button>
         <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
       <div class="msgs" id="notices"></div>
@@ -124,10 +132,10 @@
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
-<div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
-<div class="sr-only" id="sayAlert" role="alert"></div>
+<div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
+<div class="sr-only" id="sayAlert" role="alert" aria-atomic="false"></div>
 
 <script type="module" src="app.js"></script>

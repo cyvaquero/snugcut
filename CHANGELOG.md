@@ -4,6 +4,129 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.0-beta
+
+Release of 1.3.8-beta through 1.3.48-beta, with the fixes from the release review (1.4.1-beta through 1.4.5-beta).
+
+### Added
+
+- Parts can be set to follow a grain direction (#7). Each part's orientation button cycles through three states, each
+  with its own icon:
+  - **free**: the part turns at the Rotation step;
+  - **grain**: the part turns only end for end, 0° or 180°, so wood grain or brushed metal runs the same way on every
+    copy. In Bounding box mode it isn't turned at all.
+  - **locked**: 0° only.
+
+  Both search methods and the worker pool keep grain parts to 0° and 180°. A part left out because it fits only turned
+  90° says so. A grain part's outline on the plate preview is labeled "(grain)". The button's name says its state
+  ("Orientation of star.svg: grain, 0° or 180° only"), and a change is announced. A line under the parts list explains
+  the three states (#345). Free and locked parts nest exactly as before.
+- A genetic search, as an alternative to the order walk, in True shape (#5). **Method** in **Search Options** picks
+  Order walk (the default) or Genetic.
+  - Genetic keeps 20 layouts, each an order and one fixed angle per part, and breeds new ones from the best. A part's
+    angles are only those it fits the plate at, and no layout with a part missing beats a complete one (#359).
+    Pinning the angles makes each layout quicker to try: in a 4 s search of the sample parts it tries about 1.6× as
+    many as the order walk at 90° steps and 14× as many at 15°. When it stops improving, it restarts from shaken
+    copies of its best layout.
+  - Over 10 jobs (8 seeds, 4 s and 30 s, 90° and 15°, measured on 1.3.42-beta), it did better than the order walk in
+    73 runs and worse in 22 with one worker, and 74 and 14 with four. On the nesting fixtures at 15° with one worker
+    it used 1.0–1.1 plates on average against 1.9 for the order walk, and it filled the 120-part job with holes much
+    better (0.828 against 0.802 at 90°, 30 s). After the speedups below, in 4 s searches with one worker, it did
+    better in 33 runs and worse in 9 (#356). It can do slightly worse at 90° steps; the README says where.
+  - It works with the worker pool (one layout per worker per step) and on the page when no worker is available, and
+    "Search 30 s more" continues it.
+- **Search Options** (formerly the worker pool box) and **Plate & cutting** open and close from their headings (#344,
+  #347). Search Options starts closed and Plate & cutting open; each one's state is remembered with the other
+  settings. A closed box shows a short summary of its settings under the heading ("Genetic, 4 workers",
+  "300 × 300 mm, kerf 0.1 mm (compensated), SVG"), which a screen reader hears with the heading's button. Closing
+  Plate & cutting brings the parts list up beside the results (656 px higher in a 1280 px wide window, 735 px at
+  320 px). The mm/in switch stays usable while it's closed, and an error in one of its fields opens it again.
+
+### Changed
+
+- True-shape searches try many more layouts in the same time (#349, #350, #351). A shape with no room on a plate
+  isn't tried there again as more parts go on it, a layout that starts like a recent one picks up from that one's
+  plates, and each plate keeps the free space it has for each part shape, taking away only the parts added since.
+  Layouts tried in a 4 s search of the sample parts, measured in two steps: Order walk 168 → 256 → 603 at 90° and
+  8 → 16 → 22 at 15°; Genetic 564 → 724 → 986 at 90° and 227 → 295 → 317 at 15°; with 4 workers, Order walk
+  644 → 981 → 2547 at 90° and Genetic 266 → 305 → 331 at 15°. The first layout of a 120-part job comes 1.25–1.9×
+  sooner. Layouts can differ from before by rounding (at most 1 µm, on 2 of 120 parts in the tests); over 160 timed
+  searches (10 jobs, both methods, 8 seeds) 39 found a better layout and none a worse one.
+- Plate size, kerf, gap and edge margin refuse values over 100,000 mm with a message under the field ("Plate width
+  can be at most 100000 mm; still using 300 mm."), the same limit saved settings are checked against (#285). Before,
+  150000 was accepted and saved, then silently replaced by the default on the next visit.
+
+### Fixed
+
+- The search pauses every 30 ms however short each layout attempt is (#340). Searching on the page, when no
+  background worker is available, froze it for up to a second at a time (longest gaps 1054 ms and 912 ms in a 3 s
+  search); the longest is now 74 ms. In a worker, a new search right after Stop started at once instead of waiting up
+  to 6 s for the stopped one to notice.
+- Colors are exported right whatever syntax the file uses (#317, #284). A 50%-transparent fill was cut as fully
+  opaque; it now carries `fill-opacity="0.5"`. `oklch()`, `color()`, `lab()` and other newer forms were written into
+  the SVG as they were and became DXF layers like `OKLCH_0_6_0_2_30_` with the default color; they are now converted
+  to hex (`oklch(0.6 0.2 30)` → `#de3e2d`, DXF layer `DE3E2D`, ACI 22). Fully transparent paint counts as none in
+  every syntax.
+- Markers on a path (arrowheads, dots set with `marker-start`, `marker-mid` or `marker-end`) are no longer lost
+  (#281). The export left them out with no notice, and nesting gave them no room. A part with markers is now kept as
+  original markup, so the SVG export draws them; nesting reserves room for each marker up to its full size around the
+  point it sits on, in both modes; and the DXF export names them in its notes (`dxfOut.markers`).
+- SVG files saved in an encoding other than UTF-8 are read as their XML declaration says (#269): text in a Latin-1
+  or Windows-1252 file came in as `Gr��e` and was engraved that way; it now reads `Größe` and `5€`. Files with a
+  byte-order mark, or no declaration, are read as before.
+- A shape inside a group with `opacity` (or in a file with `opacity` on its root) keeps that opacity in the export,
+  as the thumbnail already showed (#267). `<g opacity="0.3">` around a blue rect exported it fully opaque; nested
+  opacities multiply, as in a browser.
+- DXF layer names are matched without regard to case, as in CAD (#268). An entity on `HIDDEN` whose layer table
+  entry is `Hidden` (frozen) was cut, in black, with no "left out" notice; now it is left out with the notice, and an
+  entity on `ENGRAVE` takes the color of layer `Engrave` instead of black.
+- With the worker pool on, a starting layout that Stop (or the time limit) cuts short is packed by "Search 30 s
+  more", as with one worker (#270). It used to be dropped, so Search more went straight to random tries and could
+  miss a better starting layout.
+- A failed download says so: "The download failed: …" appears as an error notice, for **Download all** and for single
+  plates (#287). Before, a failure in building the zip or a plate file did nothing visible.
+- A field's error message shows the value in use with as many decimals as the field does (#286): with an edge margin
+  of 0.25 mm, typing a letter said "still using 0.3 mm"; it now says 0.25 mm.
+- A search worker that fails without a message of its own says "Nesting stopped after an error: the search worker
+  stopped" (#279).
+- The Kerf, Designed and Measured fields in the blue kerf box have borders at least 3:1 against the box (#273):
+  4.78:1 in the light theme and 5.50:1 in the dark, up from 2.88:1 and 2.69:1.
+- In Windows high contrast (forced colors), the orientation button set to grain or locked, and a pressed **Nest parts
+  inside the holes** button, show the keyboard focus ring (#266, #374). A pressed button is now filled in the highlight color, as the pressed Nesting mode and
+  Units toggles are, and the focus ring shows around it in the system text color.
+- The ↗ after links that open a new tab also shows in browsers older than Firefox 128 and Safari 17.4, which the
+  README lists as supported (#297).
+- Cuts inside a window are made before the window, even when they share a line style with the part's outline (#361).
+  A black outline and a black disc inside a red window cut the window first, so its slug could drop or shift with the
+  disc still uncut; the export now cuts the disc, then the window, then the outline, in SVG and DXF. Files whose cut
+  order was already right export exactly as before.
+- A rect's corner radius given as a percentage in CSS (`rect{rx:20%}`) is nested and exported as the browser draws it
+  (#362): a percentage of the viewport's width for `rx` and height for `ry`. The export drew sharp corners while the
+  nesting kept room for rounded ones of the wrong size, so the cut reached past the room reserved for it.
+- Screen readers hear each announcement once (#363). The announcement regions were atomic, so a new message could
+  make a screen reader read again every message from the last 20 s.
+- The Workers hint says how much extra workers help depends on the search method, and the memory warning says to leave
+  Workers off instead of "the pool" (#375).
+
+### Security
+
+- Comments and processing instructions in an imported SVG are removed, so they no longer reach the exported SVG
+  (#360). A comment such as `<!--><b>…</b>-->` is inert as XML, but software that reads the export as HTML ended it
+  early and turned the markup inside into live elements.
+- Crafted outlines no longer freeze the page (#271). A 160 KB SVG zigzag of 20,000 teeth froze the tab for 94 s after
+  it was added; the page now blocks for at most 255 ms. A thin outline that the nesting simplifies to a line was grown
+  by the spacing point by point: it now keeps a simplified copy within the same tolerance. Lines that cross each other
+  more than 10,000 times, or open zigzags with thousands of turns, would take Clipper seconds to minutes to trace (a
+  DXF spline crossing itself took 22 s at 2,000 control points): such a part is nested by the shape around all of it,
+  with a notice, and exported as drawn. A file whose curves would be sampled into more than 2,000,000 points is
+  refused with a message (`svg.tooManyPoints`). Ordinary files measure and nest exactly as before.
+- A crafted SVG with a long run of `--name:` text in a style sheet or an attribute no longer freezes the page while it
+  is added (#272). The check for CSS custom properties holding a string backtracked quadratically: a 300 KB file took
+  8.7 s, and 1 MB would take about 95 s. It now checks one declaration at a time, with the same results: that file is
+  added in 14 ms.
+- Text from the string table, and file names among its values, is escaped wherever the app writes it into markup
+  (#298), so a translation containing a quote, `<` or `&` can't break a button's label or tooltip or add elements.
+
 ## 1.3.0-beta
 
 Release of 1.2.1-beta through 1.2.40-beta, with the fixes from the release review (1.3.1-beta through 1.3.7-beta).

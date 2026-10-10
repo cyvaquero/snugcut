@@ -8,7 +8,7 @@
 
 app/index.html, app/snugcut.css, app/app.js, app/strings-en.js and lib/snugcut.js are the source of truth. The page's
 stylesheet link and module script are replaced by the CSS and the JavaScript inline: the library first, then the
-string table, then the app, in one classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
+string table, then the app, in one strict classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
 (no 'unsafe-inline', so injected inline handlers can't run), and 'self' is dropped since nothing is loaded from disk.
 Both runs check the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
 message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
@@ -63,14 +63,15 @@ def build():
     if html.count(link) != 1 or html.count(mod) != 1: fail("app/index.html must have exactly one snugcut.css link and one app.js module script")
     csp = re.search(r'(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(">)', html)
     if not csp: fail("app/index.html has no Content-Security-Policy <meta>")
-    script = "\n(() => {\n" + lib + app + "})();\n"
+    # strict, as app/ is as ES modules, so testing app/ covers the shipped file (#289)
+    script = "\n(() => {\n\"use strict\";\n" + lib + app + "})();\n"
     digest = "'sha256-" + base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode() + "'"
     dirs = []
     for d in csp.group(2).split(";"):
         d = d.strip()
         if "'unsafe-inline'" in d and d.startswith("script-src"): fail("app/index.html: script-src must not allow 'unsafe-inline'")
         if d.startswith("script-src"): d = d.replace("'self'", digest)    # the one inline script, by hash
-        else: d = d.replace("'self' ", "")
+        else: d = " ".join(w for w in d.split() if w != "'self'")   # wherever it stands in the directive (#296)
         dirs.append(d)
     html = html.replace(csp.group(0), csp.group(1) + "; ".join(dirs) + csp.group(3), 1)
     html = html.replace(link, "<style>\n" + css + "</style>\n", 1)
@@ -81,9 +82,11 @@ def build():
 if __name__ == "__main__":
     out = build()
     if "--check" in sys.argv[1:]:
-        if not OUT.exists() or OUT.read_text(encoding="utf-8") != out:
+        # compared as bytes and written with \n on every platform, so a Windows build can't turn every line into \r\n
+        # unseen (#292)
+        if not OUT.exists() or OUT.read_bytes() != out.encode("utf-8"):
             fail("snugcut.html is out of date: run python3 tools/build.py")
         print("snugcut.html is up to date")
     else:
-        OUT.write_text(out, encoding="utf-8")
+        OUT.write_text(out, encoding="utf-8", newline="\n")
         print(f"wrote {OUT.relative_to(ROOT)} ({len(out.encode('utf-8'))} bytes)")
