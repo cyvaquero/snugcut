@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.18-beta
+
+- **Fixed:** placeholder text in the file prefix and kerf fields is easier to read: it now meets WCAG AA contrast in
+  both themes (#371). It used the browser's default gray, at 3.7–4.6:1; it now uses the page's muted text color, at
+  5.3–6.7:1.
+
 ## 1.4.17-beta
 
 - **Security:** files with tens of thousands of separate pieces are added and downloaded in seconds instead of

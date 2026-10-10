@@ -3,6 +3,7 @@
 /* Layout: settings + parts rail on the left, plate previews filling the right; stacks on narrow screens.
    --line is for dividers; --field outlines controls and is at least 3:1 against --surface, --sunk and --bg (#99); in
    the kerf box, on --accent-soft, fields are outlined in --muted instead (4.78:1 light, 5.50:1 dark, #273).
+   Placeholder text is --muted, at least 4.5:1 on --sunk and --surface (#371).
    --plate-edge is at least 3:1 against --surface, the plate card around it (#167). */
 :root{
   --bg:#eceff3; --surface:#ffffff; --sunk:#f4f6f8; --fg:#16202b; --muted:#5a6775; --line:#d3dae2; --field:#7e8b99;
@@ -51,6 +52,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,.drop:focus-visibl
 .kerf{background:var(--accent-soft);border:1px solid var(--accent);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .kerf label{color:var(--fg);font-weight:600}
 .kerf input{font-size:17px;background:var(--surface);border-color:var(--muted)}
+::placeholder{color:var(--muted);opacity:1}
 .hint{font-size:13px;color:var(--muted);margin:0}
 .ferr{font-size:13px;color:var(--warn);margin:0}
 .part .ferr{grid-column:1/-1}
