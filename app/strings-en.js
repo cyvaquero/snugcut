@@ -62,6 +62,7 @@ export const EN = {
   "parts.none": "No parts yet. Add SVG or DXF files above.",
   "parts.count": "{files, plural, one {# file} other {# files}} · {n, plural, one {# part} other {# parts}}",
   "files.only": "Only .svg and .dxf files can be added.",
+  "files.refused": "{list} {n, plural, one {wasn't} other {weren't}} added: only .svg and .dxf files can be added.",
   "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
   "files.hiddenItem": "{n} from {name}",
   "files.tangled": "{name} has lines that cross each other too many times to trace its outline, so it is nested by the shape around all of it.",
