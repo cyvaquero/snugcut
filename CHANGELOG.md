@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.15-beta
+
+- Very long outlines no longer fail to import with "Maximum call stack size exceeded" (#410): a polyline of 200,000
+  points with markers, a path of 150,000 pieces in one style, and DXF splines through very many fit points. They are
+  now imported, or refused with the point-limit message when over it.
+
 ## 1.4.14-beta
 
 - **Security:** the points SnugCut adds around markers count against the 2,000,000-point limit for a file's curves
