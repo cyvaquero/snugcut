@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.8-beta
+
+- When the search runs on the page (no background worker), a starting layout cut short by Stop or the time limit is
+  packed by "Search 30 s more" (#368), as it already was with workers. It used to be dropped, so Search more could miss
+  a better starting layout.
+
 ## 1.4.7-beta
 
 - The same order and angles always give the same layout, wherever and whenever they are packed (#367). A layout that
