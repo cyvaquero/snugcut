@@ -243,6 +243,16 @@ function restart(){ restartSoon(250, true); }
 const ICON_LOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`;
 // open shackle when unlocked: the lock's state shows in its shape, not only its color (#98)
 const ICON_UNLOCK = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0"/></svg>`;
+// grain (#7): wavy lines along X, a third shape, so each orientation state shows without color
+const ICON_GRAIN = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4.5c2-1.5 4 1.5 6 0s4 1.5 6 0M2 8c2-1.5 4 1.5 6 0s4 1.5 6 0M2 11.5c2-1.5 4 1.5 6 0s4 1.5 6 0"/></svg>`;
+// a part's orientation (#7): free to rotate, grain (0° or 180° only), or locked (0°); the button cycles through them
+// in that order. Three states don't fit aria-pressed, so the button's name says the state, and a change is announced
+const orient = p => p.lock ? "lock" : p.grain ? "grain" : "free";
+const ORIENT_ICON = {free:ICON_UNLOCK, grain:ICON_GRAIN, lock:ICON_LOCK};
+const orientBtn = (el, p) => {
+  const state = orient(p); el.dataset.state = state; el.innerHTML = ORIENT_ICON[state];
+  el.title = t("part.orientTitle", {state}); el.setAttribute("aria-label", t("part.orientLabel", {name: p.name, state}));
+};
 // a part's holes open to other parts (#3): an empty frame when off, a frame with a part inside when on
 const ICON_HOLE = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="5.5" y="5.5" width="5" height="5" rx="1" stroke-dasharray="2 1.5"/></svg>`;
 const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
@@ -259,7 +269,7 @@ function renderParts(){
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${th(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${th("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${th("part.inches")}</option></select></div>` : ""}</div>
       <div class="qw"><span class="ql" id="ql-${p.uid}">${th("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
-      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk" aria-pressed="${p.lock}" title="${th("part.lockTitle")}" aria-label="${th("part.lockLabel", {name: p.name})}">${p.lock ? ICON_LOCK : ICON_UNLOCK}</button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
+      <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk"></button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
       const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
@@ -271,7 +281,11 @@ function renderParts(){
     if (du) du.onchange = () => { const np = reunit(p, du.value); if (np) { say(t("part.readIn", {name: np.name, units: du.value, w: fmt(np.wMM), h: fmt(np.hMM), unit: S.unit})); renderParts(); $("parts").querySelector(`.part[data-uid="${np.uid}"] select`).focus(); restart(); } };
     const lk = row.querySelector(".lk"), rm = row.querySelector(".rm"), hl = row.querySelector(".hl");
     if (hl) hl.onclick = () => { p.useHoles = !p.useHoles; hl.setAttribute("aria-pressed", p.useHoles); hl.innerHTML = p.useHoles ? ICON_HOLE_ON : ICON_HOLE; restartSoon(250); };
-    lk.onclick = () => { p.lock = !p.lock; lk.setAttribute("aria-pressed", p.lock); lk.innerHTML = p.lock ? ICON_LOCK : ICON_UNLOCK; restartSoon(250); };
+    orientBtn(lk, p);
+    lk.onclick = () => {
+      const next = {free:"grain", grain:"lock", lock:"free"}[orient(p)];
+      p.grain = next === "grain"; p.lock = next === "lock"; orientBtn(lk, p); say(lk.getAttribute("aria-label")); restartSoon(250);
+    };
     rm.onclick = () => {   // focus moves to the next part's quantity (or the previous one, or the drop zone) (#95)
       const i = parts.indexOf(p), nb = parts[i + 1] || parts[i - 1];
       removeParts(x => x === p); renderParts();
@@ -291,11 +305,11 @@ function updateCount(){
   $("partCount").textContent = t("parts.count", {files: parts.length, n});
 }
 // a DXF file that doesn't declare its units is read again in the units the user picks (#90); the part keeps its place,
-// quantity and lock
+// quantity and orientation
 function reunit(p, units){
   try {
     const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
-    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
+    Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, grain:p.grain, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
@@ -383,14 +397,15 @@ function drawLayout(){
   $("sEffK").textContent = E ? t("stat.effLabel", {eff: pct(E.eff)}) : t("stat.effNone");
   const msg = text => { const m = document.createElement("div"); m.className = "msg"; m.textContent = text; msgs.appendChild(m); };
   const bbox = S.mode === "bbox", canRot = bbox ? S.rotate : !!S.rotStep;
-  for (const p of L.oversize) msg(t(!p.lock && canRot ? (bbox ? "layout.oversizeBbox" : "layout.oversizeRot") : "layout.oversize", {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
+  const tooBig = p => p.lock || !canRot ? "layout.oversize" : p.grain ? (bbox ? "layout.oversizeGrainBbox" : "layout.oversizeGrain") : bbox ? "layout.oversizeBbox" : "layout.oversizeRot";
+  for (const p of L.oversize) msg(t(tooBig(p), {name: p.name, w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit}));
   if (L.noArea) msg(t("run.noArea"));
   // when nothing was placed, say why only if no message above already does (#84)
   if (!L.plates.length && !L.noArea && !L.oversize.length) box.innerHTML = `<p class="note">${th(!parts.length ? "layout.addFiles" : !parts.some(p => p.qty) ? "layout.setQty" : "layout.nonePlaced")}</p>`;
   L.plates.forEach((pl, i) => {
     const url = URL.createObjectURL(new Blob([plateSVG(pl, {preview:true})], {type:"image/svg+xml"})); plateURLs.push(url);
     const ratio = pl.area / plateA, fill = pct(ratio);
-    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.ang ? th("plate.rotated", {name: it.part.name, ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
+    const env = pl.items.map(it => it.env.map(q => `<polygon points="${q.map(([x, y]) => `${n4(x)},${n4(y)}`).join(" ")}" fill="none" stroke="var(--guide)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"><title>${it.part.grain ? th("plate.grain", {name: it.part.name, ang: it.ang}) : it.ang ? th("plate.rotated", {name: it.part.name, ang: it.ang}) : esc(it.part.name)}</title></polygon>`).join("")).join("");
     const mg = S.margin > 0 ? `<rect x="${n4(S.margin)}" y="${n4(S.margin)}" width="${n4(S.plateW-2*S.margin)}" height="${n4(S.plateH-2*S.margin)}" fill="none" stroke="var(--guide-margin)" stroke-width="1" stroke-dasharray="1 3" vector-effect="non-scaling-stroke"/>` : "";
     // text alternative (#96): the image says what's on the plate, and is described by the list of the parts on it. The
     // description is a hidden copy of the list: the list itself is in a <details> that is usually closed, and a closed

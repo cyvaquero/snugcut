@@ -4,6 +4,20 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.43-beta
+
+- Parts can be set to follow a grain direction (#7). Each part's orientation button now cycles through three states,
+  each with its own icon:
+  - **free**: the part turns at the Rotation step;
+  - **grain**: the part turns only end for end, 0° or 180°, so wood grain or brushed metal runs the same way on every
+    copy. In Bounding box mode it isn't turned at all.
+  - **locked**: 0° only.
+
+  Both search methods and the worker pool keep grain parts to 0° and 180°. A part left out because it fits only turned
+  90° says so. A grain part's outline on the plate preview is labeled "(grain)". The button's name says its state
+  ("Orientation of star.svg: grain, 0° or 180° only"), and a change is announced. Free and locked parts nest exactly
+  as before.
+
 ## 1.3.42-beta
 
 - A genetic search, as an alternative to the order walk, in True shape (#5). The box above Plate & cutting is now
