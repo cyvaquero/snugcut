@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.7-beta
+
+- The same order and angles always give the same layout, wherever and whenever they are packed (#367). A layout that
+  started like a recent one picked up from that one's plates, which could place a part 1 µm differently than packing
+  it from the start (2 of 30 trials on the sample parts at 15°), so a search's results could depend on what it had
+  tried before or which worker tried it. Every layout is packed from the start again; that reuse saved about 5% since
+  the free-space change in 1.3.47-beta.
+
 ## 1.4.6-beta
 
 - The QA workbooks in `qa/` test 1.4.0-beta: the release under test, its source zip and the footer check (#373). Test
