@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.45-beta
+
+- The **Search** box is now **Search Options**, and it and **Plate & cutting** open and close from their headings
+  (#344, #347). Search Options starts closed and Plate & cutting open; each one's state is remembered with the other
+  settings. A closed box shows a short summary of its settings under the heading ("Genetic, 4 workers",
+  "300 × 300 mm, kerf 0.1 mm (compensated), SVG"), which a screen reader hears with the heading's button. Closing
+  Plate & cutting brings the parts list up beside the results (656 px higher in a 1280 px wide window, 735 px at
+  320 px). The mm/in switch stays usable while it's closed, and an error in one of its fields opens it again.
+
 ## 1.3.44-beta
 
 - The Parts panel now explains the padlock button on each part: each click moves to the next setting, free (turns at

@@ -51,6 +51,8 @@ const SEARCH_MS = 4000, MORE_MS = 30000;
 $("more").textContent = t("search.more", {s: MORE_MS / 1000});
 // the longest length a field takes, in mm: the fields refuse more, and a saved value past it is ignored on load (#285)
 const MAX_LEN = 100000;
+// the rail panels' open state (#344, #347): page-only, saved with the settings; the library never reads it
+Object.assign(S, {openSearch:false, openPlate:true});
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -62,10 +64,10 @@ function loadSettings(saved){
   for (const k of ["rotStep", "prec", "dpi", "pool"]) pick(k, v => opts(k).includes(v));
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= MAX_LEN);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= MAX_LEN);
-  for (const k of ["rotate", "outline", "comp"]) pick(k, v => typeof v === "boolean");
+  for (const k of ["rotate", "outline", "comp", "openSearch", "openPlate"]) pick(k, v => typeof v === "boolean");
   pick("prefix", v => typeof v === "string" && v.length <= 200);
 }
-const save = () => { try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
+const save = () => { panelSummary(); try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
 let parts = [];
 let layout = null;               // {plates:[{area, items:[{part,x,y,ang,rx,ry,env}]}], oversize, minPlates, noArea, stale}
@@ -96,6 +98,8 @@ function fieldErr(input, msg, quiet){
   let e = document.getElementById(input.id + "-err");
   if (!msg) { sayLater(input.id); if (e) { e.remove(); input.removeAttribute("aria-invalid"); describe(input, e.id, false); } return; }
   if (!quiet && (!e || e.textContent !== msg)) sayLater(input.id, msg);
+  const bd = input.closest(".panel-bd");   // an error in a closed panel opens it (#347)
+  if (bd?.hidden) setPanel(bd.id.slice(2), true);
   if (!e) { e = document.createElement("p"); e.className = "ferr"; e.id = input.id + "-err"; const row = input.closest(".part"); row ? row.appendChild(e) : input.after(e); }
   e.textContent = msg; input.setAttribute("aria-invalid", "true"); describe(input, e.id, true, true);
 }
@@ -132,6 +136,23 @@ $("search").onchange = e => { S.search = e.target.value; save(); restart(); };  
 $("outline").onchange = e => { S.outline = e.target.checked; save(); };
 // the warning describes the checkbox while it shows, and its heading is announced when compensation is turned on (#166)
 function showCompWarn(){ $("compWarn").hidden = !S.comp; describe($("kerfComp"), "compWarn", S.comp); }
+// the rail panels open and close from their headings, remembered like the other settings (#344, #347). Closed, a short
+// summary of the panel's settings shows under the heading and describes the toggle; open, the fields say it all.
+const PANELS = {pool:"openSearch", plate:"openPlate"};
+function panelSummary(){
+  $("sum-pool").textContent = t("panel.searchSummary", {method: S.search, n: S.pool});
+  $("sum-plate").textContent = t("panel.plateSummary", {w: num(toDisp(S.plateW), fieldDec("plateW")), h: num(toDisp(S.plateH), fieldDec("plateH")),
+    kerf: num(toDisp(S.kerf), fieldDec("kerf")), unit: S.unit, comp: String(!!S.comp), format: S.format});
+}
+function setPanel(id, open){
+  const tg = $("t-" + id);
+  if (open !== undefined && open !== S[PANELS[id]]) { S[PANELS[id]] = open; save(); }
+  open = S[PANELS[id]];
+  tg.setAttribute("aria-expanded", open); $("b-" + id).hidden = !open; $("sum-" + id).hidden = open;
+  describe(tg, "sum-" + id, !open);
+}
+for (const id in PANELS) { $("t-" + id).onclick = () => setPanel(id, !S[PANELS[id]]); setPanel(id); }
+panelSummary();
 $("kerfComp").onchange = e => { S.comp = e.target.checked; showCompWarn(); if (S.comp) say($("compWarn").querySelector("b").textContent); save(); invalidateGeometry(); restart(); };
 $("prefix").oninput = e => { S.prefix = e.target.value; save(); prefixEx(); };
 $("format").onchange = e => { S.format = e.target.value; save(); renderLayout(); prefixEx(); };
