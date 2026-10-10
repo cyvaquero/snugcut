@@ -125,7 +125,7 @@ The orientation button cycles through three states, each with its own icon: **fr
 the Rotation step), **grain** (wavy lines: the part only turns end for end, 0° or 180°, so wood grain or brushed metal
 runs the same way on every copy; in Bounding box mode it isn't turned at all, since 180° gives the same rectangle), and
 **locked** (a closed lock: 0° only) (#7). A part left out because it fits only turned another way says so, and a
-grain part's outline on the plate preview is labeled "(grain)". A few sample parts are loaded at first; they go away when you add your own files.
+grain part's outline on the plate preview is labeled "(grain)". A line under the parts list explains the three states (#345). A few sample parts are loaded at first; they go away when you add your own files.
 
 **Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
 not on parts kept as original markup);

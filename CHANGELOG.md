@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.3.44-beta
+
+- The Parts panel now explains the padlock button on each part: each click moves to the next setting, free (turns at
+  the Rotation step), grain (0° or 180° only, no turn in Bounding box) and locked (never turns) (#345).
+
 ## 1.3.43-beta
 
 - Parts can be set to follow a grain direction (#7). Each part's orientation button now cycles through three states,
