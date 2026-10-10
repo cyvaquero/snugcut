@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-5ZO49FJWn93fLy5z4vqq5cyesNPPUweuiTBs4iFXcZg=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-984cg7BbbugYtgmsuxZVQYQ7IHK2QqH+YaG2vnMaki4=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -289,7 +289,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.46-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.3.47-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite"></div>
@@ -1909,21 +1909,29 @@ function nestCore(CL, SC, hooks){
     let region;
     if (!bin.items.length) region = [ifp];
     else {
-      const c = new CL.Clipper();
-      c.AddPath(ifp, CL.PolyType.ptSubject, true);
-      for (const it of bin.items) {
-        // skip neighbors that can't reach the inner-fit rectangle
-        if (it.x + it.s.maxX - Bs.minX < xMin || it.x + it.s.minX - Bs.maxX > xMax || it.y + it.s.maxY - Bs.minY < yMin || it.y + it.s.minY - Bs.maxY > yMax) continue;
-        let block = nfp(it.s, Bs);
-        if (it.s.holes.length) {            // the neighbor's holes, where Bs fits inside them, are open (#3)
-          const fits = it.s.holes.flatMap((_, hi) => holeFit(it.s, hi, Bs));
-          if (fits.length) { const d = new CL.Clipper(); d.AddPaths(block.map(q => unpack(q)), CL.PolyType.ptSubject, true); d.AddPaths(fits.map(q => unpack(q)), CL.PolyType.ptClip, true);
-            block = new CL.Paths(); d.Execute(CL.ClipType.ctDifference, block, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero); }
+      // the free region for this shape is kept per plate, and only the parts added since are taken from it (#351): the
+      // first call subtracts every neighbor, later ones (the shape's next copies) just the newcomers
+      const reg = bin.reg || (bin.reg = new Map()), last = reg.get(Bs.key), from = last ? last.n : 0;
+      if (last && from === bin.items.length) region = last.region;
+      else {
+        const c = new CL.Clipper();
+        if (last) c.AddPaths(last.region, CL.PolyType.ptSubject, true); else c.AddPath(ifp, CL.PolyType.ptSubject, true);
+        for (let j = from; j < bin.items.length; j++) {
+          const it = bin.items[j];
+          // skip neighbors that can't reach the inner-fit rectangle
+          if (it.x + it.s.maxX - Bs.minX < xMin || it.x + it.s.minX - Bs.maxX > xMax || it.y + it.s.maxY - Bs.minY < yMin || it.y + it.s.minY - Bs.maxY > yMax) continue;
+          let block = nfp(it.s, Bs);
+          if (it.s.holes.length) {            // the neighbor's holes, where Bs fits inside them, are open (#3)
+            const fits = it.s.holes.flatMap((_, hi) => holeFit(it.s, hi, Bs));
+            if (fits.length) { const d = new CL.Clipper(); d.AddPaths(block.map(q => unpack(q)), CL.PolyType.ptSubject, true); d.AddPaths(fits.map(q => unpack(q)), CL.PolyType.ptClip, true);
+              block = new CL.Paths(); d.Execute(CL.ClipType.ctDifference, block, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero); }
+          }
+          for (const q of block) c.AddPath(q instanceof Int32Array ? unpack(q, it.x, it.y) : q.map(v => ({X:v.X + it.x, Y:v.Y + it.y})), CL.PolyType.ptClip, true);
         }
-        for (const q of block) c.AddPath(q instanceof Int32Array ? unpack(q, it.x, it.y) : q.map(v => ({X:v.X + it.x, Y:v.Y + it.y})), CL.PolyType.ptClip, true);
+        region = new CL.Paths();
+        c.Execute(CL.ClipType.ctDifference, region, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+        reg.set(Bs.key, {n:bin.items.length, region});
       }
-      region = new CL.Paths();
-      c.Execute(CL.ClipType.ctDifference, region, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
     }
     let best = null;
     const bb = bin.bb;
@@ -2014,6 +2022,7 @@ function nestCore(CL, SC, hooks){
       await breathe();
     }
     snaps[n] = snap();
+    for (const b of bins) delete b.reg;     // the free regions are only for this pack: kept, a memo's plates would hold them all
     memos.push({items, F, ver:hooks.ver(), order:order.slice(), angs:angsAt, snaps, placed, bins});
     if (memos.length > MEMO_MAX) memos.shift();
     return bins;
