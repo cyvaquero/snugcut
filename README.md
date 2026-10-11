@@ -20,9 +20,9 @@ always outward, so they nest a little less tightly but never overlap.
 
 **Area minimum** is the fewest plates the job could fit on by area alone: in True shape, the parts' envelopes
 (outlines plus half the spacing all round, less the holes of parts set to nest other parts inside them) divided by the
-plate's usable area; in Bounding box mode, the parts' bounding rectangles grown by the spacing, divided by the usable
-area grown the same way. When the best layout uses more plates than that, the status
-line suggests a longer search ("A longer search may save a plate").
+plate's usable area grown by half the spacing (and the outline precision); in Bounding box mode, the parts' bounding
+rectangles grown by the spacing, divided by the usable area grown the same way. When the best layout uses more plates
+than that, the status line suggests a longer search ("A longer search may save a plate").
 
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
 material: their outlines minus their holes, in both modes (parts kept as original markup count their holes as

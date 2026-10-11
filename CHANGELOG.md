@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.37-beta
+
+- **Fixed:** the README's description of the True shape Area minimum now says that the plate's usable area is grown by
+  half the spacing (and the outline precision), as the calculation does (#381).
+
 ## 1.4.36-beta
 
 - **Added:** a GitHub Actions check runs `python3 tools/build.py --check` and `python3 tools/qa_workbooks.py --check`
