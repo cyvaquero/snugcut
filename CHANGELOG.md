@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.22-beta
+
+- **Fixed:** an error while drawing a layout now stops the run with "Nesting stopped after an error" in both modes,
+  and stops the other workers, instead of failing silently with the status still claiming a result (#385). This is
+  what now shows the Bounding box failure in #420.
+
 ## 1.4.21-beta
 
 - **Changed:** the README's accessibility section says the plate previews' mouse tooltips are extra, and lists where

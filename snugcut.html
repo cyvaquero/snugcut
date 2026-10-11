@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t26qGyjFlBNRATPru5xIEYNKETN0C04Fo7We9WdMhnk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gMyLJLNyNfpHhwCZ5nQI3VbM65FYyx4kRi7Uq9ZhmNc=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -291,7 +291,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.21-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.22-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2413,10 +2413,13 @@ function inWorker(w, st, o, parts, byUid){
       const m = e.data;
       if (m.id !== id || o.token !== runToken) return;
       Object.assign(st, m.st);
-      if (m.type === "best") o.onBest(rebuild(m.bins, byUid), m.score);
-      else if (m.type === "step") o.onStep();
-      else if (m.type === "draw") { if (o.onDraw) o.onDraw(); }
-      else if (m.type === "done") { end(); resolve(); }
+      // an error in the caller's callbacks (drawing a layout) fails the search, which the caller awaits (#385)
+      try {
+        if (m.type === "best") o.onBest(rebuild(m.bins, byUid), m.score);
+        else if (m.type === "step") o.onStep();
+        else if (m.type === "draw") { if (o.onDraw) o.onDraw(); }
+      } catch(err) { w.postMessage({type:"stop", id}); fail(err); return; }
+      if (m.type === "done") { end(); resolve(); }
       else if (m.type === "error") { end(); reject(new Error(m.message)); }
     };
     w.addEventListener("message", on); w.addEventListener("error", poolFailed); live.add(fail);
@@ -3041,14 +3044,11 @@ $("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; s
 /* ---------- search controller ---------- */
 let search = null;   // {items, oversize, minPlates, F, st: the search state, see searchParts}
 async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
-  const token = newRun();
-  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
-  const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
-  const plateA = S.plateW * S.plateH;
-  setRunning(true);
-  const t0 = performance.now();
-  try {
+  const token = newRun(), F = binFrame(), plateA = S.plateW * S.plateH, t0 = performance.now();
+  try {     // an error while drawing a layout stops the run with a notice in both modes (#385)
+    if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); return; }
+    $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
+    setRunning(true);
     if (fresh || !search || !search.st.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
@@ -3072,8 +3072,9 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
-    if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
-    else return;
+    if (e === ABORT) return;
+    console.error(e); notice(t("notice.nestError", {error: e.message || e}), true);
+    newRun(); setRunning(false, quiet);     // the pool's other workers stop too, as on Stop
   } finally {
     if (isCurrent(token)) setRunning(false, quiet);
   }
