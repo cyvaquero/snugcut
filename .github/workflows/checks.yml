@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
+# The generated files must be committed with their sources (CLAUDE.md): snugcut.html from app/ and lib/, and the QA
+# workbooks from tools/qa_workbooks.py. Each pull request, and each push to main or develop, fails when either is out
+# of date (#393). Python 3 standard library only, as both scripts are.
+name: Generated files are current
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          persist-credentials: false
+      - name: snugcut.html is built from app/ and lib/
+        run: python3 tools/build.py --check
+      - name: The QA workbooks are generated from tools/qa_workbooks.py
+        run: python3 tools/qa_workbooks.py --check

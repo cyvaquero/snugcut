@@ -367,7 +367,8 @@ python3 tools/build.py
 ```
 
 and commit the sources and `snugcut.html` together. `python3 tools/regression.py` then checks that the exports are
-byte-identical to `develop`'s. The split app (`app/index.html`) uses ES modules, so it only runs
+byte-identical to `develop`'s. Every pull request and every push to `main` or `develop` runs both `--check` commands
+(`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
