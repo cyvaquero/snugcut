@@ -126,7 +126,7 @@ the mm/in switch stays in its heading, and a field error opens the box again.
   72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
   `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).
 - **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
-- **Output file prefix**: put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
+- **Output file prefix** (up to 60 characters): put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
   `nested-plates.zip` without a prefix or `<prefix>-plates.zip` with one. "Download all (.zip)" appears when there is
   more than one plate.
 - **Export format**: SVG, or DXF (R12, mm).

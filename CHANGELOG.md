@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.24-beta
+
+- **Fixed:** the output file prefix has one limit, 60 characters, in the field, in saved settings and in file names
+  (#386). The field allowed 80 while file names kept 60, and a longer saved prefix was loaded whole; it is now cut to
+  60.
+
 ## 1.4.23-beta
 
 - **Changed:** the export QA workbooks test 1.4.0.1-beta and link its source zip (#49, #50, #51, #52, #132, #133).

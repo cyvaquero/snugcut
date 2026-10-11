@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aW92veitvxdoaewoEovWUIGNP614jOJEnxxxOwl7/kM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W3uGNIWl/M2mzdaMcWmV+9AT3PDII8Gm9sT6XFRkP/U=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -248,7 +248,7 @@ footer a,header p a{color:var(--accent)}
           </div>
           <div class="row">
             <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
-              <input type="text" id="prefix" maxlength="80" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
+              <input type="text" id="prefix" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
             <div class="field"><label for="format" data-t="page.format">Export format</label>
               <select id="format"><option value="svg">SVG</option><option value="dxf" data-t="page.formatDxf">DXF (R12, mm)</option></select></div>
           </div>
@@ -291,7 +291,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.23-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.4.24-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2913,6 +2913,8 @@ $("more").textContent = t("search.more", {s: MORE_MS / 1000});
 const MAX_LEN = 100000;
 // the rail panels' open state (#344, #347): page-only, saved with the settings; the library never reads it
 Object.assign(S, {openSearch:false, openPlate:true});
+// the output file prefix's one length limit (#386): the field's maxlength, saved settings and file names
+const PREFIX_MAX = 60; $("prefix").maxLength = PREFIX_MAX;
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -2925,7 +2927,7 @@ function loadSettings(saved){
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= MAX_LEN);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= MAX_LEN);
   for (const k of ["rotate", "outline", "comp", "openSearch", "openPlate"]) pick(k, v => typeof v === "boolean");
-  pick("prefix", v => typeof v === "string" && v.length <= 200);
+  if (Object.hasOwn(saved, "prefix") && typeof saved.prefix === "string") S.prefix = saved.prefix.slice(0, PREFIX_MAX);   // a longer one is cut to what the field allows
 }
 const save = () => { panelSummary(); try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
@@ -3025,7 +3027,7 @@ $("dpi").onchange = e => { S.dpi = +e.target.value; save(); parts.forEach(measur
 function filePrefix(){
   // the user's prefix made safe for file names on every OS (no path or reserved characters, no leading dots), plus "-"
   const p = String(S.prefix || "").replace(/[\/\\:*?"<>|\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim()
-    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, 60).trim();
+    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, PREFIX_MAX).trim();
   return p ? p + "-" : "";
 }
 function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
