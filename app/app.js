@@ -329,12 +329,18 @@ function updateCount(){
 // quantity and orientation
 function reunit(p, units){
   try {
-    const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
+    const np = addThumb(parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name));
     Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, grain:p.grain, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
 // a removed part's pending Qty error isn't announced after it's gone (#379)
+// a part's thumbnail in the parts list: an object URL the app makes and releases (#392)
+function addThumb(p){
+  const svg = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${p.rootAttrs}>${p.inner}</g></svg>`;
+  p.thumb = URL.createObjectURL(new Blob([svg], {type:"image/svg+xml"}));
+  return p;
+}
 function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); sayLater("q-" + p.uid); return false; } return true; }); }
 
 /* ---------- files ---------- */
@@ -371,7 +377,7 @@ async function addFiles(list){
     const pre = isCompensated(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
-    const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
+    const p = addThumb(parseSVG(text, f.name)); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
     if (p.tangled) notes.push(t("files.tangled", {name: p.name}));
     if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
@@ -531,7 +537,7 @@ const SAMPLES = [
 fillInputs();
 // text the app writes into the page from the string table, the first time (#279)
 $("kOut").textContent = t("kcalc.none"); $("sEffK").textContent = t("stat.effNone");
-for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+for (const [n, q, svg] of SAMPLES) { try { const p = addThumb(parseSVG(svg, n)); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 startWorker({url: $("clipper-lib").src, integrity: $("clipper-lib").integrity});   // fetched and built while the parts list is drawn (#4)
 renderParts();
 run(SEARCH_MS, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
