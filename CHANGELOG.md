@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.38-beta
+
+- **Fixed:** RELEASING.md's fixture regression no longer says `run(0, true)` runs one pack: in True shape it packs
+  both sorted orders and keeps the better, with no search (#382).
+
 ## 1.4.37-beta
 
 - **Fixed:** the README's description of the True shape Area minimum now says that the plate's usable area is grown by
