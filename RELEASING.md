@@ -22,12 +22,9 @@ one unasked. If the answer is yes:
 The release branch is cut only on the maintainer's instruction, never automatically. Step 1 finishing (or being
 declined) is not a reason to cut it; wait to be told, including which version to release.
 
-- Branch `release/<version>` off an up-to-date `develop`.
-- Set the version in the page footer (`app/index.html`), run `python3 tools/build.py`, and add a `CHANGELOG.md` entry. Major and minor versions change
-  only when the maintainer asks.
-- For a major or minor version, consolidate `CHANGELOG.md`: squash the iterative entries the release covers (and backfill
-  earlier unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release).
-- Push the branch.
+- Branch `release/<version>` off an up-to-date `develop` and push it.
+- Don't bump the version or touch `CHANGELOG.md` at the cut: the release branch keeps develop's iterative number, and
+  the bump to `<version>` and the CHANGELOG consolidation happen when the release is finished (section 4).
 
 ## 3. After cutting: blind review
 
@@ -91,6 +88,11 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
 - Fix release blockers on `bugfix/` branches, with PRs into the release branch. Bump the iterative version with each
   fix.
 - Finishing the release needs the maintainer's explicit approval:
+  - on the release branch, set `<version>` (`X.Y.0` for a major or minor release) in the page footer
+    (`app/index.html`), run `python3 tools/build.py`, and add its `CHANGELOG.md` section. For a major or minor version,
+    consolidate `CHANGELOG.md` in the same commit: squash the iterative entries the release covers (and backfill earlier
+    unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release). Major and minor
+    versions change only when the maintainer asks;
   - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
   - delete the release branch, locally and on origin.

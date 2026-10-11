@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.42-beta
+
+- **Changed:** cutting a release branch no longer bumps the version or changes `CHANGELOG.md`; the bump to the release
+  version and the CHANGELOG consolidation happen when the release is finished, just before it merges into `main`
+  (#444).
+
 ## 1.4.41-beta
 
 - **Fixed:** the comment in `tools/regression.py` no longer says each sample nest is one pack: True shape packs both
