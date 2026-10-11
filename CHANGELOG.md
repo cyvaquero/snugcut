@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.23-beta
+
+- **Changed:** the export QA workbooks test 1.4.0.1-beta and link its source zip (#49, #50, #51, #52, #132, #133).
+  No test's expected result changes: the hotfix only affects Bounding box mode, which the workbooks don't use.
+
 ## 1.4.22-beta
 
 - **Fixed:** an error while drawing a layout now stops the run with "Nesting stopped after an error" in both modes,
