@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.34-beta
+
+- **Added:** a GitHub Actions check runs `python3 tools/build.py --check` and `python3 tools/qa_workbooks.py --check`
+  on every pull request and every push to `main` or `develop`, so a stale `snugcut.html` or QA workbook fails it
+  (#393).
+
 ## 1.4.33-beta
 
 - **Added:** `tools/regression.py`, the fixture regression as one command (#394). It exports every fixture and the
