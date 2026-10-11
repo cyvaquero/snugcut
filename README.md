@@ -313,6 +313,13 @@ output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, a
 build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
 allows its own files with `'self'` instead).
 
+## Library version and markers
+
+`setVersion(v)` sets the version written into exports (`<!-- SnugCut v… -->` in every SVG, and the `999` comment that
+opens a DXF with kerf compensation built in); the app passes its footer version. Without it, exports say `unversioned`. A plate exported with kerf compensation
+carries a marker saying so, and `isCompensated(text, isDXF)` tells whether a file has one, so it isn't compensated
+again on import (#389).
+
 ## Library messages
 
 `lib/snugcut.js` words every message it shows a person (import errors and notes, export notes) through a code and its
