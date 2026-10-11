@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.44-beta
+
+- **Fixed:** DXF splines with thousands of control points import several times faster, with the same outlines: each
+  point used to search the knots from the start. An 8,000-point spline now reads in 125 ms instead of 534 ms, a
+  20,000-point one in 311 ms instead of 2.9 s, and the crafted 40,000-point file in 1.4 s instead of 13 s (#447).
+
 ## 1.4.43-beta
 
 - **Added:** the README explains how to embed SnugCut in another site's page: how to rewrite a copy of
