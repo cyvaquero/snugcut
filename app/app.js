@@ -185,14 +185,11 @@ $("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; s
 /* ---------- search controller ---------- */
 let search = null;   // {items, oversize, minPlates, F, st: the search state, see searchParts}
 async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
-  const token = newRun();
-  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
-  const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
-  const plateA = S.plateW * S.plateH;
-  setRunning(true);
-  const t0 = performance.now();
-  try {
+  const token = newRun(), F = binFrame(), plateA = S.plateW * S.plateH, t0 = performance.now();
+  try {     // an error while drawing a layout stops the run with a notice in both modes (#385)
+    if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); return; }
+    $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
+    setRunning(true);
     if (fresh || !search || !search.st.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
@@ -216,8 +213,9 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
-    if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
-    else return;
+    if (e === ABORT) return;
+    console.error(e); notice(t("notice.nestError", {error: e.message || e}), true);
+    newRun(); setRunning(false, quiet);     // the pool's other workers stop too, as on Stop
   } finally {
     if (isCurrent(token)) setRunning(false, quiet);
   }
