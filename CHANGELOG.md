@@ -98,6 +98,12 @@ a major rewrite of what the app does or how it works.
 - The QA workbooks in `qa/` test 1.4.0-beta: the release under test, its source zip and the footer check (#373). Test
   22 also lists the pin-hole notice the DXF download shows (#380).
 
+## 1.4.0.1-beta
+
+- **Fixed:** Bounding box mode makes layouts again (#420). In 1.4.0-beta every Bounding box run failed silently: the
+  True shape plates from before stayed on screen and the status still read "Best of N layouts tried." Its layouts
+  and exports are again the same as before the break.
+
 ## 1.4.0-beta
 
 Release of 1.3.8-beta through 1.3.48-beta, with the fixes from the release review (1.4.1-beta through 1.4.5-beta).
