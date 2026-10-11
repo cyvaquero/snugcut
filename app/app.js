@@ -53,6 +53,8 @@ $("more").textContent = t("search.more", {s: MORE_MS / 1000});
 const MAX_LEN = 100000;
 // the rail panels' open state (#344, #347): page-only, saved with the settings; the library never reads it
 Object.assign(S, {openSearch:false, openPlate:true});
+// the output file prefix's one length limit (#386): the field's maxlength, saved settings and file names
+const PREFIX_MAX = 60; $("prefix").maxLength = PREFIX_MAX;
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -65,7 +67,7 @@ function loadSettings(saved){
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= MAX_LEN);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= MAX_LEN);
   for (const k of ["rotate", "outline", "comp", "openSearch", "openPlate"]) pick(k, v => typeof v === "boolean");
-  pick("prefix", v => typeof v === "string" && v.length <= 200);
+  if (Object.hasOwn(saved, "prefix") && typeof saved.prefix === "string") S.prefix = saved.prefix.slice(0, PREFIX_MAX);   // a longer one is cut to what the field allows
 }
 const save = () => { panelSummary(); try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
@@ -165,7 +167,7 @@ $("dpi").onchange = e => { S.dpi = +e.target.value; save(); parts.forEach(measur
 function filePrefix(){
   // the user's prefix made safe for file names on every OS (no path or reserved characters, no leading dots), plus "-"
   const p = String(S.prefix || "").replace(/[\/\\:*?"<>|\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim()
-    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, 60).trim();
+    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, PREFIX_MAX).trim();
   return p ? p + "-" : "";
 }
 function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
