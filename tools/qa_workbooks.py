@@ -15,7 +15,7 @@ Python 3, standard library only.
 import io, os, re, sys, zipfile
 from xml.sax.saxutils import escape
 
-VERSION = "1.4.0-beta"   # the release under test: the tag whose source zip testers download
+VERSION = "1.4.0.1-beta"   # the release under test: the tag whose source zip testers download
 REPO = "https://github.com/cyvaquero/snugcut"
 
 APPS = [
