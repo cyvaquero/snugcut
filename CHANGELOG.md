@@ -4,11 +4,17 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
-## 1.4.34-beta
+## 1.4.36-beta
 
 - **Added:** a GitHub Actions check runs `python3 tools/build.py --check` and `python3 tools/qa_workbooks.py --check`
   on every pull request and every push to `main` or `develop`, so a stale `snugcut.html` or QA workbook fails it
   (#393).
+
+## 1.4.35-beta
+
+- **Changed:** the blind review rates best-practice findings by risk (medium when it will break builds or operations,
+  low for maintainability and testability gaps, info for convention only, never above medium) instead of always
+  `severity:info` (#435).
 
 ## 1.4.33-beta
 
