@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.46-beta
+
+- **Fixed:** hardening against a drawing that freezes the import: thousands of LINEs that all start or end at one point
+  (a star or sunburst, for example) used to take seconds to minutes to read (2.8 s for 1,000 spokes, 342 s for 3,000,
+  and the page was unresponsive meanwhile). When more than about 750 line ends pile up at one point (or hubs add up to
+  as much), the part is now treated as the shape around all of it, with the existing notice, and a 3,000-spoke star
+  reads in 52 ms and 10 stars of 400 spokes in 83 ms instead of 5.3 s. Ordinary junctions are not affected: a 60 x 60
+  grid of 7,320 lines, a 200 x 200 grid, the 40,000-line gear and stars up to 750 spokes read as before with the same
+  outlines (#451).
+
 ## 1.4.45-beta
 
 - **Fixed:** an outline drawn as thousands of separate lines, or as one very long open line, imports much faster. A DXF
