@@ -10,7 +10,8 @@ app/index.html, app/snugcut.css, app/app.js, app/strings-en.js and lib/snugcut.j
 stylesheet link and module script are replaced by the CSS and the JavaScript inline: the library first, then the
 string table, then the app, in one strict classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
 (no 'unsafe-inline', so injected inline handlers can't run), and 'self' is dropped since nothing is loaded from disk.
-Both runs check the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
+Both runs check that each library <script> URL is in the CSP's script-src (and clipper-lib's in connect-src) with
+integrity and crossorigin (#387), and the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
 message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
 Python 3 standard library only.
 """
@@ -53,6 +54,21 @@ def check_text(html, strings, app, lib):
     twice = sorted({k for k in page if page.count(k) > 1})
     if twice: fail(f"app/index.html uses the data-t key {', '.join(twice)} more than once")
 
+def check_libs(html, csp):
+    # every external script is allowed by script-src and pinned with integrity + crossorigin, and clipper-lib's URL is
+    # in connect-src too, where the search worker fetches it (#387): a library bump that misses one URL stops the build
+    dirs = {d.split()[0]: d.split()[1:] for d in (x.strip() for x in csp.split(";")) if d}
+    tags = re.findall(r"<script\b[^>]*\ssrc=\"https?://[^>]*>", html)
+    if not tags: fail("app/index.html has no library <script> tags")
+    for tag in tags:
+        src = re.search(r'\ssrc="([^"]+)"', tag).group(1)
+        if src not in dirs.get("script-src", []): fail(f"app/index.html: {src} is not in the CSP's script-src")
+        if not re.search(r'\sintegrity="sha(256|384|512)-[^"]+"', tag) or 'crossorigin="anonymous"' not in tag:
+            fail(f"app/index.html: the <script> for {src} needs integrity and crossorigin=\"anonymous\"")
+    clip = re.search(r'<script\b[^>]*\sid="clipper-lib"[^>]*\ssrc="([^"]+)"', html)
+    if not clip: fail('app/index.html has no <script id="clipper-lib">')
+    if clip.group(1) not in dirs.get("connect-src", []): fail(f"app/index.html: {clip.group(1)} is not in the CSP's connect-src (the search worker fetches it)")
+
 def build():
     html, css = read("app/index.html"), read("app/snugcut.css")
     check_text(html, read("app/strings-en.js"), read("app/app.js"), read("lib/snugcut.js"))
@@ -63,6 +79,7 @@ def build():
     if html.count(link) != 1 or html.count(mod) != 1: fail("app/index.html must have exactly one snugcut.css link and one app.js module script")
     csp = re.search(r'(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(">)', html)
     if not csp: fail("app/index.html has no Content-Security-Policy <meta>")
+    check_libs(html, csp.group(2))
     # strict, as app/ is as ES modules, so testing app/ covers the shipped file (#289)
     script = "\n(() => {\n\"use strict\";\n" + lib + app + "})();\n"
     digest = "'sha256-" + base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode() + "'"
