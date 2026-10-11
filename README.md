@@ -238,7 +238,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Focus** stays in place when the parts list or the plates are redrawn, and open "Parts on this plate" lists stay
   open. Removing a part moves it to the next part, and Search more and Stop hand it to each other.
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
-  with counts and rotations. The image is described by the same list whether it is open or closed.
+  with counts and rotations. The image is described by the same list whether it is open or closed. Pointing at a dashed
+  outline with the mouse shows the part's file name and rotation; that is extra, for mouse users only: the list says which parts are
+  on a plate, but not where each one sits on it (#378).
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use. The kerf field and the "Compensate kerf on objects" checkbox are also described by their
   hints.
@@ -255,7 +257,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
   (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
-- **Known gaps**: none open. The findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
+- **Known gaps**: where each part sits on a plate preview is shown only in the image and the mouse tooltips (#378). The
+  findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
   #166–#169, #176, #178) are fixed, as is #204. Target size (#177) isn't required at WCAG 2.1 AA: the mm / in buttons
   are 24 px tall. Report problems as a GitHub issue.
 

@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.21-beta
+
+- **Changed:** the README's accessibility section says the plate previews' mouse tooltips are extra, and lists where
+  each part sits on a plate as a known gap for keyboard and screen-reader users (#378).
+
 ## 1.4.20-beta
 
 - **Fixed:** removing a part right after typing an invalid quantity for it no longer announces that field's error
