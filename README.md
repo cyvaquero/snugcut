@@ -234,7 +234,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   motion is requested.
 - **Screen readers**: the result of each run, confirmations and errors are announced. Warnings and errors also stay in
   the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
-  Field errors, the kerf compensation warning and the kerf measured from a test cut are announced once typing pauses.
+  Field errors and the kerf measured from a test cut are announced once typing pauses; the kerf compensation warning
+  is announced when it is turned on.
 - **Focus** stays in place when the parts list or the plates are redrawn, and open "Parts on this plate" lists stay
   open. Removing a part moves it to the next part, and Search more and Stop hand it to each other.
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
