@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.41-beta
+
+- **Fixed:** the comment in `tools/regression.py` no longer says each sample nest is one pack: True shape packs both
+  sorted starting orders and keeps the better, and Bounding box runs its one MaxRects packing (#442).
+
 ## 1.4.40-beta
 
 - **Fixed:** the `tools/qa_workbooks.py` docstring no longer says the output is byte-for-byte the same on every run: the
