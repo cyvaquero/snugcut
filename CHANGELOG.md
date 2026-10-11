@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.25-beta
+
+- **Changed:** a message whose translated wording fails is logged to the browser console before the English text is
+  used, so a broken translation shows up (#395).
+
 ## 1.4.24-beta
 
 - **Fixed:** the output file prefix has one limit, 60 characters, in the field, in saved settings and in file names
