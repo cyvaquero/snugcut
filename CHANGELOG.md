@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.35-beta
+
+- **Changed:** the blind review rates best-practice findings by risk (medium when it will break builds or operations,
+  low for maintainability and testability gaps, info for convention only, never above medium) instead of always
+  `severity:info` (#435).
+
 ## 1.4.33-beta
 
 - **Added:** `tools/regression.py`, the fixture regression as one command (#394). It exports every fixture and the
