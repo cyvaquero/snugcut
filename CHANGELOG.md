@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.28-beta
+
+- **Changed:** `tools/build.py` stops when a library `<script>` URL isn't in the CSP's `script-src`, lacks `integrity`
+  or `crossorigin`, or (for clipper-lib) isn't in `connect-src` as well (#387). A library update that missed one of
+  them used to build, and the search worker then silently ran on the page instead.
+
 ## 1.4.27-beta
 
 - **Changed:** `tools/qa_workbooks.py` closes the files it reads and writes, and `--check` no longer creates the
