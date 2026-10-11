@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.30-beta
+
+- **Changed:** the library both writes and reads the "kerf compensation built in" marker (`isCompensated`), and
+  exports from a library caller that never set a version say `unversioned`, so their DXF marker is still recognized
+  on re-import (#389). The README documents `setVersion` and `isCompensated`. The app's exports are unchanged.
+
 ## 1.4.29-beta
 
 - **Changed:** `tools/build.py` stops when the inlined JavaScript contains `<!--` or `<script`, or the CSS contains

@@ -3,7 +3,7 @@
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
 import {ABORT, CL, IN, S, SVGNS, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
-  fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, n4, newRun, parseSVG, plateDXF,
+  fitsPlate, invalidateGeometry, isCompensated, isCurrent, kerfC, measureScale, n4, newRun, parseSVG, plateDXF,
   plateSVG, rectFits, searchParts, setMessages, setVersion, shape, startWorker, toPlates} from "../lib/snugcut.js";
 import {EN} from "./strings-en.js";
 
@@ -345,12 +345,6 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
 file.onchange = () => { addFiles(file.files); file.value = ""; };
-// A file says it already has kerf compensation built in only where SnugCut (once Plate Nester) writes that: the comment
-// right after the <svg> tag, or the 999 comment that opens a DXF. The same words anywhere else, such as in a <desc>,
-// don't count (#179).
-const builtInComp = (text, dxf) => (dxf
-  ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
-  : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*\x3C!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*\x3C!-- kerf-compensated: [\d.]+ mm per side/).test(text);
 async function readText(f, dxf){
   // an SVG is decoded as its byte-order mark or XML declaration says (Latin-1 text came out as "Gr��e"), else as
   // UTF-8, as File.text() always did (#269)
@@ -374,7 +368,7 @@ async function addFiles(list){
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await readText(f, isDXF(f));
-    const pre = builtInComp(text, isDXF(f));
+    const pre = isCompensated(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
     const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
