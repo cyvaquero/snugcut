@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gMyLJLNyNfpHhwCZ5nQI3VbM65FYyx4kRi7Uq9ZhmNc=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aW92veitvxdoaewoEovWUIGNP614jOJEnxxxOwl7/kM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2073,7 +2073,8 @@ function nestCore(CL, SC, hooks){
   // [plates, −Σ fill²]: fewer plates first, then fuller ones. n, the number of items packed: a layout that left any out
   // counts a million plates per missing item, so no search can prefer it to a complete one (#359)
   function score(bins, plateA, n){
-    let sq = 0, placed = 0; for (const b of bins) { const u = b.area / plateA; sq += u*u; placed += b.items.length; }
+    // placed items are counted only when n is given: Bounding box's RectBins keep theirs in .used, not .items (#420)
+    let sq = 0, placed = 0; for (const b of bins) { const u = b.area / plateA; sq += u*u; if (n != null) placed += b.items.length; }
     return [bins.length + (n != null && placed < n ? (n - placed) * 1e6 : 0), -sq];
   }
   const better = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1] - 1e-9);
