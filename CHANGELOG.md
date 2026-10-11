@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.45-beta
+
+- **Fixed:** an outline drawn as thousands of separate lines, or as one very long open line, imports much faster. A DXF
+  gear of 40,000 touching LINEs now reads in about 0.9 s instead of 8 s (5,000 in 0.1 s instead of 0.2 s, 20,000 in
+  0.4 s instead of 2.3 s), and growth is about linear instead of quadratic; an open spline of 32,000 points reads in
+  27 ms instead of 720 ms. Above 2,000 open pieces, pieces whose ends meet are chained, and a chain that closes goes in
+  as a ring; above 5,000 open points, open lines are thinned within 0.015 mm. Only files with thousands of open lines
+  or very long open lines get a slightly different outline, which still covers the drawing; everything else is
+  unchanged (#448).
+
 ## 1.4.44-beta
 
 - **Fixed:** DXF splines with thousands of control points import several times faster, with the same outlines: each
