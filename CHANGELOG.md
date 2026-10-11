@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.32-beta
+
+- **Fixed:** a part whose cut order is already inside-first keeps it in SVG and DXF exports; since 1.4.0-beta, a
+  shallower shape elsewhere in the part could make SnugCut regroup and reorder its cuts anyway (#422). Parts that need
+  reordering, as in #361, still get it.
+
 ## 1.4.31-beta
 
 - **Changed:** the parts list's thumbnails are made by the app, which also releases them; `parseSVG` in the library no
