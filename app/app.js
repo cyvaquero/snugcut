@@ -334,7 +334,8 @@ function reunit(p, units){
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
-function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); return false; } return true; }); }
+// a removed part's pending Qty error isn't announced after it's gone (#379)
+function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); sayLater("q-" + p.uid); return false; } return true; }); }
 
 /* ---------- files ---------- */
 const drop = $("drop"), file = $("file");
