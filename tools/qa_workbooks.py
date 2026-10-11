@@ -12,7 +12,7 @@ not in the .docx files, and run the script again. The output is byte-for-byte th
 
 Python 3, standard library only.
 """
-import io, os, re, sys, zipfile
+import io, pathlib, re, sys, zipfile
 from xml.sax.saxutils import escape
 
 VERSION = "1.4.0.1-beta"   # the release under test: the tag whose source zip testers download
@@ -515,24 +515,24 @@ def contents(data):
 
 
 def main():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = pathlib.Path(__file__).resolve().parent.parent
     check = "--check" in sys.argv[1:]
     stale = []
-    os.makedirs(os.path.join(root, "qa"), exist_ok=True)
     for slug, *rest in APPS:
-        path = os.path.join(root, "qa", slug + ".docx")
+        path = root / "qa" / (slug + ".docx")
         data = workbook(*rest)
-        old = open(path, "rb").read() if os.path.exists(path) else None
+        old = path.read_bytes() if path.exists() else None
         same = old is not None and contents(old) == contents(data)
         if check:
             if not same:
                 stale.append(path)
         elif not same:
-            open(path, "wb").write(data)
-            print("wrote", os.path.relpath(path, root))
+            path.parent.mkdir(exist_ok=True)       # only when writing: --check never creates qa/ (#391)
+            path.write_bytes(data)
+            print("wrote", path.relative_to(root))
     if check:
         if stale:
-            sys.exit("out of date (run python3 tools/qa_workbooks.py): " + ", ".join(os.path.relpath(p, root) for p in stale))
+            sys.exit("out of date (run python3 tools/qa_workbooks.py): " + ", ".join(str(p.relative_to(root)) for p in stale))
         print("qa workbooks are up to date")
 
 
