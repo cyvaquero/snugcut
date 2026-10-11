@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.31-beta
+
+- **Changed:** the parts list's thumbnails are made by the app, which also releases them; `parseSVG` in the library no
+  longer creates an object URL that other callers would have to release (#392). Thumbnails look the same.
+
 ## 1.4.30-beta
 
 - **Changed:** the library both writes and reads the "kerf compensation built in" marker (`isCompensated`), and
