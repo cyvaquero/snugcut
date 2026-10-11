@@ -103,21 +103,26 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
 ## Fixture regression
 
 CLAUDE.md requires a structural or refactoring change to leave every export from `snugcut.html` byte-identical, and
-section 1 above requires the same of an optimization. The check compares two builds of `snugcut.html` in a headless
-browser. The scripts that drive it are kept outside the repo; this is what they must do.
+section 1 above requires the same of an optimization. `tools/regression.py` checks it (#394): it runs two builds of
+`snugcut.html` in headless Chrome and compares their exports.
 
-**The two builds**
-- Baseline: `snugcut.html` from the branch the change goes into (`git show develop:snugcut.html`).
-- Candidate: `snugcut.html` freshly built from the change with `python3 tools/build.py`.
+```sh
+python3 tools/build.py                       # the candidate: snugcut.html built from the change
+python3 tools/regression.py                  # develop's snugcut.html against the working tree's
+python3 tools/regression.py main             # against another branch, tag or commit
+python3 tools/regression.py OLD.html NEW.html
+```
 
-**Preparing each copy to run from a file** (the same edits to both, in a scratch folder outside the repo)
-- Point the clipper-lib 6.4.2 and jszip 3.10.1 `<script>` tags at local copies of those exact files, and remove their
-  `integrity` and `crossorigin` attributes, the Content-Security-Policy `<meta>` and the Google Fonts `<link>`.
-  Nothing else in the page changes.
-- Replace the page's startup call to `run(…)` (the last statement of its script, after `renderParts()`) with the test
-  below. The page is one script, so the test can call the library and app functions directly.
-- Open it in a fresh browser profile, so no saved `snugcut.settings` changes the defaults. The test prints its results
-  as one JSON string to the console.
+It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usual place) and network access for the
+two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
+worker can't start from a file, so the nests then run on the page only. `--json FILE` keeps the new build's raw
+results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build.
+
+**What it does to each build** (the same to both, in a temporary folder): replaces the page's startup `run(…)` (the
+last statement of its script, after `renderParts()`) with its test, which calls the library and app functions directly,
+since the page is one script; removes the Content-Security-Policy `<meta>` (the test changes the inline script's hash)
+and the Google Fonts `<link>`; and opens it in a fresh browser profile, so no saved `snugcut.settings` changes the
+defaults. The test prints its results as one JSON string to the console.
 
 **What is exported**, with the default settings otherwise:
 1. Every fixture alone. For each `.svg` and `.dxf` file under `fixtures/` (all folders), with **Compensate kerf on
@@ -126,20 +131,22 @@ browser. The scripts that drive it are kept outside the repo; this is what they 
    - place it alone, unrotated, at (10, 10) mm on a plate of its own size;
    - export it with `plateSVG` and with `plateDXF`.
 
-   Keep the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has to
-   match too.
-2. Whole nests of the sample parts the page opens with. Run one pack (`run(0, true)`) and export every plate with the
-   app's own `plateFile`, keeping each file and its notices. Do this six times:
+   It keeps the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has
+   to match too.
+2. Whole nests of the sample parts the page opens with. One pack (`run(0, true)`), every plate exported with the app's
+   own `plateFile`, keeping each file and its notices, six times:
    - True shape: SVG, then DXF, with compensation off;
    - True shape: SVG, then DXF, with compensation on;
    - Bounding box: SVG, then DXF, with compensation off.
 
-   Invalidate the cached geometry each time compensation or the mode changes.
+   The cached geometry is invalidated each time compensation or the mode changes. The six run in the search worker,
+   then again on the page; the two sets must match. A nest whose run fails is reported as a failure, even when it
+   fails the same way in both builds.
 
 **Comparing**: the two result lists must match entry by entry and byte for byte. Only two things are normalized:
 - the version number in the export comment (`SnugCut v1.3.39-beta` and the like), which every version bump changes;
 - the per-import id prefix (`p<number>_`) that `parseSVG` adds to ids in the markup. It counts imports in the session,
   so it shifts when the number of sample parts changes.
 
-Report the number of entries compared in each list and the indexes of any that differ. A change that is meant to alter
-exports says which entries changed and why. All other entries must still match.
+It reports the number of entries compared in each list and names any that differ. A change that is meant to alter
+exports says in its PR which entries changed and why. All other entries must still match.
