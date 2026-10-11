@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.0.1-beta
+
+- **Fixed:** Bounding box mode makes layouts again (#420). In 1.4.0-beta every Bounding box run failed silently: the
+  True shape plates from before stayed on screen and the status still read "Best of N layouts tried." Its layouts
+  and exports are again the same as before the break.
+
 ## 1.4.0-beta
 
 Release of 1.3.8-beta through 1.3.48-beta, with the fixes from the release review (1.4.1-beta through 1.4.5-beta).
