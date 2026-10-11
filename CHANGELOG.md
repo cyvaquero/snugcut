@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.40-beta
+
+- **Fixed:** the `tools/qa_workbooks.py` docstring no longer says the output is byte-for-byte the same on every run: the
+  contents are, but zip bytes can differ between zlib builds, which is why `--check` compares contents (#384).
+
 ## 1.4.39-beta
 
 - **Fixed:** the README's accessibility notes no longer say the kerf compensation warning waits for typing to pause: it

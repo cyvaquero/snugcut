@@ -5,7 +5,8 @@
 
 Each workbook holds the setup, the app's own notes and every test of the export compatibility suite, with a results
 table and boxes to paste screenshots into. Testers fill one in and attach it to the app's QA issue. Edit the tests here,
-not in the .docx files, and run the script again. The output is byte-for-byte the same on every run.
+not in the .docx files, and run the script again. The contents are the same on every run (zip bytes can differ
+between zlib builds).
 
     python3 tools/qa_workbooks.py           # write qa/*.docx
     python3 tools/qa_workbooks.py --check   # fail if a workbook is out of date
