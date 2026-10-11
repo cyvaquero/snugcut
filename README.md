@@ -281,6 +281,7 @@ SnugCut; the details are in #106 and #181.
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
 | `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
+| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome (Python 3, no dependencies; needs Chrome), see [RELEASING.md](RELEASING.md#fixture-regression) |
 | `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
@@ -365,7 +366,8 @@ After editing the sources, run:
 python3 tools/build.py
 ```
 
-and commit the sources and `snugcut.html` together. The split app (`app/index.html`) uses ES modules, so it only runs
+and commit the sources and `snugcut.html` together. `python3 tools/regression.py` then checks that the exports are
+byte-identical to `develop`'s. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
