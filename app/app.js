@@ -350,7 +350,7 @@ file.onchange = () => { addFiles(file.files); file.value = ""; };
 // don't count (#179).
 const builtInComp = (text, dxf) => (dxf
   ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
-  : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
+  : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*\x3C!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*\x3C!-- kerf-compensated: [\d.]+ mm per side/).test(text);
 async function readText(f, dxf){
   // an SVG is decoded as its byte-order mark or XML declaration says (Latin-1 text came out as "Gr��e"), else as
   // UTF-8, as File.text() always did (#269)

@@ -33,7 +33,10 @@ def module_body(src, rel):
     src = re.sub(r"^export \{[^}]*\};\n", "", src, flags=re.M)
     left = re.findall(r"^(?:import|export)\b.*", src, flags=re.M)
     if left: fail(f"{rel}: unsupported import/export form: {left[0][:80]}")
-    if re.search(r"</script", src, flags=re.I): fail(f"{rel} contains '</script', which would end the inline script")
+    # each of these can end the inline script or swallow the markup after it (HTML Standard, "Restrictions for contents
+    # of script elements"); write "<" as \x3C in a string or regex instead (#388)
+    for seq in ("</script", "<script", "<!--"):
+        if re.search(re.escape(seq), src, flags=re.I): fail(f"{rel} contains '{seq}', which can break the inline script")
     return src
 
 def check_text(html, strings, app, lib):
@@ -91,6 +94,7 @@ def build():
         else: d = " ".join(w for w in d.split() if w != "'self'")   # wherever it stands in the directive (#296)
         dirs.append(d)
     html = html.replace(csp.group(0), csp.group(1) + "; ".join(dirs) + csp.group(3), 1)
+    if re.search(r"</style", css, flags=re.I): fail("app/snugcut.css contains '</style', which would end the inline style")
     html = html.replace(link, "<style>\n" + css + "</style>\n", 1)
     html = html.replace(mod, "<script>" + script + "</script>\n", 1)
     if not html.startswith("<!doctype html>\n"): fail("app/index.html must start with <!doctype html>")

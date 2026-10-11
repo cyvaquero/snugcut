@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.29-beta
+
+- **Changed:** `tools/build.py` stops when the inlined JavaScript contains `<!--` or `<script`, or the CSS contains
+  `</style`, which could break the generated `snugcut.html` (#388). The four `<!--` already in the sources are written
+  as `\x3C!--`, the same text when the app runs.
+
 ## 1.4.28-beta
 
 - **Changed:** `tools/build.py` stops when a library `<script>` URL isn't in the CSP's `script-src`, lacks `integrity`
