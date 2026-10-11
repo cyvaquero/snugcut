@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.43-beta
+
+- **Added:** the README explains how to embed SnugCut in another site's page: how to rewrite a copy of
+  `app/snugcut.css` so it styles only the app's container and takes the host's palette, and what the script changes
+  outside the container (#358).
+
 ## 1.4.42-beta
 
 - **Changed:** cutting a release branch no longer bumps the version or changes `CHANGELOG.md`; the bump to the release
