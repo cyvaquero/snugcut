@@ -315,6 +315,41 @@ output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, a
 build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
 allows its own files with `'self'` instead).
 
+## Embedding SnugCut in another page
+
+SnugCut is built as a page of its own, and `app/snugcut.css` assumes it owns the document: it styles `html`, `body`
+and bare elements such as `input` and `footer`, and sets its palette on `:root`. Loaded as is into another site, it
+restyles that site, and the site's own palette loses to it. There is no separate stylesheet for embedding (#358). To
+embed the app, put the contents of `app/index.html`'s `<body>` inside one container, for example
+`<div class="snugcut">`, and load a copy of `app/snugcut.css` rewritten this way:
+
+1. Prefix every selector with the container, inside `@media` blocks too: `.panel h2` becomes `.snugcut .panel h2`,
+   `input:focus-visible,select:focus-visible` becomes `.snugcut input:focus-visible,.snugcut select:focus-visible`,
+   and `::placeholder` becomes `.snugcut ::placeholder`.
+2. Point the page-level rules at the container: `*` becomes `.snugcut,.snugcut *`, and the `html,body` and `body`
+   rules become `.snugcut` rules. The `body` padding (16 px at the sides, 20 px above, 40 px below) is spacing for a
+   page of its own; keep it or change it to suit the host.
+3. Move the palette onto `.snugcut`: both `:root` blocks, the one at the top and the one inside
+   `@media (prefers-color-scheme: dark)`. The host can then set any of its custom properties (`--accent`, `--bg`,
+   `--fg` and the rest) on the container, in a rule that comes later or is more specific. Keep the dark block, or set
+   the dark values yourself: the colors are chosen to meet the contrast minimums noted at the top of `snugcut.css`.
+4. Leave `body` in front of the two `[data-mode]` rules and add the container after it:
+   `body[data-mode="bbox"] .snugcut [data-only="shape"]`. `app.js` sets `data-mode` on `body`.
+5. Rename `@keyframes pulse` and the `animation` that uses it, for example to `snugcut-pulse`, so neither name
+   collides with the host's.
+
+The script reaches outside the container in a few places, which the host has to allow for:
+- it sets `lang` on the page's `<html>` and `data-mode` on its `<body>`;
+- it finds its elements by `id` (`search`, `pool`, `plates` and others in `app/index.html`), so those ids must be
+  unique on the host page, and it writes the unit into every element with the class `u`;
+- Escape anywhere on the page closes its toast, which is fixed to the bottom of the window;
+- it saves its settings in `localStorage` under `snugcut.settings`, for the host's origin.
+
+The host also loads what `app/index.html` loads: the two library script tags with their integrity hashes, the fonts
+(without them the fallbacks in `--f-display`, `--f-body` and `--f-mono` are used), and `app/app.js` as a module, which
+imports `app/strings-en.js` and `lib/snugcut.js` by relative path. The host's Content-Security-Policy has to allow the
+same URLs as SnugCut's, and `worker-src blob:` for the search workers; without that, the search runs on the page.
+
 ## Library version and markers
 
 `setVersion(v)` sets the version written into exports (`<!-- SnugCut v… -->` in every SVG, and the `999` comment that
