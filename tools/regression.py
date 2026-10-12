@@ -12,14 +12,17 @@ Options:
     --libs DIR      load clipper.js and jszip.min.js from DIR instead of the CDN, to run offline. The search worker
                     can't load from a file, so the nests then run on the page only.
     --json FILE     also write NEW's raw results to FILE
+    --allow-diff    entries that differ between the builds are listed but don't fail the run (a change meant to alter
+                    exports); nest failures, worker-vs-page differences and workbook mismatches still do
+    --no-sandbox    start Chrome with --no-sandbox, for CI runners whose Chrome can't create its sandbox
 
 It also runs the export QA workbooks' tests (tools/qa_workbooks.py) on NEW only, each with its own settings and
 fixture files, and checks the measured sizes, colors, closed or open shapes, notices and DXF layers against the
 expected results stored beside each test. A mismatch is reported as "workbook test N: expected ..., got ...".
 
-Exit status: 0 when every entry matches; 1 when an entry differs, a nest failed, the worker's nests differ from the
-page's, or a workbook test doesn't match its expected result; 2 when a build gives no results (Chrome missing, a
-timeout, or the page failed before finishing).
+Exit status: 0 when every entry matches (with --allow-diff: when nothing but entries differ); 1 when an entry differs,
+a nest failed, the worker's nests differ from the page's, or a workbook test doesn't match its expected result; 2 when
+a build gives no results (Chrome missing, a timeout, or the page failed before finishing).
 Python 3 standard library only.
 """
 import base64, glob, json, os, pathlib, re, shutil, subprocess, sys, tempfile, threading, time
@@ -171,13 +174,14 @@ def prepare(html, label, libs, qa=None):
         html = re.sub(r' integrity="[^"]*" crossorigin="anonymous"', "", html)
     return html
 
-def run_build(chrome, html, label, tag, scratch, libs, qa=None):
+def run_build(chrome, html, label, tag, scratch, libs, qa=None, sandbox=True):
     # one build in a fresh profile; its results come back as one console line
     page = scratch / f"build{tag}.html"; page.write_text(prepare(html, label, libs, qa), encoding="utf-8")
     log, prof = page.with_suffix(".log"), scratch / (page.stem + "-profile")
     with open(log, "wb") as err:
-        p = subprocess.Popen([chrome, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-                              f"--user-data-dir={prof}", "--enable-logging=stderr", "--v=0", page.as_uri()],
+        p = subprocess.Popen([chrome, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check"]
+                             + ([] if sandbox else ["--no-sandbox"])
+                             + [f"--user-data-dir={prof}", "--enable-logging=stderr", "--v=0", page.as_uri()],
                              stdout=subprocess.DEVNULL, stderr=err)
         try:
             end = time.time() + TIMEOUT
@@ -239,10 +243,11 @@ def norm(v):
     return s
 
 def main():
-    args, opts = [], {"--chrome": None, "--libs": None, "--json": None}
+    args, opts, flags = [], {"--chrome": None, "--libs": None, "--json": None}, set()
     it = iter(sys.argv[1:])
     for a in it:
         if a in opts: opts[a] = next(it, None)
+        elif a in ("--allow-diff", "--no-sandbox"): flags.add(a)
         elif a in ("-h", "--help"): print(__doc__); return
         else: args.append(a)
     if len(args) > 2: fail(2, "at most two builds: BASE [NEW]")
@@ -251,20 +256,20 @@ def main():
     builds = [source(base or "develop"), source(new or str(ROOT / "snugcut.html"))]
     with tempfile.TemporaryDirectory(prefix="snugcut-regression-") as tmp:
         res = [None, None]
-        def go(i): res[i] = run_build(chrome, builds[i][0], builds[i][1], i, pathlib.Path(tmp), opts["--libs"], qa_cases() if i == 1 else None)
+        def go(i): res[i] = run_build(chrome, builds[i][0], builds[i][1], i, pathlib.Path(tmp), opts["--libs"], qa_cases() if i == 1 else None, "--no-sandbox" not in flags)
         ts = [threading.Thread(target=go, args=(i,)) for i in range(2)]
         [t.start() for t in ts]; [t.join() for t in ts]
         if None in res: sys.exit(2)    # the thread already reported why
     a, b = res
     if opts["--json"]: pathlib.Path(opts["--json"]).write_text(json.dumps(b, indent=1, ensure_ascii=False), encoding="utf-8")
-    bad = False
+    bad = differs = False
     print(f"base: {builds[0][1]}\nnew:  {builds[1][1]}")
     for key in ("single", "nests"):
         if len(a[key]) != len(b[key]): print(f"{key}: {len(a[key])} vs {len(b[key])} entries, can't compare"); bad = True; continue
         diff = [i for i in range(len(a[key])) if norm(a[key][i]) != norm(b[key][i])]
         name = lambda e: e.get("n", e.get("label")) + (" comp" if e.get("comp") else "") + (f" ({e['where']})" if "where" in e else "")
         print(f"{key}: {len(a[key])} compared, {len(diff)} differ" + "".join(f"\n  {i}: {name(b[key][i])}" for i in diff))
-        bad |= bool(diff)
+        differs |= bool(diff); bad |= bool(diff) and "--allow-diff" not in flags
     for side, r in (("base", a), ("new", b)):
         errs = [f"{n['label']} ({n.get('where', '')}): {n['err']}" for n in r["nests"] if "err" in n]
         if errs: print(f"{side}: nests failed:" + "".join("\n  " + e for e in errs)); bad = True
@@ -278,7 +283,7 @@ def main():
     qa = check_qa(b.get("qa") or {})
     print(f"workbook tests: {len(qa_checks())} checked, {len(qa)} mismatches" + "".join("\n  " + m for m in qa))
     bad |= bool(qa)
-    print("FAIL" if bad else "OK: byte-identical, workbook tests match")
+    print("FAIL" if bad else "OK: " + ("exports differ as allowed" if differs else "byte-identical") + ", workbook tests match")
     sys.exit(1 if bad else 0)
 
 if __name__ == "__main__":
