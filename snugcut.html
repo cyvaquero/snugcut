@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2vqNR8BovXcQWUORUhmA2b8kiwcfLHu5LJ3odGc4VAI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3knuOiGoY0Kuop5OXRyFZvvGxzxa5vUpEUu7kNdHuGA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2652,7 +2652,7 @@ class RectBin {
       else { s1 = f.y + hh; s2 = f.x; }                                        // bottom-left
       if (!best || s1 < best.s1 - EPS || (Math.abs(s1 - best.s1) <= EPS && s2 < best.s2)) best = {x:f.x, y:f.y, w:ww, h:hh, rot, s1, s2};
     };
-    rectWork += this.free.length;
+    rectWork += 20 + this.free.length;   // the scan, plus about what a call and a bin cost besides
     for (const f of this.free) { tryIt(f, w, h, false); if (canRot && Math.abs(w - h) > EPS) tryIt(f, h, w, true); }
     return best;
   }
@@ -2680,7 +2680,7 @@ function rectPackOnce(items, order, heur, W, H){
   return bins;
 }
 
-const SWAP_WORK = 97000000;   // Bounding box's swap search: free-rectangle comparisons (see rectWork)
+const SWAP_WORK = 125000000, SWAP_TRIES = 30000;   // Bounding box's swap search: free-rectangle comparisons (see rectWork), and tries
 function computeRectLayout(parts){
   const s = S.kerf + S.gap;
   const W = S.plateW - 2*S.margin + s, H = S.plateH - 2*S.margin + s;
@@ -2705,10 +2705,11 @@ function computeRectLayout(parts){
   }
   // local search: perturb the best ordering until a fixed amount of work is spent (#460), counted in free-rectangle
   // comparisons (rectWork), not in clock time, so the layout depends only on the input and not on how fast the machine
-  // is, and the time stays bounded however many or how small the parts are: about 350 ms for the 32 sample parts
+  // is, and the time stays bounded however many or how small the parts are: about 350 ms for the 32 sample parts. A try
+  // that does little counted work (a few parts that fill a plate) is bounded by the number of tries instead
   const rnd = mulberry(1234), stop = rectWork + (items.length > 1 ? SWAP_WORK : 0);
   let cur = bestOrder.order, curH = bestOrder.h;
-  while (rectWork < stop) {
+  for (let k = 0; k < SWAP_TRIES && rectWork < stop; k++) {
     const o = cur.slice(), n = o.length, a = Math.floor(rnd()*n), b = Math.floor(rnd()*n);
     [o[a], o[b]] = [o[b], o[a]];
     const h = rnd() < 0.8 ? curH : Math.floor(rnd()*4);
