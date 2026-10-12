@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.50-beta
+
+- **Fixed:** `python3 tools/build.py` works on Python 3.9, the stock `python3` on macOS, and no longer stops with a
+  `TypeError`; `snugcut.html` comes out byte-identical on every Python 3 version, with `\n` line endings (#459).
+
 ## 1.4.49-beta
 
 - **Security:** a tiny SVG or DXF with huge coordinates (an SVG path to 1e13 units, an arc whose radius scales up to
