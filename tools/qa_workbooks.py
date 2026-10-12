@@ -5,17 +5,18 @@
 
 Each workbook holds the setup, the app's own notes and every test of the export compatibility suite, with a results
 table and boxes to paste screenshots into. Testers fill one in and attach it to the app's QA issue. Edit the tests here,
-not in the .docx files, and run the script again. The output is byte-for-byte the same on every run.
+not in the .docx files, and run the script again. The contents are the same on every run (zip bytes can differ
+between zlib builds).
 
     python3 tools/qa_workbooks.py           # write qa/*.docx
     python3 tools/qa_workbooks.py --check   # fail if a workbook is out of date
 
 Python 3, standard library only.
 """
-import io, os, re, sys, zipfile
+import io, pathlib, re, sys, zipfile
 from xml.sax.saxutils import escape
 
-VERSION = "1.2.1-beta"   # the release under test: the tag whose source zip testers download
+VERSION = "1.4.0.1-beta"   # the release under test: the tag whose source zip testers download
 REPO = "https://github.com/cyvaquero/snugcut"
 
 APPS = [
@@ -246,7 +247,8 @@ TESTS = [
         (22, "Kerf, DXF", "#36, #32", [
             "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects** again.",
             "Add `test-cuts/kerf-test.svg`, download the plate and import it. The download says kerf compensation is "
-            "built in and that filled areas are written as their outlines.",
+            "built in, that filled areas are written as their outlines, and that a hole in `kerf-test.svg` is narrower "
+            "than the kerf, so it was left as drawn (the pin hole).",
             "Afterwards set kerf back to 0.1 mm, untick compensation and set **Export format** back to SVG.",
         ], [
             "The same sizes as test 14: a 20.2 × 20.2 mm outline, a 9.8 mm square hole and a 5.8 mm round hole.",
@@ -514,24 +516,24 @@ def contents(data):
 
 
 def main():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = pathlib.Path(__file__).resolve().parent.parent
     check = "--check" in sys.argv[1:]
     stale = []
-    os.makedirs(os.path.join(root, "qa"), exist_ok=True)
     for slug, *rest in APPS:
-        path = os.path.join(root, "qa", slug + ".docx")
+        path = root / "qa" / (slug + ".docx")
         data = workbook(*rest)
-        old = open(path, "rb").read() if os.path.exists(path) else None
+        old = path.read_bytes() if path.exists() else None
         same = old is not None and contents(old) == contents(data)
         if check:
             if not same:
                 stale.append(path)
         elif not same:
-            open(path, "wb").write(data)
-            print("wrote", os.path.relpath(path, root))
+            path.parent.mkdir(exist_ok=True)       # only when writing: --check never creates qa/ (#391)
+            path.write_bytes(data)
+            print("wrote", path.relative_to(root))
     if check:
         if stale:
-            sys.exit("out of date (run python3 tools/qa_workbooks.py): " + ", ".join(os.path.relpath(p, root) for p in stale))
+            sys.exit("out of date (run python3 tools/qa_workbooks.py): " + ", ".join(str(p.relative_to(root)) for p in stale))
         print("qa workbooks are up to date")
 
 
