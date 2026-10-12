@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XxXZM186QDikt2+c3Wovt7jSBjHMSBnCcIA1lHiy2TE=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-II6p0oSheIP0G27BMh8lwPrwhoY15uAtSS+QS3BNkYw=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1801,7 +1801,7 @@ function buildOutline(p){
   const open = [], subj = [];
   for (const r of p.rings) {
     const path = toInt(r);
-    if (r.closed && path.length >= 3 && Math.abs(area(path)) > SC * SC * 0.01) subj.push(path);
+    if (r.closed && path.length >= 3 && Math.abs(area(path)) > SC * SC * 0.01) subj.push(CL.Clipper.Orientation(path) ? path : path.reverse());   // one winding, so overlapping shapes drawn in opposite directions union instead of cancelling (#456)
     else open.push(path);
   }
   if (open.length > OPEN_MANY) {                     // chains that close become rings, which skip the offset (#448)
@@ -1809,7 +1809,7 @@ function buildOutline(p){
     if (ch) {
       open.length = 0;
       for (const [q, closed] of ch) {
-        if (closed && Math.abs(area(q)) > SC * SC * 0.01) subj.push(q.slice(0, -1)); else open.push(q);
+        if (closed && Math.abs(area(q)) > SC * SC * 0.01) { const r = q.slice(0, -1); subj.push(CL.Clipper.Orientation(r) ? r : r.reverse()); } else open.push(q);
       }
     }
   }
