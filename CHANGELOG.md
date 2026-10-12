@@ -29,7 +29,8 @@ a major rewrite of what the app does or how it works.
 - **Changed:** for maintainers, `tools/build.py` and `tools/qa_workbooks.py` reject an unknown argument (such as a
   mistyped `--chek`) with a usage message and exit status 2 instead of writing their output (#468); `build.py` fails
   when the Content-Security-Policy has no `script-src 'self'` to put the inline script's hash in (#469); the fixture
-  regression no longer fails with a traceback when it reads Chrome's log while the results are half written (#470);
+  regression no longer fails with a traceback when it reads Chrome's log while the results are half written, or when
+  Chrome is still writing to its scratch profile as the run cleans up (#470, #471);
   and `build.py`'s string check ignores comments, so a key named only in one counts as neither used nor missing (#473).
   The built `snugcut.html` is unchanged by these.
 

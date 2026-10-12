@@ -254,12 +254,15 @@ def main():
     base, new = (args + [None, None])[:2]
     chrome = find_chrome(opts["--chrome"])
     builds = [source(base or "develop"), source(new or str(ROOT / "snugcut.html"))]
-    with tempfile.TemporaryDirectory(prefix="snugcut-regression-") as tmp:
+    tmp = tempfile.mkdtemp(prefix="snugcut-regression-")
+    try:
         res = [None, None]
         def go(i): res[i] = run_build(chrome, builds[i][0], builds[i][1], i, pathlib.Path(tmp), opts["--libs"], qa_cases() if i == 1 else None, "--no-sandbox" not in flags)
         ts = [threading.Thread(target=go, args=(i,)) for i in range(2)]
         [t.start() for t in ts]; [t.join() for t in ts]
         if None in res: sys.exit(2)    # the thread already reported why
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)   # Chrome's helper processes can still be writing to a profile after it is killed
     a, b = res
     if opts["--json"]: pathlib.Path(opts["--json"]).write_text(json.dumps(b, indent=1, ensure_ascii=False), encoding="utf-8")
     bad = differs = False
