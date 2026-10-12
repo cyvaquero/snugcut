@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.48-beta
+
+- **Fixed:** a rotated or skewed SVG shape is measured by its true size instead of a looser box around it. A 20 mm
+  circle turned 45 degrees was listed as 28.3 x 28.3 mm and a 60 x 20 mm ellipse turned 30 degrees as 62.0 x 47.3 mm
+  (true 52.9 x 34.6), so Bounding box mode reserved too much room and could report a part that fits as too big for
+  the plate. Parts that aren't rotated or skewed are measured as before (#457).
+
 ## 1.4.47-beta
 
 - **Fixed:** overlapping closed shapes drawn in opposite directions (a square next to a circle, or a shape and its
