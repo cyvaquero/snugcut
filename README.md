@@ -13,8 +13,8 @@ Two modes:
   responsive; the **Workers** setting adds up to 3 more.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation, then a swap search on the
   best order: seeded tries that swap two parts or change the heuristic, run until a fixed amount of packing work is
-  spent (counted in free-rectangle comparisons, not time; about 350 ms for the sample parts and under a second for
-  thousands of parts), so the same parts and settings give the same layout on any machine.
+  spent (counted in free-rectangle comparisons, not time) or 30,000 tries have run (about 350 ms for the sample parts,
+  under half a second for thousands of parts or a few plate-sized ones), so the same parts and settings give the same layout on any machine.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
 follows each part. Rounded rectangles nest by their rounded corners and `<use>` copies by the shapes they copy; text,
