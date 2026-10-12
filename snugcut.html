@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-S4zSj+3qeZBOgUiPKtET9SUMmOnGOmdQKzc+THvVZiU=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2MNO677pcH385eu0RH8HVCBBBqqlcHsBCdjfzq3nX6M=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -291,7 +291,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.4-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.5-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -784,8 +784,8 @@ function dxfToSVG(text, name, opts = {}){
       if (!(Math.abs(X) <= COORD_LIMIT && Math.abs(Y) <= COORD_LIMIT)) throw fail("dxf.tooLarge", {name, limit:COORD_LIMIT});   // also not finite (#458)
       x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
     const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
-      // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 90° each)
-      const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 2) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
+      // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 45° each, error about 4e-6 × the radius, #462)
+      const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 4) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
       const pt = t => [cx + ax*Math.cos(t) + bx*Math.sin(t), cy + ay*Math.cos(t) + by*Math.sin(t)];
       const dv = t => [-ax*Math.sin(t) + bx*Math.cos(t), -ay*Math.sin(t) + by*Math.cos(t)];
       if (move) d.push(["M", P(...pt(ta))]);
@@ -1219,6 +1219,7 @@ function parsePathD(d){
   return out;
 }
 function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
+  // segments of at most 45°, whose radial error is about 4e-6 × the radius (90° ones: 2.7e-4, 0.14 mm on a 1 m circle, #462)
   if (x1 === x2 && y1 === y2) return [];
   rx = Math.abs(rx); ry = Math.abs(ry);
   if (!rx || !ry) return [["L", x2, y2]];
@@ -1234,7 +1235,7 @@ function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
   const t1 = ang(1, 0, (x1p - cxp)/rx, (y1p - cyp)/ry);
   let dt = ang((x1p - cxp)/rx, (y1p - cyp)/ry, (-x1p - cxp)/rx, (-y1p - cyp)/ry);
   if (!fs && dt > 0) dt -= 2*Math.PI; else if (fs && dt < 0) dt += 2*Math.PI;
-  const segs = Math.max(1, Math.ceil(Math.abs(dt) / (Math.PI/2) - 1e-9)), del = dt / segs, k = 4/3 * Math.tan(del/4);
+  const segs = Math.max(1, Math.ceil(Math.abs(dt) / (Math.PI/4) - 1e-9)), del = dt / segs, k = 4/3 * Math.tan(del/4);
   const map = (u, v) => [cx + rx*cp*u - ry*sp*v, cy + rx*sp*u + ry*cp*v];
   const out = [];
   for (let s = 0; s < segs; s++) {
@@ -2474,15 +2475,22 @@ function searchWorker(self, nestCore, SC){
 const poolSize = () => Math.min(Math.max(S.pool | 0, 1), 4);
 let srcP = null, pool = [], broken = false, workersQ = Promise.resolve(null), workerRun = 0, clipperSrc = null;
 function workerSource(){
-  // clipper-lib's text, fetched with the page's own SRI hash, and the search code: or null where that fails
-  return srcP || (srcP = (async () => {
+  // clipper-lib's text, fetched with the page's own SRI hash, and the search code: or null where that fails. A null
+  // from a failed fetch (offline, an SRI mismatch) is logged and not kept, so the next run tries again; one from a
+  // browser without workers or a page without clipper-lib stays, as retrying can't change it (#472)
+  if (srcP) return srcP;
+  if (typeof Worker !== "function" || !CL || !clipperSrc) return srcP = Promise.resolve(null);
+  const p = srcP = (async () => {
     try {
-      if (typeof Worker !== "function" || !CL || !clipperSrc) return null;
       const res = await fetch(clipperSrc.url, clipperSrc.integrity ? {integrity:clipperSrc.integrity} : {});
       // the app's own code runs strict in the worker too, as in the page (#289); clipper-lib before it stays as it is
-      return res.ok ? `${await res.text()}\n;(function(){ "use strict"; (${searchWorker})(self, ${nestCore}, ${SC}); })();\n` : null;
-    } catch(e) { return null; }
-  })());
+      if (res.ok) return `${await res.text()}\n;(function(){ "use strict"; (${searchWorker})(self, ${nestCore}, ${SC}); })();\n`;
+      console.warn(`SnugCut: the search worker's clipper-lib fetch gave HTTP ${res.status}; searching on the page.`);
+    } catch(e) { console.warn("SnugCut: the search worker's clipper-lib fetch failed; searching on the page.", e); }
+    if (srcP === p) srcP = null;
+    return null;
+  })();
+  return p;
 }
 function spawn(src){
   // a worker that has said it's ready, or null
@@ -2506,7 +2514,7 @@ function getWorkers(){
     while (pool.length > n) pool.pop().terminate();      // a smaller pool: the others are closed, freeing their memory
     if (!pool.length) {                                  // the first shows whether workers can run here at all (CSP, browser)
       const w = await spawn(src);
-      if (!w) { broken = true; return null; }
+      if (!w) { broken = true; console.warn("SnugCut: the search worker could not start (blocked or unsupported); searching on the page."); return null; }
       pool.push(w);
     }
     if (pool.length < n) pool.push(...(await Promise.all(Array.from({length:n - pool.length}, () => spawn(src)))).filter(Boolean));
@@ -2516,7 +2524,7 @@ function getWorkers(){
 // start building the workers early, while the page loads. src = {url, integrity}: where the page loaded clipper-lib
 // from, and its SRI hash, which the worker loads it with; the library doesn't look for it in the page (#295). Without
 // it, the search runs on the page.
-const startWorker = src => { if (src && src.url) clipperSrc = {url:String(src.url), integrity:String(src.integrity || "")}; getWorkers(); };
+const startWorker = src => { if (src && src.url) clipperSrc = {url:String(src.url), integrity:String(src.integrity || "")}; getWorkers().catch(() => null); };
 // a worker's placements (uid, angle, x, y) back into bins, with the page's own core
 const rebuild = (bins, byUid) => bins.map(b => { const bin = core.newBin(); for (const [uid, ang, x, y] of b) core.addTo(bin, shape(byUid.get(uid), ang), {x, y}); return bin; });
 // One search in one worker: st is that search's state, updated from the worker's messages
@@ -2625,6 +2633,7 @@ async function searchParts(st, o){
 
 /* ---------- bounding-box mode: MaxRects packing ---------- */
 const EPS = 1e-7;
+let rectWork = 0;   // free-rectangle comparisons so far: the deterministic cost of a pack, for computeRectLayout's swap search
 class RectBin {
   constructor(W, H){ this.W = W; this.H = H; this.free = [{x:0,y:0,w:W,h:H}]; this.used = []; this.area = 0; }
   find(w, h, canRot, heur){
@@ -2639,6 +2648,7 @@ class RectBin {
       else { s1 = f.y + hh; s2 = f.x; }                                        // bottom-left
       if (!best || s1 < best.s1 - EPS || (Math.abs(s1 - best.s1) <= EPS && s2 < best.s2)) best = {x:f.x, y:f.y, w:ww, h:hh, rot, s1, s2};
     };
+    rectWork += 20 + this.free.length;   // the scan, plus about what a call and a bin cost besides
     for (const f of this.free) { tryIt(f, w, h, false); if (canRot && Math.abs(w - h) > EPS) tryIt(f, h, w, true); }
     return best;
   }
@@ -2651,6 +2661,7 @@ class RectBin {
       if (n.y > f.y + EPS) out.push({x:f.x, y:f.y, w:f.w, h:n.y - f.y});
       if (n.y + n.h < f.y + f.h - EPS) out.push({x:f.x, y:n.y + n.h, w:f.w, h:f.y + f.h - n.y - n.h});
     }
+    rectWork += out.length * out.length;   // the pruning below compares every pair
     this.free = out.filter((a, i) => !out.some((b, j) => j !== i && a.x >= b.x - EPS && a.y >= b.y - EPS && a.x + a.w <= b.x + b.w + EPS && a.y + a.h <= b.y + b.h + EPS && (j < i || !(Math.abs(a.x-b.x)<EPS && Math.abs(a.y-b.y)<EPS && Math.abs(a.w-b.w)<EPS && Math.abs(a.h-b.h)<EPS))));
     this.used.push(n);
   }
@@ -2665,6 +2676,7 @@ function rectPackOnce(items, order, heur, W, H){
   return bins;
 }
 
+const SWAP_WORK = 125000000, SWAP_TRIES = 30000;   // Bounding box's swap search: free-rectangle comparisons (see rectWork), and tries
 function computeRectLayout(parts){
   const s = S.kerf + S.gap;
   const W = S.plateW - 2*S.margin + s, H = S.plateH - 2*S.margin + s;
@@ -2687,10 +2699,13 @@ function computeRectLayout(parts){
       if (!best || better(sc, bestScore)) { best = bins; bestScore = sc; bestOrder = {order, h}; }
     }
   }
-  // local search: perturb the best ordering for a short, fixed budget
-  const rnd = mulberry(1234), t0 = performance.now(), budget = items.length > 1 ? 350 : 0;
+  // local search: perturb the best ordering until a fixed amount of work is spent (#460), counted in free-rectangle
+  // comparisons (rectWork), not in clock time, so the layout depends only on the input and not on how fast the machine
+  // is, and the time stays bounded however many or how small the parts are: about 350 ms for the 32 sample parts. A try
+  // that does little counted work (a few parts that fill a plate) is bounded by the number of tries instead
+  const rnd = mulberry(1234), stop = rectWork + (items.length > 1 ? SWAP_WORK : 0);
   let cur = bestOrder.order, curH = bestOrder.h;
-  while (performance.now() - t0 < budget) {
+  for (let k = 0; k < SWAP_TRIES && rectWork < stop; k++) {
     const o = cur.slice(), n = o.length, a = Math.floor(rnd()*n), b = Math.floor(rnd()*n);
     [o[a], o[b]] = [o[b], o[a]];
     const h = rnd() < 0.8 ? curH : Math.floor(rnd()*4);

@@ -11,7 +11,10 @@ Two modes:
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded search: an order walk by
   default, or a genetic search ("Search 30 s more", Stop). The search runs in a background worker, so the page stays
   responsive; the **Workers** setting adds up to 3 more.
-- **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
+- **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation, then a swap search on the
+  best order: seeded tries that swap two parts or change the heuristic, run until a fixed amount of packing work is
+  spent (counted in free-rectangle comparisons, not time) or 30,000 tries have run (about 350 ms for the sample parts,
+  under half a second for thousands of parts or a few plate-sized ones), so the same parts and settings give the same layout on any machine.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
 follows each part. Rounded rectangles nest by their rounded corners and `<use>` copies by the shapes they copy; text,
@@ -52,7 +55,9 @@ with a notice, and so is anything on a frozen, off or non-plotting layer or the 
 invisible entities are left out without a notice.
 
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
-format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
+format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change. Circles,
+ellipses and arcs are written as Bézier segments of at most 45°, which stay within about 4e-6 of the radius (0.002 mm
+on a 500 mm circle).
 
 **Compensate kerf on objects** (off by default) builds the kerf into the downloaded files. Closed cut paths move by
 half the kerf, outlines outward and holes inward, so parts come out at their drawn size. Filled areas and open lines
@@ -282,7 +287,7 @@ SnugCut; the details are in #106 and #181.
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
 | `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
-| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' expected results (Python 3, no dependencies; needs Chrome), see [RELEASING.md](RELEASING.md#fixture-regression) |
+| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' expected results (Python 3, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
 | `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
@@ -407,7 +412,8 @@ python3 tools/build.py
 and commit the sources and `snugcut.html` together. `python3 tools/regression.py` then checks that the exports are
 byte-identical to `develop`'s and that the QA workbook tests' expected results still hold. Every pull request and
 every push to `main` or `develop` runs both `--check` commands
-(`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check. The split app (`app/index.html`) uses ES modules, so it only runs
+(`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check, and the regression itself
+(`.github/workflows/regression.yml`), so a script error or an unintended export change fails it too. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
