@@ -4,274 +4,96 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
-## 1.4.50-beta
+## 1.5.0-beta
 
-- **Fixed:** `python3 tools/build.py` works on Python 3.9, the stock `python3` on macOS, and no longer stops with a
-  `TypeError`; `snugcut.html` comes out byte-identical on every Python 3 version, with `\n` line endings (#459).
+Release of 1.4.6-beta through 1.4.46-beta (1.4.34-beta was not used), with the fixes from the release review
+(1.4.47-beta through 1.4.50-beta).
 
-## 1.4.49-beta
+### Added
 
-- **Security:** a tiny SVG or DXF with huge coordinates (an SVG path to 1e13 units, an arc whose radius scales up to
-  5e19, a DXF with 1e15 mm coordinates or a bulge of 1e300) no longer freezes the page forever when it is added. Parts
-  whose points are not finite, or lie more than 1,000,000,000 mm from their center, are refused at once with a "too
-  large" message, and the page stays responsive; ordinary files, including far-from-origin site drawings, import as
-  before. The six repro files are in `fixtures/security` (#458).
+- The README explains how to embed SnugCut in another site's page: how to rewrite a copy of `app/snugcut.css` so it
+  styles only the app's container and takes the host's palette, and what the script changes outside the container
+  (#358).
 
-## 1.4.48-beta
+### Changed
 
-- **Fixed:** a rotated or skewed SVG shape is measured by its true size instead of a looser box around it. A 20 mm
-  circle turned 45 degrees was listed as 28.3 x 28.3 mm and a 60 x 20 mm ellipse turned 30 degrees as 62.0 x 47.3 mm
-  (true 52.9 x 34.6), so Bounding box mode reserved too much room and could report a part that fits as too big for
-  the plate. Parts that aren't rotated or skewed are measured as before (#457).
+- For library callers: the library both writes and reads the "kerf compensation built in" marker (`isCompensated`),
+  and exports from a caller that never set a version say `unversioned`, so their DXF marker is still recognized on
+  re-import; the README documents `setVersion` and `isCompensated`. The parts list's thumbnails are made and released
+  by the app, so `parseSVG` no longer creates an object URL that other callers would have to release. The app's
+  exports and thumbnails are unchanged (#389, #392).
 
-## 1.4.47-beta
-
-- **Fixed:** overlapping closed shapes drawn in opposite directions (a square next to a circle, or a shape and its
-  mirrored copy) no longer lose their overlap from the part's outline. The overlap used to become a hole, so the area
-  was under-reported (1,600 mm² instead of about 1,953 for a 40 mm square with a 15 mm circle on its edge) and the
-  utilization and efficiency figures came out too low (#456).
-
-## 1.4.46-beta
-
-- **Fixed:** hardening against a drawing that freezes the import: thousands of LINEs that all start or end at one point
-  (a star or sunburst, for example) used to take seconds to minutes to read (2.8 s for 1,000 spokes, 342 s for 3,000,
-  and the page was unresponsive meanwhile). When more than about 750 line ends pile up at one point (or hubs add up to
-  as much), the part is now treated as the shape around all of it, with the existing notice, and a 3,000-spoke star
-  reads in 52 ms and 10 stars of 400 spokes in 83 ms instead of 5.3 s. Ordinary junctions are not affected: a 60 x 60
-  grid of 7,320 lines, a 200 x 200 grid, the 40,000-line gear and stars up to 750 spokes read as before with the same
-  outlines (#451).
-
-## 1.4.45-beta
-
-- **Fixed:** an outline drawn as thousands of separate lines, or as one very long open line, imports much faster. A DXF
-  gear of 40,000 touching LINEs now reads in about 0.9 s instead of 8 s (5,000 in 0.1 s instead of 0.2 s, 20,000 in
-  0.4 s instead of 2.3 s), and growth is about linear instead of quadratic; an open spline of 32,000 points reads in
-  27 ms instead of 720 ms. Above 2,000 open pieces, pieces that meet end to end (not at junctions of three or more) are chained, and a chain that closes goes in
-  as a ring; above 5,000 open points, open lines are thinned within 0.015 mm. Only files with thousands of open lines
-  or very long open lines get a slightly different outline, which still covers the drawing; everything else is
-  unchanged (#448).
-
-## 1.4.44-beta
-
-- **Fixed:** DXF splines with thousands of control points import several times faster, with the same outlines: each
-  point used to search the knots from the start. An 8,000-point spline now reads in 125 ms instead of 534 ms, a
-  20,000-point one in 311 ms instead of 2.9 s, and the crafted 40,000-point file in 1.4 s instead of 13 s (#447).
-
-## 1.4.43-beta
-
-- **Added:** the README explains how to embed SnugCut in another site's page: how to rewrite a copy of
-  `app/snugcut.css` so it styles only the app's container and takes the host's palette, and what the script changes
-  outside the container (#358).
-
-## 1.4.42-beta
-
-- **Changed:** cutting a release branch no longer bumps the version or changes `CHANGELOG.md`; the bump to the release
-  version and the CHANGELOG consolidation happen when the release is finished, just before it merges into `main`
-  (#444).
-
-## 1.4.41-beta
-
-- **Fixed:** the comment in `tools/regression.py` no longer says each sample nest is one pack: True shape packs both
-  sorted starting orders and keeps the better, and Bounding box runs its one MaxRects packing (#442).
-
-## 1.4.40-beta
-
-- **Fixed:** the `tools/qa_workbooks.py` docstring no longer says the output is byte-for-byte the same on every run: the
-  contents are, but zip bytes can differ between zlib builds, which is why `--check` compares contents (#384).
-
-## 1.4.39-beta
-
-- **Fixed:** the README's accessibility notes no longer say the kerf compensation warning waits for typing to pause: it
-  is announced as soon as compensation is turned on (#383).
-
-## 1.4.38-beta
-
-- **Fixed:** RELEASING.md's fixture regression no longer says `run(0, true)` runs one pack: in True shape it packs
-  both sorted orders and keeps the better, with no search (#382).
-
-## 1.4.37-beta
-
-- **Fixed:** the README's description of the True shape Area minimum now says that the plate's usable area is grown by
-  half the spacing (and the outline precision), as the calculation does (#381).
-
-## 1.4.36-beta
-
-- **Added:** a GitHub Actions check runs `python3 tools/build.py --check` and `python3 tools/qa_workbooks.py --check`
-  on every pull request and every push to `main` or `develop`, so a stale `snugcut.html` or QA workbook fails it
-  (#393).
-
-## 1.4.35-beta
-
-- **Changed:** the blind review rates best-practice findings by risk (medium when it will break builds or operations,
-  low for maintainability and testability gaps, info for convention only, never above medium) instead of always
-  `severity:info` (#435).
-
-## 1.4.33-beta
-
-- **Added:** `tools/regression.py`, the fixture regression as one command (#394). It exports every fixture and the
-  sample nests from two builds of `snugcut.html` in headless Chrome (by default `develop`'s and the working tree's),
-  compares them byte for byte, checks that the search worker's nests match the page's, and fails loudly when a build
-  gives no results or a nest fails. RELEASING.md, CLAUDE.md and the README describe it.
-
-## 1.4.32-beta
-
-- **Fixed:** a part whose cut order is already inside-first keeps it in SVG and DXF exports; since 1.4.0-beta, a
-  shallower shape elsewhere in the part could make SnugCut regroup and reorder its cuts anyway (#422). Parts that need
-  reordering, as in #361, still get it.
-
-## 1.4.31-beta
-
-- **Changed:** the parts list's thumbnails are made by the app, which also releases them; `parseSVG` in the library no
-  longer creates an object URL that other callers would have to release (#392). Thumbnails look the same.
-
-## 1.4.30-beta
-
-- **Changed:** the library both writes and reads the "kerf compensation built in" marker (`isCompensated`), and
-  exports from a library caller that never set a version say `unversioned`, so their DXF marker is still recognized
-  on re-import (#389). The README documents `setVersion` and `isCompensated`. The app's exports are unchanged.
-
-## 1.4.29-beta
-
-- **Changed:** `tools/build.py` stops when the inlined JavaScript contains `<!--` or `<script`, or the CSS contains
-  `</style`, which could break the generated `snugcut.html` (#388). The four `<!--` already in the sources are written
-  as `\x3C!--`, the same text when the app runs.
-
-## 1.4.28-beta
-
-- **Changed:** `tools/build.py` stops when a library `<script>` URL isn't in the CSP's `script-src`, lacks `integrity`
-  or `crossorigin`, or (for clipper-lib) isn't in `connect-src` as well (#387). A library update that missed one of
-  them used to build, and the search worker then silently ran on the page instead.
-
-## 1.4.27-beta
-
-- **Changed:** `tools/qa_workbooks.py` closes the files it reads and writes, and `--check` no longer creates the
-  `qa/` folder (#391). The workbooks it writes are unchanged.
-
-## 1.4.26-beta
-
-- **Changed:** text meant only for screen readers is also hidden with `clip-path`, as the deprecated `clip` property
-  alone may stop hiding it in future browsers (#396).
-
-## 1.4.25-beta
-
-- **Changed:** a message whose translated wording fails is logged to the browser console before the English text is
-  used, so a broken translation shows up (#395).
-
-## 1.4.24-beta
-
-- **Fixed:** the output file prefix has one limit, 60 characters, in the field, in saved settings and in file names
-  (#386). The field allowed 80 while file names kept 60, and a longer saved prefix was loaded whole; it is now cut to
-  60.
-
-## 1.4.23-beta
-
-- **Changed:** the export QA workbooks test 1.4.0.1-beta and link its source zip (#49, #50, #51, #52, #132, #133).
-  No test's expected result changes: the hotfix only affects Bounding box mode, which the workbooks don't use.
-
-## 1.4.22-beta
-
-- **Fixed:** an error while drawing a layout now stops the run with "Nesting stopped after an error" in both modes,
-  and stops the other workers, instead of failing silently with the status still claiming a result (#385). This is
-  what now shows the Bounding box failure in #420.
-
-## 1.4.21-beta
-
-- **Changed:** the README's accessibility section says the plate previews' mouse tooltips are extra, and lists where
-  each part sits on a plate as a known gap for keyboard and screen-reader users (#378).
-
-## 1.4.20-beta
-
-- **Fixed:** removing a part right after typing an invalid quantity for it no longer announces that field's error
-  afterwards (#379).
-
-## 1.4.19-beta
-
-- **Fixed:** when files that aren't SVG or DXF are chosen or dropped together with ones that are, a notice now names
-  the ones that weren't added, and screen readers announce it (#372). Before, they were left out without a word.
-
-## 1.4.18-beta
-
-- **Fixed:** placeholder text in the file prefix and kerf fields is easier to read: it now meets WCAG AA contrast in
-  both themes (#371). It used the browser's default gray, at 3.7–4.6:1; it now uses the page's muted text color, at
-  5.3–6.7:1.
-
-## 1.4.17-beta
-
-- **Security:** files with tens of thousands of separate pieces are added and downloaded in seconds instead of
-  minutes (#412). Each step took time growing with the square of the pieces: 150,000 short lines in one path took
-  about 94 s; they now take 1.4 s to add, 1.3 s to prepare for nesting and 0.5 s to export (40,000: 3.0 s, 3.4 s and
-  8.3 s before; 0.37 s, 0.32 s and 0.13 s now). Outlines and exports are the same as before.
-
-## 1.4.16-beta
-
-- **Security:** embedded `data:` images and fonts are kept only when their whole type is an allowed one (#377). A
-  type that merely started with one, such as `data:image/pngfoo` or `data:image/png+xml`, was kept too. No browser
-  treats those as active content, so this is hardening.
-
-## 1.4.15-beta
-
-- Very long outlines no longer fail to import with "Maximum call stack size exceeded" (#410): a polyline of 200,000
-  points with markers, a path of 150,000 pieces in one style, and DXF splines through very many fit points. They are
-  now imported, or refused with the point-limit message when over it.
-
-## 1.4.14-beta
-
-- **Security:** the points SnugCut adds around markers count against the 2,000,000-point limit for a file's curves
-  (#376). Each marker added 8 points uncounted, so a file under the limit could bring 8× as many again: five
-  60,000-point polylines with a marker on every point (2.7 million in all) were added. It is now refused with the
-  limit's message.
-
-## 1.4.13-beta
-
-- **Security:** a DXF block array no longer re-reads its insert's settings for every cell (#370). A 180 KB file with a
-  300 × 300 array and 20,000 padding codes took 4.6 s to add; it now takes 0.09 s, with the same result. One that
-  passes the 250,000-item limit is refused in 0.06 s instead of 6 s.
-
-## 1.4.12-beta
-
-- **Security:** a crafted DXF spline is refused as soon as it passes the 2,000,000-point limit (#369). Its points were
-  all computed and stored before the limit was checked: a 55 KB spline took 3.0 s and 523 MB before being refused, and
-  longer ones grew from there. It is now refused after 1.4 s and 117 MB. Splines under the limit are read as before.
-
-## 1.4.11-beta
-
-- The DXF export writes a curve as a true arc only when it is within 0.01 mm of one, as the file promises (#366). The
-  check allowed more on larger curves (0.35 mm at a 1 m radius), so a 100 × 99.9 mm ellipse quarter (0.036 mm off) or
-  a shallow curve 300 mm long became circular arcs; they are now written as short straight segments within
-  0.01 mm. Circles, arcs and rounded corners are still written as arcs.
-
-## 1.4.10-beta
-
-- Path data that doesn't start with a moveto (`d="C 10 30 …"`) is treated as browsers treat it, as drawing nothing
-  (#365). It made the DXF download fail ("The download failed"), and the SVG download too with kerf compensation or
-  holes nesting on; without them, the SVG export merged it into the outline's path data, so the outline wasn't drawn
-  either. The rest of the part now exports as usual.
-
-## 1.4.9-beta
-
-- An SVG whose width or height has a sign is sized as browsers size it (#364). `width="+100mm"` is read as 100 mm; it
-  made percentage lengths in the file resolve against the wrong size (a 50% wide rect came out 1.32 mm instead of
-  50 mm). A zero or negative width or height counts as missing, so the size comes from the other one or the viewBox; it
-  gave parts negative sizes, and Bounding box mode stacked every copy off the plate.
-
-## 1.4.8-beta
-
-- When the search runs on the page (no background worker), a starting layout cut short by Stop or the time limit is
-  packed by "Search 30 s more" (#368), as it already was with workers. It used to be dropped, so Search more could miss
-  a better starting layout.
-
-## 1.4.7-beta
+### Fixed
 
 - The same order and angles always give the same layout, wherever and whenever they are packed (#367). A layout that
   started like a recent one picked up from that one's plates, which could place a part 1 µm differently than packing
   it from the start (2 of 30 trials on the sample parts at 15°), so a search's results could depend on what it had
-  tried before or which worker tried it. Every layout is packed from the start again; that reuse saved about 5% since
-  the free-space change in 1.3.47-beta.
+  tried before or which worker tried it. Every layout is packed from the start again; that reuse saved about 5%.
+- When the search runs on the page (no background worker), a starting layout cut short by Stop or the time limit is
+  packed by "Search 30 s more" (#368), as it already was with workers.
+- An error while drawing a layout stops the run with "Nesting stopped after an error" in both modes, and stops the
+  other workers, instead of failing silently with the status still claiming a result (#385).
+- Overlapping closed shapes drawn in opposite directions (a square next to a circle, or a shape and its mirrored copy)
+  keep their overlap in the part's outline. It used to become a hole, so the area was under-reported (1,600 mm²
+  instead of about 1,953 for a 40 mm square with a 15 mm circle on its edge) and the utilization and efficiency
+  figures came out too low (#456).
+- A rotated or skewed SVG shape is measured by its true size instead of a looser box around it. A 20 mm circle turned
+  45° was listed as 28.3 × 28.3 mm and a 60 × 20 mm ellipse turned 30° as 62.0 × 47.3 mm (true 52.9 × 34.6), so
+  Bounding box mode reserved too much room and could report a part that fits as too big for the plate. Parts that
+  aren't rotated or skewed are measured as before (#457).
+- An SVG whose width or height has a sign is sized as browsers size it (#364): `width="+100mm"` is read as 100 mm, and
+  a zero or negative width or height counts as missing, so the size comes from the other one or the viewBox. Signed
+  sizes made percentage lengths resolve against the wrong size and gave parts negative sizes.
+- Path data that doesn't start with a moveto (`d="C 10 30 …"`) draws nothing, as in browsers (#365). It made the DXF
+  download fail, and the SVG download too with kerf compensation or holes nesting on.
+- Very long outlines no longer fail to import with "Maximum call stack size exceeded" (#410): a polyline of 200,000
+  points with markers, a path of 150,000 pieces in one style, and DXF splines through very many fit points are
+  imported, or refused with the point-limit message when over it.
+- DXF splines with thousands of control points import several times faster, with the same outlines (#447): an
+  8,000-point spline reads in 125 ms instead of 534 ms, a 20,000-point one in 311 ms instead of 2.9 s.
+- An outline drawn as thousands of separate lines, or as one very long open line, imports in about linear time
+  instead of quadratic (#448): a DXF gear of 40,000 touching LINEs reads in about 0.9 s instead of 8 s, and an open
+  spline of 32,000 points in 27 ms instead of 720 ms. Above 2,000 open pieces, pieces that meet end to end (not at
+  junctions of three or more) are chained, and a chain that closes goes in as a ring; above 5,000 open points, open
+  lines are thinned within 0.015 mm. Only such files get a slightly different outline, which still covers the
+  drawing.
+- The DXF export writes a curve as a true arc only when it is within 0.01 mm of one, as the file promises (#366). On
+  larger curves it allowed more (0.35 mm at a 1 m radius); those are now written as short straight segments within
+  0.01 mm. Circles, arcs and rounded corners are still written as arcs.
+- A part whose cut order is already inside-first keeps it in SVG and DXF exports; since 1.4.0-beta, a shallower shape
+  elsewhere in the part could make SnugCut regroup and reorder its cuts anyway (#422).
+- The output file prefix has one limit, 60 characters, in the field, in saved settings and in file names (#386).
+- When files that aren't SVG or DXF are chosen or dropped together with ones that are, a notice names the ones that
+  weren't added, and screen readers announce it (#372).
+- Removing a part right after typing an invalid quantity for it no longer announces that field's error afterwards
+  (#379).
+- Placeholder text in the file prefix and kerf fields meets WCAG AA contrast in both themes: 5.3–6.7:1 instead of the
+  browser's default gray at 3.7–4.6:1 (#371).
 
-## 1.4.6-beta
+### Security
 
-- The QA workbooks in `qa/` test 1.4.0-beta: the release under test, its source zip and the footer check (#373). Test
-  22 also lists the pin-hole notice the DXF download shows (#380).
+- A tiny SVG or DXF with huge coordinates (an SVG path to 1e13 units, an arc whose radius scales up to 5e19, a DXF with
+  1e15 mm coordinates or a bulge of 1e300) no longer freezes the page forever when it is added. Parts whose points are
+  not finite, or lie more than 1,000,000,000 mm from their center, are refused at once with a "too large" message;
+  ordinary files, including far-from-origin site drawings, import as before (#458).
+- Hardening against a drawing that freezes the import: thousands of LINEs that all start or end at one point (a star or
+  sunburst) took seconds to minutes to read (2.8 s for 1,000 spokes, 342 s for 3,000). When more than about 750 line
+  ends pile up at one point (or hubs add up to as much), the part is treated as the shape around all of it, with the
+  existing notice: a 3,000-spoke star reads in 52 ms. Ordinary junctions are not affected (#451).
+- Files with tens of thousands of separate pieces are added and downloaded in seconds instead of minutes (#412):
+  150,000 short lines in one path took about 94 s and now take 1.4 s to add, 1.3 s to prepare for nesting and 0.5 s to
+  export. Outlines and exports are the same as before.
+- Embedded `data:` images and fonts are kept only when their whole type is an allowed one (#377). A type that merely
+  started with one, such as `data:image/pngfoo`, was kept too. No browser treats those as active content, so this is
+  hardening.
+- The points SnugCut adds around markers count against the 2,000,000-point limit for a file's curves (#376): five
+  60,000-point polylines with a marker on every point (2.7 million in all) were added, and are now refused with the
+  limit's message.
+- A DXF block array no longer re-reads its insert's settings for every cell (#370): a 180 KB file with a 300 × 300
+  array took 4.6 s to add and now takes 0.09 s, with the same result; one past the 250,000-item limit is refused in
+  0.06 s instead of 6 s.
+- A crafted DXF spline is refused as soon as it passes the 2,000,000-point limit (#369): a 55 KB spline took 3.0 s and
+  523 MB before being refused, and is now refused after 1.4 s and 117 MB.
 
 ## 1.4.0.1-beta
 
