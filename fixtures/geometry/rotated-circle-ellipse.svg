@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100" fill="none" stroke="#ff0000" stroke-width="0.2">
+  <!-- A circle turned 45 degrees and an ellipse turned 30 degrees (#457): the browser's box of a transformed shape is
+       loose (28.28 mm for a 20 mm circle), so the part's size comes from the sampled outline, which is exact. -->
+  <circle r="10" transform="translate(20 20) rotate(45)"/>
+  <ellipse rx="30" ry="10" transform="translate(50 70) rotate(30)"/>
+</svg>

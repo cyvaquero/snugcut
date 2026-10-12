@@ -45,6 +45,7 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
         const dx = /\.dxf$/i.test(n), t = dx ? dxfToSVG(t0, n).svg : t0;
         const p = parseSVG(t, n); p.fromDXF = dx;
         const x = 10, y = 10, w = p.wMM, h = p.hMM;
+        r.size = [p.wMM, p.hMM, p.areaMM].map(v => Math.round(v * 1e6) / 1e6); r.outers = (p.outers || []).length;   // the outline, which the exports don't show (#484)
         const pl = {area:w*h, items:[{part:p, x, y, ang:0, rx:p.bbox.x, ry:p.bbox.y, env:[[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]]}]};
         const notes = new Set();
         r.svg = plateSVG(pl, {notes}); const d = plateDXF(pl); r.dxf = d.dxf; r.notes = [...notes, ...d.notes];
