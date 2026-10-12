@@ -98,10 +98,15 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
   - delete the release branch, locally and on origin.
 - Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with
   "Fixed in #PR (X.Y.Z)".
-- If export QA issues are still open (#49–#52, #132, #133), move them to the new release: set `VERSION` in
-  `tools/qa_workbooks.py`, check each test's expected sizes, colors, layers and notices against the release, run
-  `python3 tools/qa_workbooks.py`, and update the version in each issue (on a `feature/` branch after the release is
-  tagged).
+- If export QA issues are still open (#49–#52, #132, #133), move them to the new release:
+  - at release prep (the maintainer says to prep it), on the prep `bugfix/` branch into `release/<version>`, set
+    `VERSION` in `tools/qa_workbooks.py` to `<version>` and run `python3 tools/qa_workbooks.py`. The workbooks link the
+    tag's source zip, whose URL is known before the tag exists. The [fixture regression](#fixture-regression) checks
+    each workbook test's expected sizes, colors, layers and notices against the build, so it fails, naming the test,
+    when one no longer matches;
+  - after the tag is pushed at the finish, for each open QA issue run
+    `python3 tools/qa_workbooks.py --issue N > body.md` (outside the repo) and `gh issue edit N --body-file body.md`.
+    The body comes from the same `APPS` and `VERSION` as the workbook. No separate branch or version bump is needed.
 
 ## Fixture regression
 
@@ -151,6 +156,16 @@ defaults. The test prints its results as one JSON string to the console.
 - the version number in the export comment (`SnugCut v1.3.39-beta` and the like), which every version bump changes;
 - the per-import id prefix (`p<number>_`) that `parseSVG` adds to ids in the markup. It counts imports in the session,
   so it shifts when the number of sample parts changes.
+
+**Workbook tests** (new build only): the export QA workbooks in `qa/` come from the tests in `tools/qa_workbooks.py`,
+and each test that runs SnugCut (all but test 4) carries a machine-checkable form of its Expected text beside it. For
+each, the regression sets the test's settings (the Setup's defaults plus the test's own, such as kerf and **Export
+format**), adds its fixture files, nests with no search, exports the first plate with `plateFile`, and measures it as a
+tester would, reading a DXF export back in. It compares the non-text shapes (size to 0.02 mm, stroke and fill color,
+closed or open, subpaths, dashes), the text content and colors, the notices after adding the files, the export notes
+and the DXF layer names. Text sizes aren't compared, since they depend on installed fonts. A mismatch is reported as
+`workbook test N: expected …, got …` and fails the run. A change that alters what testers see therefore fails its own
+pull request, and that pull request updates the test's text and its check together.
 
 It reports the number of entries compared in each list and names any that differ. A change that is meant to alter
 exports says in its PR which entries changed and why. All other entries must still match.
