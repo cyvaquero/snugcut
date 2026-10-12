@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xFt6stMYmXLrOkQv0z432wv2ZvUytA4NAYUmZey3jkQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HymMjiPpIwmM7p+yETrolovW0A9tDBJ6c8CuH3ZZ7Rs=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2676,6 +2676,7 @@ function rectPackOnce(items, order, heur, W, H){
   return bins;
 }
 
+const SWAP_WORK = 900000;   // Bounding box's swap search: tries × items
 function computeRectLayout(parts){
   const s = S.kerf + S.gap;
   const W = S.plateW - 2*S.margin + s, H = S.plateH - 2*S.margin + s;
@@ -2698,10 +2699,12 @@ function computeRectLayout(parts){
       if (!best || better(sc, bestScore)) { best = bins; bestScore = sc; bestOrder = {order, h}; }
     }
   }
-  // local search: perturb the best ordering for a short, fixed budget
-  const rnd = mulberry(1234), t0 = performance.now(), budget = items.length > 1 ? 350 : 0;
+  // local search: perturb the best ordering a fixed number of tries (#460), not for a time, so the layout depends only on
+  // the input and not on how fast the machine is. A try costs about as much as there are items, so the count is
+  // SWAP_WORK ÷ items: about 350 ms for the 32 sample parts, and about as long for larger jobs
+  const rnd = mulberry(1234), tries = items.length > 1 ? Math.round(SWAP_WORK / items.length) : 0;
   let cur = bestOrder.order, curH = bestOrder.h;
-  while (performance.now() - t0 < budget) {
+  for (let k = 0; k < tries; k++) {
     const o = cur.slice(), n = o.length, a = Math.floor(rnd()*n), b = Math.floor(rnd()*n);
     [o[a], o[b]] = [o[b], o[a]];
     const h = rnd() < 0.8 ? curH : Math.floor(rnd()*4);

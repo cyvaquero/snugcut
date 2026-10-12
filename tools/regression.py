@@ -53,8 +53,9 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
     }
   }
   // 2. whole nests of the sample parts, the starting packs with no search (run(0, true): True shape packs both sorted
-  // orders and keeps the better, Bounding box runs its MaxRects packing), every plate exported with the app's
-  // plateFile. A failed run is recorded, not fatal, so the rest still runs and the failure shows in the report
+  // orders and keeps the better, Bounding box runs its MaxRects packing, then its swap search: a fixed number of seeded
+  // tries, so the layout doesn't depend on speed), every plate exported with the app's plateFile. A failed run is
+  // recorded, not fatal, so the rest still runs and the failure shows in the report
   const dump = async (label, where) => {
     try { await run(0, true); } catch(e) { out.nests.push({label, where, err:String(e && e.message || e)}); return; }
     out.nests.push({label, where, files:layout.plates.map(pl => { const ns = new Set(); return [plateFile(pl, ns), [...ns]]; })});
