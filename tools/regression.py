@@ -122,7 +122,10 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
     }
     Object.assign(S, saved); __bump();
   }
-  console.log("OUT:" + btoa(unescape(encodeURIComponent(JSON.stringify(out)))) + ":END");
+  // UTF-8 to base64: TextEncoder, then the bytes as a binary string in chunks (one big apply would overflow the stack)
+  const bytes = new TextEncoder().encode(JSON.stringify(out));
+  let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  console.log("OUT:" + btoa(bin) + ":END");
 })();
 })();
 """

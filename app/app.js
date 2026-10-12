@@ -334,14 +334,20 @@ function reunit(p, units){
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
-// a removed part's pending Qty error isn't announced after it's gone (#379)
 // a part's thumbnail in the parts list: an object URL the app makes and releases (#392)
 function addThumb(p){
   const svg = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${p.rootAttrs}>${p.inner}</g></svg>`;
   p.thumb = URL.createObjectURL(new Blob([svg], {type:"image/svg+xml"}));
   return p;
 }
-function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); sayLater("q-" + p.uid); return false; } return true; }); }
+function removeParts(fn){
+  parts = parts.filter(p => {
+    if (!fn(p)) return true;
+    URL.revokeObjectURL(p.thumb);
+    sayLater("q-" + p.uid);   // a removed part's pending Qty error isn't announced after it's gone (#379)
+    return false;
+  });
+}
 
 /* ---------- files ---------- */
 const drop = $("drop"), file = $("file");
@@ -499,22 +505,36 @@ $("dlAll").onclick = async () => {
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
-// the pointer is over it, and Esc closes it (#94). Warnings and errors go to notice() and stay until dismissed.
-let toastT;
+// the pointer is over it or focus is inside it, and closed by its Dismiss button or Esc. Opening one never moves focus.
+// Warnings and errors go to notice() and stay until dismissed.
+let toastT, toastFrom;
+function dismissBtn(text){
+  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = t("notice.dismiss");
+  x.setAttribute("aria-label", t("notice.dismissLabel", {text: text.length > 60 ? text.slice(0, 57) + "…" : text}));
+  return x;
+}
+function closeToast(){
+  const el = $("toast"), had = el.contains(document.activeElement); clearTimeout(toastT); el.hidden = true;
+  if (had) (toastFrom && toastFrom.isConnected ? toastFrom : drop).focus();   // back to where the user was
+}
+// the toast's text is announced once through the live region by say(); the toast itself isn't a live region
 function toast(text){
-  const el = $("toast"); el.textContent = text; el.hidden = false; say(text); clearTimeout(toastT);
-  const wait = ms => { toastT = setTimeout(() => el.matches(":hover") ? wait(1000) : (el.hidden = true), ms); };
+  const el = $("toast"); if (el.contains(document.activeElement)) closeToast();
+  const s = document.createElement("span"); s.textContent = text;
+  const x = dismissBtn(text); x.onclick = closeToast;
+  el.replaceChildren(s, x); el.hidden = false; say(text); clearTimeout(toastT);
+  const wait = ms => { toastT = setTimeout(() => el.matches(":hover, :focus-within") ? wait(1000) : (el.hidden = true), ms); };
   wait(Math.max(20000, text.length * 100));
 }
-addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) { clearTimeout(toastT); $("toast").hidden = true; } });
+$("toast").addEventListener("focusin", e => { if (!$("toast").contains(e.relatedTarget)) toastFrom = e.relatedTarget; });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) closeToast(); });
 // warnings and errors: one item each in the message list, until dismissed (#94); announced once (#93)
 function notice(text, err){
   const box = $("notices");
   if ([...box.children].some(m => m.dataset.text === text)) { say(text, err); return; }   // already on screen
   const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = text;
   const s = document.createElement("span"); s.textContent = text;
-  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = t("notice.dismiss");
-  x.setAttribute("aria-label", t("notice.dismissLabel", {text: text.length > 60 ? text.slice(0, 57) + "…" : text}));
+  const x = dismissBtn(text);
   x.onclick = () => { const nb = m.nextElementSibling || m.previousElementSibling; m.remove(); (nb ? nb.querySelector(".x") : drop).focus(); };
   m.append(s, x); box.appendChild(m); say(text, err);
 }

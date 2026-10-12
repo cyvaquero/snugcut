@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2MNO677pcH385eu0RH8HVCBBBqqlcHsBCdjfzq3nX6M=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tAWq1NSu3dDfdtqxkQUT9U46T80a+3tCxyPnFOAkSPI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,6 +55,7 @@ header ul{margin:4px 0 0;padding-left:20px;color:var(--muted);max-width:72ch}
 .panel-bd[hidden]{display:none}
 .panel h2{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.row{grid-template-columns:1fr}}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font:500 13px/1.2 var(--f-body);color:var(--muted)}
 input[type=number],input[type=text],select{width:100%;font:500 15px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg);background:var(--sunk);border:1px solid var(--field);border-radius:6px;padding:7px 9px}
@@ -128,9 +129,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .msg li{margin-top:4px}
 .msg.has-x{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
 .msg.err{border-left:3px solid var(--warn)}
-.msg .x{flex:none;border:0;background:none;color:inherit;cursor:pointer;padding:2px;border-radius:4px;line-height:0}
-.msg .x svg{width:14px;height:14px}
-.plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.msg .x,.toast .x{flex:none;border:0;background:none;color:inherit;cursor:pointer;padding:2px;border-radius:4px;line-height:0}
+.msg .x svg,.toast .x svg{width:14px;height:14px}
+.plates{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:14px}
 .plates.stale .sheet{opacity:.45}
 .plate{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .plate .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -142,7 +143,9 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plist ul{margin:6px 0 0;padding-left:18px;font-size:13px}
 .bar{height:5px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ok)}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px);display:flex;gap:10px;align-items:center}
+.toast[hidden]{display:none}
+.toast .x:focus-visible{outline-color:var(--bg)}
 .note{font-size:13px;color:var(--muted)}
 /* links that open a new tab say so: a described "Opens in a new tab." and an arrow that screen readers skip (#242) */
 /* the plain arrow first: browsers older than Firefox 128 and Safari 17.4 drop the alt-text form, and still show it (#297) */
@@ -172,6 +175,7 @@ footer a,header p a{color:var(--accent)}
 </style>
 
 <div class="wrap">
+  <noscript><p class="msg" data-t="page.noscript">SnugCut needs JavaScript to nest your parts. Turn it on for this page and reload.</p></noscript>
   <header>
     <h1>SnugCut</h1>
     <p data-t="page.intro">Save material on any cutter: pack SVG and DXF parts onto sheets of plywood, acrylic, metal, vinyl or card for laser, vinyl, CNC and plasma cutting. Everything runs in your browser; your files are never uploaded.</p>
@@ -291,7 +295,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.7-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2950,7 +2954,7 @@ const EN = {
   "files.refused": "{list} {n, plural, one {wasn't} other {weren't}} added: only .svg and .dxf files can be added.",
   "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
   "files.hiddenItem": "{n} from {name}",
-  "files.tangled": "{name} has lines that cross each other too many times to trace its outline, so it is nested by the shape around all of it.",
+  "files.tangled": "{name} has too many crossing lines, or too many lines meeting at one point, to trace its outline, so it is nested by the shape around all of it.",
   "files.hidden": "Left out hidden shapes (not shown, so not cut): {list}.",
   "files.stripped": "Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from {list}; only what's inside the file is used.",
   "stat.eff": "{rating} out of 10",
@@ -3342,14 +3346,20 @@ function reunit(p, units){
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
-// a removed part's pending Qty error isn't announced after it's gone (#379)
 // a part's thumbnail in the parts list: an object URL the app makes and releases (#392)
 function addThumb(p){
   const svg = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${p.rootAttrs}>${p.inner}</g></svg>`;
   p.thumb = URL.createObjectURL(new Blob([svg], {type:"image/svg+xml"}));
   return p;
 }
-function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); sayLater("q-" + p.uid); return false; } return true; }); }
+function removeParts(fn){
+  parts = parts.filter(p => {
+    if (!fn(p)) return true;
+    URL.revokeObjectURL(p.thumb);
+    sayLater("q-" + p.uid);   // a removed part's pending Qty error isn't announced after it's gone (#379)
+    return false;
+  });
+}
 
 /* ---------- files ---------- */
 const drop = $("drop"), file = $("file");
@@ -3507,22 +3517,36 @@ $("dlAll").onclick = async () => {
 };
 
 // short confirmations only ("Saved …", "Kerf updated"): on screen for at least 20 s, longer for long text, kept while
-// the pointer is over it, and Esc closes it (#94). Warnings and errors go to notice() and stay until dismissed.
-let toastT;
+// the pointer is over it or focus is inside it, and closed by its Dismiss button or Esc. Opening one never moves focus.
+// Warnings and errors go to notice() and stay until dismissed.
+let toastT, toastFrom;
+function dismissBtn(text){
+  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = t("notice.dismiss");
+  x.setAttribute("aria-label", t("notice.dismissLabel", {text: text.length > 60 ? text.slice(0, 57) + "…" : text}));
+  return x;
+}
+function closeToast(){
+  const el = $("toast"), had = el.contains(document.activeElement); clearTimeout(toastT); el.hidden = true;
+  if (had) (toastFrom && toastFrom.isConnected ? toastFrom : drop).focus();   // back to where the user was
+}
+// the toast's text is announced once through the live region by say(); the toast itself isn't a live region
 function toast(text){
-  const el = $("toast"); el.textContent = text; el.hidden = false; say(text); clearTimeout(toastT);
-  const wait = ms => { toastT = setTimeout(() => el.matches(":hover") ? wait(1000) : (el.hidden = true), ms); };
+  const el = $("toast"); if (el.contains(document.activeElement)) closeToast();
+  const s = document.createElement("span"); s.textContent = text;
+  const x = dismissBtn(text); x.onclick = closeToast;
+  el.replaceChildren(s, x); el.hidden = false; say(text); clearTimeout(toastT);
+  const wait = ms => { toastT = setTimeout(() => el.matches(":hover, :focus-within") ? wait(1000) : (el.hidden = true), ms); };
   wait(Math.max(20000, text.length * 100));
 }
-addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) { clearTimeout(toastT); $("toast").hidden = true; } });
+$("toast").addEventListener("focusin", e => { if (!$("toast").contains(e.relatedTarget)) toastFrom = e.relatedTarget; });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("toast").hidden) closeToast(); });
 // warnings and errors: one item each in the message list, until dismissed (#94); announced once (#93)
 function notice(text, err){
   const box = $("notices");
   if ([...box.children].some(m => m.dataset.text === text)) { say(text, err); return; }   // already on screen
   const m = document.createElement("div"); m.className = "msg has-x" + (err ? " err" : ""); m.dataset.text = text;
   const s = document.createElement("span"); s.textContent = text;
-  const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.innerHTML = ICON_X; x.title = t("notice.dismiss");
-  x.setAttribute("aria-label", t("notice.dismissLabel", {text: text.length > 60 ? text.slice(0, 57) + "…" : text}));
+  const x = dismissBtn(text);
   x.onclick = () => { const nb = m.nextElementSibling || m.previousElementSibling; m.remove(); (nb ? nb.querySelector(".x") : drop).focus(); };
   m.append(s, x); box.appendChild(m); say(text, err);
 }
