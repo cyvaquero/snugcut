@@ -373,12 +373,14 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxf.noUnits` | `units` (`"mm"` or `"in"`) | a DXF doesn't declare its units (note) |
 | `dxf.tooManyItems` | `limit` | blocks and arrays expand past the item limit |
 | `dxf.tooManyPoints` | `limit` | blocks and arrays draw past the point limit |
+| `dxf.tooLarge` | `limit` (mm) | a coordinate is not finite or lies beyond the size limit |
 | `dxf.splineDegree` | `degree` | a spline's degree is outside 1 to 11 |
 | `dxf.hiddenLeftOut` | `count` | items on hidden layers were left out (note) |
 | `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
 | `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
 | `svg.unreadable` | | an import isn't a readable SVG |
 | `svg.tooManyPoints` | `limit` | curves sampled past the point limit |
+| `svg.tooLarge` | `limit` (mm) | a point lies beyond the size limit from the part's center, or isn't finite |
 | `svg.tooManyCopies` | `limit` | `<use>` copies past the limit |
 | `svg.nothingVisible` | | an SVG has no visible shapes |
 | `svg.nothingToCut` | | an SVG has no cuttable shapes |
