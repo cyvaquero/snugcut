@@ -375,9 +375,6 @@ If a newer release is cut before this issue is closed, the workbook and this iss
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 https://claude.ai/code/session_017HvDcuheawf6ger4p9Vj6i
-
-
-
 """
 
 

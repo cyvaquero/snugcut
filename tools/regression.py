@@ -18,11 +18,13 @@ fixture files, and checks the measured sizes, colors, closed or open shapes, not
 expected results stored beside each test. A mismatch is reported as "workbook test N: expected ..., got ...".
 
 Exit status: 0 when every entry matches; 1 when an entry differs, a nest failed, the worker's nests differ from the
-page's, or a workbook test doesn't match its expected result; 2 when a build gives no results (Chrome missing, a timeout, or the page failed before finishing).
+page's, or a workbook test doesn't match its expected result; 2 when a build gives no results (Chrome missing, a
+timeout, or the page failed before finishing).
 Python 3 standard library only.
 """
 import base64, glob, json, os, pathlib, re, shutil, subprocess, sys, tempfile, threading, time
 
+sys.dont_write_bytecode = True   # importing qa_workbooks would otherwise leave tools/__pycache__ in the tree
 import qa_workbooks   # the export QA workbooks' tests and their machine-checkable expected results (same folder)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
