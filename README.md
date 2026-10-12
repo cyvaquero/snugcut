@@ -89,7 +89,7 @@ are left out; filled shapes become outlines. A notice names anything that was le
 
 Settings are remembered in this browser (local storage) and restored next time.
 
-The **Search Options** and **Plate & cutting** boxes open and close from their headings (#344, #347): Search Options
+The **Search Options** and **Plate & cutting** boxes open and close from their headings: Search Options
 starts closed and Plate & cutting open, and whether each is open is remembered with the settings. A closed box shows a
 one-line summary under its heading, such as "Order walk, workers off" or "300 × 300 mm, kerf 0.1 mm, SVG", which a
 screen reader hears with the heading's button. Closing Plate & cutting brings the parts list up next to the results;
@@ -99,7 +99,7 @@ the mm/in switch stays in its heading, and a field error opens the box again.
 - **Search Options** (True shape, its own box above Plate & cutting):
   - **Method**: **Order walk** (the default) keeps changing the order the parts are placed in, 1–3 swaps or moves at
     a time, keeps each change that is no worse, and lets every part take its best angle where it lands. **Genetic**
-    (#5) keeps 20 layouts, each an order and a fixed angle per part, and breeds new ones from the best of them; with
+    keeps 20 layouts, each an order and a fixed angle per part, and breeds new ones from the best of them; with
     one angle per part each layout is quicker to try, so it tries many more in the same time. When it stops
     improving, it starts again from shaken copies of its best layout. In tests over 10 jobs (the sample parts, the
     nesting and test-cut fixtures, and a 120-part mix with and without nesting in holes, at 90° and 15° steps, 8
@@ -108,16 +108,16 @@ the mm/in switch stays in its heading, and a field error opens the box again.
     and on the 120-part jobs. At 90° steps it can do slightly worse: in 4 s searches of the 120-part jobs with one
     worker it filled plates a little less well in most runs, and with four workers it once stayed on 2 plates for a
     4 s search where Order walk found 1. Those tests ran on 1.3.42-beta. Since 1.3.46-beta both methods try more
-    layouts in the same time, Order walk the most (#349, #350, #351); in 4 s searches of the same jobs with one worker
-    (1.3.47-beta), Genetic did better on 33 runs and worse on 9 (#356). Both start from the same two sorted orders.
+    layouts in the same time, Order walk the most; in 4 s searches of the same jobs with one worker
+    (1.3.47-beta), Genetic did better on 33 runs and worse on 9. Both start from the same two sorted orders.
   - **Workers**: Off (the default) searches in one background worker; 2, 3 or 4 workers try that many layouts at
     once, so more layouts are tried in the same time. Each extra worker uses more memory, about 100 MB on a job of
     120 parts, so on a lower-spec computer (little memory or few processor cores) leave it off; the box says so.
     Layouts and exports don't depend on it beyond the number of layouts tried. How much it helps depends on the
-    method (#352), measured on the sample parts (1.3.47-beta): with 4 workers Order walk tries 4.2–4.9× as many
+    method, measured on the sample parts (1.3.47-beta): with 4 workers Order walk tries 4.2–4.9× as many
     layouts as one at 90° steps and 2–3.4× at 15°. Genetic waits at each step for the slowest of its layouts, and
     each worker builds its own cache of part pairs, so it tries 2.5–2.9× as many at 90°, 1.9× at 15° in a 30 s
-    search, and no more than one worker in a 4 s search at 15° (#355).
+    search, and no more than one worker in a 4 s search at 15°.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
   Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
   German, for example); exported files always use `.`.
@@ -140,8 +140,8 @@ In the parts list, each file has a **quantity** (0 leaves it out), an **orientat
 The orientation button cycles through three states, each with its own icon: **free** (an open lock: the part turns at
 the Rotation step), **grain** (wavy lines: the part only turns end for end, 0° or 180°, so wood grain or brushed metal
 runs the same way on every copy; in Bounding box mode it isn't turned at all, since 180° gives the same rectangle), and
-**locked** (a closed lock: 0° only) (#7). A part left out because it fits only turned another way says so, and a
-grain part's outline on the plate preview is labeled "(grain)". A line under the parts list explains the three states (#345). A few sample parts are loaded at first; they go away when you add your own files.
+**locked** (a closed lock: 0° only). A part left out because it fits only turned another way says so, and a
+grain part's outline on the plate preview is labeled "(grain)". A line under the parts list explains the three states. A few sample parts are loaded at first; they go away when you add your own files.
 
 **Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
 not on parts kept as original markup);
@@ -161,9 +161,15 @@ What happens to imported files:
   URLs hidden in CSS custom properties: a custom property holding a string, and `var()` inside `image-set()`,
   `image()` or `cross-fade()`, are removed; custom properties holding colors or lengths keep working. Embedded
   (`data:`) content is kept only for raster images (PNG, JPEG, GIF, WebP, AVIF, BMP) and fonts.
-- A part whose lines cross each other too many times to trace its outline quickly (more than 10,000 crossings, or
-  thousands of open zigzag turns) is nested by the shape around all of it, with a notice; its cut paths are exported
-  as drawn. A file whose curves would be sampled into more than 2,000,000 points isn't added.
+- A part with too many crossing lines to trace its outline quickly (more than 10,000 crossings, about 775 or more
+  line ends meeting at one point such as a star or sunburst, or thousands of open zigzag turns) is nested by the shape
+  around all of it, with a notice; its cut paths are exported as drawn.
+- Limits that refuse input, each with a message saying why: a plate, kerf, extra gap or edge margin above 100,000 mm
+  (the field is marked and the last good value stays in use); a file whose curves would be sampled into more than
+  2,000,000 points, or a DXF that draws more than that many, isn't added; a DXF that expands to more than 250,000 items
+  (blocks and arrays), or has a spline of degree above 11, isn't added; an SVG that repeats shapes through `<use>`
+  more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (or not
+  finite) make the file too large to add.
 - A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
   page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.
   `:root` rules still apply to the part; rules that need an HTML page around the drawing, such as `body rect`,
@@ -221,8 +227,9 @@ makes the joint about 0.04 mm looser.
 
 Fingers 8 mm wide and 3 mm deep, the way a box side is joined. Fit the two pieces at 90°: A's fingers on segments 1,
 3 and 5 fill B's gaps. With the right kerf the joint is snug and the faces are flush. If the fingers stick out or sit
-short, the material isn't 3 mm: check it with the slot gauge. The finger depth is drawn for 3 mm; regenerate the pair
-for other stock.
+short, the material isn't 3 mm: check it with the slot gauge. The finger depth is drawn for 3 mm. For other stock,
+open both files in a text editor and change every `50` in the path data (the x of the finger edges; the drawing is
+53 mm wide) to 53 minus the thickness, for example `49` for 4 mm stock.
 
 ### Slot gauge (`slot-gauge-3mm.svg`)
 
@@ -238,7 +245,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Display**: the light or dark theme follows the system setting, and the status animation stops when reduced
   motion is requested.
 - **Screen readers**: the result of each run, confirmations and errors are announced. Warnings and errors also stay in
-  the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
+  the message list above the plates until dismissed, and confirmations stay on screen at least 20 s, and longer while the pointer is over them or focus is inside them (their
+  Dismiss button or Esc closes them).
   Field errors and the kerf measured from a test cut are announced once typing pauses; the kerf compensation warning
   is announced when it is turned on.
 - **Focus** stays in place when the parts list or the plates are redrawn, and open "Parts on this plate" lists stay
@@ -246,7 +254,7 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
   with counts and rotations. The image is described by the same list whether it is open or closed. Pointing at a dashed
   outline with the mouse shows the part's file name and rotation; that is extra, for mouse users only: the list says which parts are
-  on a plate, but not where each one sits on it (#378).
+  on a plate, but not where each one sits on it.
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use. The kerf field and the "Compensate kerf on objects" checkbox are also described by their
   hints.
@@ -262,21 +270,20 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   change is announced.
   Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
-  (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
-- **Known gaps**: where each part sits on a plate preview is shown only in the image and the mouse tooltips (#378). The
-  findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
-  #166–#169, #176, #178) are fixed, as is #204. Target size (#177) isn't required at WCAG 2.1 AA: the mm / in buttons
+  (name, then thumbnail, Qty and buttons) and the settings fields stack in one column, so nothing is lost at 320 px,
+  400% zoom or with larger text spacing. With JavaScript turned off, the page says that SnugCut needs it.
+- **Known gaps**: where each part sits on a plate preview is shown only in the image and the mouse tooltips. Target size isn't required at WCAG 2.1 AA: the mm / in buttons
   are 24 px tall. Report problems as a GitHub issue.
 
 **Target:** WCAG 2.1 level AA, plus the Revised Section 508 requirements that WCAG doesn't cover: accessibility
-documentation (602, this section) and keeping information visible with forced colors (302.2, #98, #157). The reviews'
+documentation (602, this section) and keeping information visible with forced colors (302.2). The reviews'
 findings are fixed, but conformance hasn't yet been confirmed with screen readers (VoiceOver, NVDA) or a full audit.
 Section 508 points to WCAG 2.0 AA for web content, so meeting WCAG 2.1 AA covers it and adds a few newer criteria
 (status messages, reflow, text spacing, non-text contrast, label in name). As web content that meets WCAG 2.0 AA,
 SnugCut falls under the 501.1 exception, so the software provisions in 502 and 503 don't apply separately. The
 authoring-tool provisions (504) are treated as not applicable: the SVG and DXF files SnugCut writes are cutting paths
 for machines in fixed formats, not documents for people to read. The two standards don't conflict anywhere in
-SnugCut; the details are in #106 and #181.
+SnugCut.
 
 ## Files
 
@@ -324,7 +331,7 @@ allows its own files with `'self'` instead).
 
 SnugCut is built as a page of its own, and `app/snugcut.css` assumes it owns the document: it styles `html`, `body`
 and bare elements such as `input` and `footer`, and sets its palette on `:root`. Loaded as is into another site, it
-restyles that site, and the site's own palette loses to it. There is no separate stylesheet for embedding (#358). To
+restyles that site, and the site's own palette loses to it. There is no separate stylesheet for embedding. To
 embed the app, put the contents of `app/index.html`'s `<body>` inside one container, for example
 `<div class="snugcut">`, and load a copy of `app/snugcut.css` rewritten this way:
 
@@ -347,7 +354,8 @@ The script reaches outside the container in a few places, which the host has to 
 - it sets `lang` on the page's `<html>` and `data-mode` on its `<body>`;
 - it finds its elements by `id` (`search`, `pool`, `plates` and others in `app/index.html`), so those ids must be
   unique on the host page, and it writes the unit into every element with the class `u`;
-- Escape anywhere on the page closes its toast, which is fixed to the bottom of the window;
+- Escape anywhere on the page closes its toast, which is fixed to the bottom of the window; the toast also has a Dismiss
+  button, and it stays while the pointer is over it or focus is inside it;
 - it saves its settings in `localStorage` under `snugcut.settings`, for the host's origin.
 
 The host also loads what `app/index.html` loads: the two library script tags with their integrity hashes, the fonts
@@ -360,7 +368,7 @@ same URLs as SnugCut's, and `worker-src blob:` for the search workers; without t
 `setVersion(v)` sets the version written into exports (`<!-- SnugCut v… -->` in every SVG, and the `999` comment that
 opens a DXF with kerf compensation built in); the app passes its footer version. Without it, exports say `unversioned`. A plate exported with kerf compensation
 carries a marker saying so, and `isCompensated(text, isDXF)` tells whether a file has one, so it isn't compensated
-again on import (#389).
+again on import.
 
 ## Library messages
 
