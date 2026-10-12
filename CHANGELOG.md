@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.49-beta
+
+- **Security:** a tiny SVG or DXF with huge coordinates (an SVG path to 1e13 units, an arc whose radius scales up to
+  5e19, a DXF with 1e15 mm coordinates or a bulge of 1e300) no longer freezes the page forever when it is added. Parts
+  whose points are not finite, or lie more than 1,000,000,000 mm from their center, are refused at once with a "too
+  large" message, and the page stays responsive; ordinary files, including far-from-origin site drawings, import as
+  before. The six repro files are in `fixtures/security` (#458).
+
 ## 1.4.48-beta
 
 - **Fixed:** a rotated or skewed SVG shape is measured by its true size instead of a looser box around it. A 20 mm
