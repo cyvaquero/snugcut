@@ -65,7 +65,7 @@ export const EN = {
   "files.refused": "{list} {n, plural, one {wasn't} other {weren't}} added: only .svg and .dxf files can be added.",
   "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
   "files.hiddenItem": "{n} from {name}",
-  "files.tangled": "{name} has lines that cross each other too many times to trace its outline, so it is nested by the shape around all of it.",
+  "files.tangled": "{name} has too many crossing lines, or too many lines meeting at one point, to trace its outline, so it is nested by the shape around all of it.",
   "files.hidden": "Left out hidden shapes (not shown, so not cut): {list}.",
   "files.stripped": "Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from {list}; only what's inside the file is used.",
   "stat.eff": "{rating} out of 10",
