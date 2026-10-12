@@ -54,7 +54,9 @@ with a notice, and so is anything on a frozen, off or non-plotting layer or the 
 invisible entities are left out without a notice.
 
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
-format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change.
+format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change. Circles,
+ellipses and arcs are written as Bézier segments of at most 45°, which stay within 0.00001 of the radius (0.005 mm on
+a 500 mm circle).
 
 **Compensate kerf on objects** (off by default) builds the kerf into the downloaded files. Closed cut paths move by
 half the kerf, outlines outward and holes inward, so parts come out at their drawn size. Filled areas and open lines

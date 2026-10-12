@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000mm" height="1000mm" viewBox="0 0 1000 1000">
+  <!-- A circle of 500 mm radius (#462): exported as Bezier segments of at most 45 degrees, so the cut path stays within
+       0.01 mm of the true circle (90 degree segments were up to 0.14 mm off). -->
+  <circle cx="500" cy="500" r="500" fill="none" stroke="#ff0000" stroke-width="0.1"/>
+</svg>
