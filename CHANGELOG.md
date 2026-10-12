@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.6-beta
+
+- **Changed:** for maintainers, the fixture regression now also records each fixture's size, outline area and number of
+  outer contours, and has fixtures for overlapping shapes drawn in opposite directions and for a rotated circle and
+  ellipse, so undoing the outline fixes from 1.5.0-beta shows as a difference. Nothing in the app changes (#484).
+
 ## 1.5.2-beta
 
 - **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
