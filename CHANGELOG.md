@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.3-beta
+
+- **Security:** a CDATA section in an imported SVG (`<![CDATA[…]]>`) is now turned into plain text on import, so an
+  exported plate escapes it instead of writing it back as is. Markup inside one, such as `</text><img onerror=…>`, can
+  no longer become live elements if the exported SVG is later inlined into an HTML page. CSS in a CDATA section
+  (as Illustrator and Inkscape write it) still styles the part the same way (#453).
+
 ## 1.5.2-beta
 
 - **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
