@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.4-beta
+
+- **Security:** a file with thousands of ids (Inkscape and Illustrator can put one on every element) no longer makes
+  every plate preview and export slow when its part is kept as original markup (text, images, `<use>`, filters): the
+  ids are now rewritten in one pass, so 16,000 ids take well under 100 ms per plate instead of about 5 seconds. The
+  exported markup is unchanged (#461).
+
 ## 1.5.2-beta
 
 - **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
