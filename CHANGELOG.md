@@ -9,6 +9,28 @@ a major rewrite of what the app does or how it works.
 - **Fixed:** `python3 tools/build.py` works on Python 3.9, the stock `python3` on macOS, and no longer stops with a
   `TypeError`; `snugcut.html` comes out byte-identical on every Python 3 version, with `\n` line endings (#459).
 
+## 1.4.49-beta
+
+- **Security:** a tiny SVG or DXF with huge coordinates (an SVG path to 1e13 units, an arc whose radius scales up to
+  5e19, a DXF with 1e15 mm coordinates or a bulge of 1e300) no longer freezes the page forever when it is added. Parts
+  whose points are not finite, or lie more than 1,000,000,000 mm from their center, are refused at once with a "too
+  large" message, and the page stays responsive; ordinary files, including far-from-origin site drawings, import as
+  before. The six repro files are in `fixtures/security` (#458).
+
+## 1.4.48-beta
+
+- **Fixed:** a rotated or skewed SVG shape is measured by its true size instead of a looser box around it. A 20 mm
+  circle turned 45 degrees was listed as 28.3 x 28.3 mm and a 60 x 20 mm ellipse turned 30 degrees as 62.0 x 47.3 mm
+  (true 52.9 x 34.6), so Bounding box mode reserved too much room and could report a part that fits as too big for
+  the plate. Parts that aren't rotated or skewed are measured as before (#457).
+
+## 1.4.47-beta
+
+- **Fixed:** overlapping closed shapes drawn in opposite directions (a square next to a circle, or a shape and its
+  mirrored copy) no longer lose their overlap from the part's outline. The overlap used to become a hole, so the area
+  was under-reported (1,600 mm² instead of about 1,953 for a 40 mm square with a 15 mm circle on its edge) and the
+  utilization and efficiency figures came out too low (#456).
+
 ## 1.4.46-beta
 
 - **Fixed:** hardening against a drawing that freezes the import: thousands of LINEs that all start or end at one point
