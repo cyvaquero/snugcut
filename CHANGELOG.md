@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.1-beta
+
+- **Changed:** the export QA workbooks test 1.5.0-beta and link its source zip (#49, #50, #51, #52, #132, #133).
+  No test's expected result changes: every test run in 1.5.0-beta gives the same exports and notices as in
+  1.4.0.1-beta.
+
 ## 1.5.0-beta
 
 Release of 1.4.6-beta through 1.4.46-beta (1.4.34-beta was not used), with the fixes from the release review
