@@ -22,12 +22,9 @@ one unasked. If the answer is yes:
 The release branch is cut only on the maintainer's instruction, never automatically. Step 1 finishing (or being
 declined) is not a reason to cut it; wait to be told, including which version to release.
 
-- Branch `release/<version>` off an up-to-date `develop`.
-- Set the version in the page footer (`app/index.html`), run `python3 tools/build.py`, and add a `CHANGELOG.md` entry. Major and minor versions change
-  only when the maintainer asks.
-- For a major or minor version, consolidate `CHANGELOG.md`: squash the iterative entries the release covers (and backfill
-  earlier unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release).
-- Push the branch.
+- Branch `release/<version>` off an up-to-date `develop` and push it.
+- Don't bump the version or touch `CHANGELOG.md` at the cut: the release branch keeps develop's iterative number, and
+  the bump to `<version>` and the CHANGELOG consolidation happen when the release is finished (section 4).
 
 ## 3. After cutting: blind review
 
@@ -51,7 +48,7 @@ The five reviewers:
 2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, RELEASING.md, fixtures/**/README.md, the UI text (the page text in app/index.html and every message in app/strings-en.js: labels, hints, messages, footer) and the QA workbook tests in tools/qa_workbooks.py (steps and expected results) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
 3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report what the CSP or sanitizer fully blocks; name the defense instead.
 4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503 including the 501.1 web-app exception, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colors, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors, and the accessibility documentation. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
-5. **Best practices**: code that works but departs from established practice for its stack and tools (web platform, JavaScript, CSS, Python), where the gap carries a concrete risk (a future bug, a maintenance trap, an API that will break). Every finding is `severity:info`. Look at:
+5. **Best practices**: code that works but departs from established practice for its stack and tools (web platform, JavaScript, CSS, Python), where the gap carries a concrete risk (a future bug, a maintenance trap, an API that will break). Severity by risk, never above `severity:medium`: **medium** when it will break builds or operations (a deprecated API with an announced removal, unpinned library versions, unsafe script defaults); **low** for maintainability and testability gaps; **info** for convention only. Look at:
    - idiomatic use of the language and platform APIs: deprecated, superseded or non-standard APIs (against the browser minimums in the README), and built-ins that were reimplemented;
    - project structure and module boundaries: DOM or UI code in `lib/`, page globals reached from the worker code, `snugcut.html` and `app/` behaving differently;
    - maintainability: the same rule implemented twice (with different results now or likely later), limits and constants defined in more than one place, dead code, misleading names or comments that contradict the code;
@@ -68,7 +65,7 @@ The five reviewers:
 - List all existing issues (`gh issue list --state all --limit 300`) and skip or cross-reference duplicates. The list includes `deferred` issues: match against them too, so parked work isn't filed again as new.
 - Merge findings that describe the same defect across reviewers into one issue. Group trivially related doc gaps only when they share one fix.
 - Calibrate severity across reviewers: wrong output reaching users or other systems (exports, cutters) ranks above cosmetic issues.
-- Best-practice findings stay at `severity:info`: calibration never raises them. If another reviewer found the same root cause, merge into that finding and keep its severity.
+- Best-practice findings are calibrated with the others but never go above `severity:medium`; anything worse belongs to reviewers 1–4. If another reviewer found the same root cause, merge into that finding and keep its severity.
 
 #### 3. Open the issues
 Match the format of the existing review issues (read #17 and #46 first). Each body contains:
@@ -79,7 +76,7 @@ Match the format of the existing review issues (read #17 and #46 first). Each bo
 - for accessibility: the WCAG SC + level and the 508 provision on their own line
 - the footer `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
 
-Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`; best-practice findings get `best-practice` as their type) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements; best-practice findings are always `severity:info`). Write the bodies to scratch files with quoted heredocs (`<<'EOF'`), so `$(…)` and backticks in code samples never run, and keep a TSV manifest (id, title, labels). Create the issues from the repo directory in severity order with `gh issue create --body-file <absolute path>`. Use placeholders for links between new issues, then fill them in with `gh issue edit` once their numbers exist.
+Labels: a type (`bug`, `documentation`, `enhancement`; security findings get `bug,security`; accessibility findings get `accessibility`; best-practice findings get `best-practice` as their type) + `code-review` + one of `severity:critical|high|medium|low|info` (no severity label on enhancements; best-practice findings never above `severity:medium`). Write the bodies to scratch files with quoted heredocs (`<<'EOF'`), so `$(…)` and backticks in code samples never run, and keep a TSV manifest (id, title, labels). Create the issues from the repo directory in severity order with `gh issue create --body-file <absolute path>`. Use placeholders for links between new issues, then fill them in with `gh issue edit` once their numbers exist.
 
 #### 4. Report
 Summarize by severity with a `#NN:Exact title` link to every new issue, call out the release blockers, list merged and dropped findings, and list any decisions that need the maintainer. If the WCAG/508 differences matter beyond single findings, open one `accessibility,documentation,code-review,severity:info` issue summarizing them.
@@ -91,6 +88,11 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
 - Fix release blockers on `bugfix/` branches, with PRs into the release branch. Bump the iterative version with each
   fix.
 - Finishing the release needs the maintainer's explicit approval:
+  - on the release branch, set `<version>` (`X.Y.0` for a major or minor release) in the page footer
+    (`app/index.html`), run `python3 tools/build.py`, and add its `CHANGELOG.md` section. For a major or minor version,
+    consolidate `CHANGELOG.md` in the same commit: squash the iterative entries the release covers (and backfill earlier
+    unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release). Major and minor
+    versions change only when the maintainer asks;
   - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
   - delete the release branch, locally and on origin.
@@ -104,21 +106,26 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
 ## Fixture regression
 
 CLAUDE.md requires a structural or refactoring change to leave every export from `snugcut.html` byte-identical, and
-section 1 above requires the same of an optimization. The check compares two builds of `snugcut.html` in a headless
-browser. The scripts that drive it are kept outside the repo; this is what they must do.
+section 1 above requires the same of an optimization. `tools/regression.py` checks it (#394): it runs two builds of
+`snugcut.html` in headless Chrome and compares their exports.
 
-**The two builds**
-- Baseline: `snugcut.html` from the branch the change goes into (`git show develop:snugcut.html`).
-- Candidate: `snugcut.html` freshly built from the change with `python3 tools/build.py`.
+```sh
+python3 tools/build.py                       # the candidate: snugcut.html built from the change
+python3 tools/regression.py                  # develop's snugcut.html against the working tree's
+python3 tools/regression.py main             # against another branch, tag or commit
+python3 tools/regression.py OLD.html NEW.html
+```
 
-**Preparing each copy to run from a file** (the same edits to both, in a scratch folder outside the repo)
-- Point the clipper-lib 6.4.2 and jszip 3.10.1 `<script>` tags at local copies of those exact files, and remove their
-  `integrity` and `crossorigin` attributes, the Content-Security-Policy `<meta>` and the Google Fonts `<link>`.
-  Nothing else in the page changes.
-- Replace the page's startup call to `run(…)` (the last statement of its script, after `renderParts()`) with the test
-  below. The page is one script, so the test can call the library and app functions directly.
-- Open it in a fresh browser profile, so no saved `snugcut.settings` changes the defaults. The test prints its results
-  as one JSON string to the console.
+It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usual place) and network access for the
+two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
+worker can't start from a file, so the nests then run on the page only. `--json FILE` keeps the new build's raw
+results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build.
+
+**What it does to each build** (the same to both, in a temporary folder): replaces the page's startup `run(…)` (the
+last statement of its script, after `renderParts()`) with its test, which calls the library and app functions directly,
+since the page is one script; removes the Content-Security-Policy `<meta>` (the test changes the inline script's hash)
+and the Google Fonts `<link>`; and opens it in a fresh browser profile, so no saved `snugcut.settings` changes the
+defaults. The test prints its results as one JSON string to the console.
 
 **What is exported**, with the default settings otherwise:
 1. Every fixture alone. For each `.svg` and `.dxf` file under `fixtures/` (all folders), with **Compensate kerf on
@@ -127,20 +134,23 @@ browser. The scripts that drive it are kept outside the repo; this is what they 
    - place it alone, unrotated, at (10, 10) mm on a plate of its own size;
    - export it with `plateSVG` and with `plateDXF`.
 
-   Keep the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has to
-   match too.
-2. Whole nests of the sample parts the page opens with. Run one pack (`run(0, true)`) and export every plate with the
-   app's own `plateFile`, keeping each file and its notices. Do this six times:
+   It keeps the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has
+   to match too.
+2. Whole nests of the sample parts the page opens with. The starting packs, no search (`run(0, true)`: True shape packs
+   both sorted orders and keeps the better, Bounding box runs its MaxRects packing), every plate exported with the
+   app's own `plateFile`, keeping each file and its notices, six times:
    - True shape: SVG, then DXF, with compensation off;
    - True shape: SVG, then DXF, with compensation on;
    - Bounding box: SVG, then DXF, with compensation off.
 
-   Invalidate the cached geometry each time compensation or the mode changes.
+   The cached geometry is invalidated each time compensation or the mode changes. The six run in the search worker,
+   then again on the page; the two sets must match. A nest whose run fails is reported as a failure, even when it
+   fails the same way in both builds.
 
 **Comparing**: the two result lists must match entry by entry and byte for byte. Only two things are normalized:
 - the version number in the export comment (`SnugCut v1.3.39-beta` and the like), which every version bump changes;
 - the per-import id prefix (`p<number>_`) that `parseSVG` adds to ids in the markup. It counts imports in the session,
   so it shifts when the number of sample parts changes.
 
-Report the number of entries compared in each list and the indexes of any that differ. A change that is meant to alter
-exports says which entries changed and why. All other entries must still match.
+It reports the number of entries compared in each list and names any that differ. A change that is meant to alter
+exports says in its PR which entries changed and why. All other entries must still match.

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100">
+  <!-- SnugCut fixture (#458): an arc whose radius scales up to about 5e19 must be refused, not hang the page -->
+  <path fill="none" stroke="#000" d="M0 0 A1e-9 1e9 0 1 1 100 100 Z"/>
+</svg>

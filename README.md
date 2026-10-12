@@ -20,9 +20,9 @@ always outward, so they nest a little less tightly but never overlap.
 
 **Area minimum** is the fewest plates the job could fit on by area alone: in True shape, the parts' envelopes
 (outlines plus half the spacing all round, less the holes of parts set to nest other parts inside them) divided by the
-plate's usable area; in Bounding box mode, the parts' bounding rectangles grown by the spacing, divided by the usable
-area grown the same way. When the best layout uses more plates than that, the status
-line suggests a longer search ("A longer search may save a plate").
+plate's usable area grown by half the spacing (and the outline precision); in Bounding box mode, the parts' bounding
+rectangles grown by the spacing, divided by the usable area grown the same way. When the best layout uses more plates
+than that, the status line suggests a longer search ("A longer search may save a plate").
 
 **Utilization** (each plate, and the average over all plates) is the share of the plate covered by the parts' real
 material: their outlines minus their holes, in both modes (parts kept as original markup count their holes as
@@ -126,7 +126,7 @@ the mm/in switch stays in its heading, and a field error opens the box again.
   72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
   `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).
 - **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
-- **Output file prefix**: put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
+- **Output file prefix** (up to 60 characters): put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
   `nested-plates.zip` without a prefix or `<prefix>-plates.zip` with one. "Download all (.zip)" appears when there is
   more than one plate.
 - **Export format**: SVG, or DXF (R12, mm).
@@ -234,18 +234,21 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   motion is requested.
 - **Screen readers**: the result of each run, confirmations and errors are announced. Warnings and errors also stay in
   the message list above the plates until dismissed, and confirmations stay on screen at least 20 s (Esc closes them).
-  Field errors, the kerf compensation warning and the kerf measured from a test cut are announced once typing pauses.
+  Field errors and the kerf measured from a test cut are announced once typing pauses; the kerf compensation warning
+  is announced when it is turned on.
 - **Focus** stays in place when the parts list or the plates are redrawn, and open "Parts on this plate" lists stay
   open. Removing a part moves it to the next part, and Search more and Stop hand it to each other.
 - **Plate previews** describe themselves ("Plate 1 of 2: 15 parts, 75% utilization") and have a "Parts on this plate" list
-  with counts and rotations. The image is described by the same list whether it is open or closed.
+  with counts and rotations. The image is described by the same list whether it is open or closed. Pointing at a dashed
+  outline with the mouse shows the part's file name and rotation; that is extra, for mouse users only: the list says which parts are
+  on a plate, but not where each one sits on it (#378).
 - **Invalid entries** are marked (`aria-invalid`) with a message under the field that says what's wrong and which
   value is still in use. The kerf field and the "Compensate kerf on objects" checkbox are also described by their
   hints.
 - **Windows high-contrast (forced colors)**: pressed toggles keep a visible state, the orientation icon is an open
   lock, wavy grain lines or a closed lock to match (grain and locked filled like a pressed toggle), the holes icon shows an empty or a filled hole, and part thumbnails and plate previews keep their tan plate
   behind the parts' own colors, so they stay visible in dark themes.
-- **Contrast**: text meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
+- **Contrast**: text, including placeholder text, meets WCAG AA in both themes. The borders of fields, icon buttons and the mode and unit toggles,
   the plate edge, the "no holes" icon and the guide lines on the plate previews are at least 3:1. Text buttons have
   faint borders and are recognized by their labels.
 - **Structure and names**: headings for the panels, results and each plate; a main landmark; quantity fields have a
@@ -255,7 +258,8 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
   (name, then thumbnail, Qty and buttons), so nothing is lost at 320 px, 400% zoom or with larger text spacing.
-- **Known gaps**: none open. The findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
+- **Known gaps**: where each part sits on a plate preview is shown only in the image and the mouse tooltips (#378). The
+  findings of the 1.0.0-beta review (#93–#105) and the 1.2.0-beta review (#155–#157,
   #166–#169, #176, #178) are fixed, as is #204. Target size (#177) isn't required at WCAG 2.1 AA: the mm / in buttons
   are 24 px tall. Report problems as a GitHub issue.
 
@@ -278,6 +282,7 @@ SnugCut; the details are in #106 and #181.
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
 | `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
+| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome (Python 3, no dependencies; needs Chrome), see [RELEASING.md](RELEASING.md#fixture-regression) |
 | `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
@@ -310,6 +315,48 @@ output of `curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A`, a
 build copies the tags and the CSP into `snugcut.html` and writes in the hash of its inline script (`app/index.html`
 allows its own files with `'self'` instead).
 
+## Embedding SnugCut in another page
+
+SnugCut is built as a page of its own, and `app/snugcut.css` assumes it owns the document: it styles `html`, `body`
+and bare elements such as `input` and `footer`, and sets its palette on `:root`. Loaded as is into another site, it
+restyles that site, and the site's own palette loses to it. There is no separate stylesheet for embedding (#358). To
+embed the app, put the contents of `app/index.html`'s `<body>` inside one container, for example
+`<div class="snugcut">`, and load a copy of `app/snugcut.css` rewritten this way:
+
+1. Prefix every selector with the container, inside `@media` blocks too: `.panel h2` becomes `.snugcut .panel h2`,
+   `input:focus-visible,select:focus-visible` becomes `.snugcut input:focus-visible,.snugcut select:focus-visible`,
+   and `::placeholder` becomes `.snugcut ::placeholder`.
+2. Point the page-level rules at the container: `*` becomes `.snugcut,.snugcut *`, and the `html,body` and `body`
+   rules become `.snugcut` rules. The `body` padding (16 px at the sides, 20 px above, 40 px below) is spacing for a
+   page of its own; keep it or change it to suit the host.
+3. Move the palette onto `.snugcut`: both `:root` blocks, the one at the top and the one inside
+   `@media (prefers-color-scheme: dark)`. The host can then set any of its custom properties (`--accent`, `--bg`,
+   `--fg` and the rest) on the container, in a rule that comes later or is more specific. Keep the dark block, or set
+   the dark values yourself: the colors are chosen to meet the contrast minimums noted at the top of `snugcut.css`.
+4. Leave `body` in front of the two `[data-mode]` rules and add the container after it:
+   `body[data-mode="bbox"] .snugcut [data-only="shape"]`. `app.js` sets `data-mode` on `body`.
+5. Rename `@keyframes pulse` and the `animation` that uses it, for example to `snugcut-pulse`, so neither name
+   collides with the host's.
+
+The script reaches outside the container in a few places, which the host has to allow for:
+- it sets `lang` on the page's `<html>` and `data-mode` on its `<body>`;
+- it finds its elements by `id` (`search`, `pool`, `plates` and others in `app/index.html`), so those ids must be
+  unique on the host page, and it writes the unit into every element with the class `u`;
+- Escape anywhere on the page closes its toast, which is fixed to the bottom of the window;
+- it saves its settings in `localStorage` under `snugcut.settings`, for the host's origin.
+
+The host also loads what `app/index.html` loads: the two library script tags with their integrity hashes, the fonts
+(without them the fallbacks in `--f-display`, `--f-body` and `--f-mono` are used), and `app/app.js` as a module, which
+imports `app/strings-en.js` and `lib/snugcut.js` by relative path. The host's Content-Security-Policy has to allow the
+same URLs as SnugCut's, and `worker-src blob:` for the search workers; without that, the search runs on the page.
+
+## Library version and markers
+
+`setVersion(v)` sets the version written into exports (`<!-- SnugCut v… -->` in every SVG, and the `999` comment that
+opens a DXF with kerf compensation built in); the app passes its footer version. Without it, exports say `unversioned`. A plate exported with kerf compensation
+carries a marker saying so, and `isCompensated(text, isDXF)` tells whether a file has one, so it isn't compensated
+again on import (#389).
+
 ## Library messages
 
 `lib/snugcut.js` words every message it shows a person (import errors and notes, export notes) through a code and its
@@ -326,12 +373,14 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxf.noUnits` | `units` (`"mm"` or `"in"`) | a DXF doesn't declare its units (note) |
 | `dxf.tooManyItems` | `limit` | blocks and arrays expand past the item limit |
 | `dxf.tooManyPoints` | `limit` | blocks and arrays draw past the point limit |
+| `dxf.tooLarge` | `limit` (mm) | a coordinate is not finite or lies beyond the size limit |
 | `dxf.splineDegree` | `degree` | a spline's degree is outside 1 to 11 |
 | `dxf.hiddenLeftOut` | `count` | items on hidden layers were left out (note) |
 | `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
 | `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
 | `svg.unreadable` | | an import isn't a readable SVG |
 | `svg.tooManyPoints` | `limit` | curves sampled past the point limit |
+| `svg.tooLarge` | `limit` (mm) | a point lies beyond the size limit from the part's center, or isn't finite |
 | `svg.tooManyCopies` | `limit` | `<use>` copies past the limit |
 | `svg.nothingVisible` | | an SVG has no visible shapes |
 | `svg.nothingToCut` | | an SVG has no cuttable shapes |
@@ -355,7 +404,9 @@ After editing the sources, run:
 python3 tools/build.py
 ```
 
-and commit the sources and `snugcut.html` together. The split app (`app/index.html`) uses ES modules, so it only runs
+and commit the sources and `snugcut.html` together. `python3 tools/regression.py` then checks that the exports are
+byte-identical to `develop`'s. Every pull request and every push to `main` or `develop` runs both `--check` commands
+(`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a

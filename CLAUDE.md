@@ -32,8 +32,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   its `script-src` on every run, so injected inline handlers can't run. Never add inline `on…=` handlers or
   `javascript:` URLs; attach handlers in `app.js`.
 - **Exports must not change by accident**: a structural or refactoring change must leave SVG and DXF exports from
-  `snugcut.html` byte-identical. Run the [fixture regression](RELEASING.md#fixture-regression) (every fixture, SVG
-  and DXF, compensation off and on) and report it.
+  `snugcut.html` byte-identical. Run the [fixture regression](RELEASING.md#fixture-regression) (`python3 tools/regression.py`:
+  every fixture, SVG and DXF, compensation off and on, and the sample nests) and report it.
 - **Verify before claiming a fix works**: run the real code (a headless browser or scripts kept outside the repo) and
   compare before and after; say what was verified and what wasn't. Don't add tooling, dependencies or build steps
   without asking.
@@ -51,6 +51,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   and `CHANGELOG.md`:
   - major: only bumped when the user explicitly says so; zeroes minor and iterative.
   - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.
+  - the bump to `X.Y.0` happens only when a release is finished, on the release branch just before it merges into
+    `main` ([RELEASING.md](RELEASING.md) section 4); cutting the release branch doesn't bump the version.
   - iterative: bump automatically with every change (once per change, not per commit: follow-up commits on an unmerged
     PR keep its version).
   - pre-release suffix: a `-beta` (or similar) suffix follows the number only when the user asks for it. It stays on
@@ -62,11 +64,11 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   automatically, and the maintainer names the version. Before cutting it, ask whether to run a code efficiency review
   and optimization first. After cutting it, run the blind review prompt in that file. Finishing a release (merge into
   `main`, tag `<version>` (no `v` prefix), merge back into `develop`) needs the maintainer's approval.
-  A major or minor release consolidates `CHANGELOG.md` as described in
+  A major or minor release consolidates `CHANGELOG.md` with its `X.Y.0` bump at the merge into `main`, as described in
   [CHANGELOG consolidation at release](#changelog-consolidation-at-release).
 - **Findings become issues**: every code-review, bug, security, documentation, accessibility and best-practice finding is
   filed as a GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md) (plain
-  title; a type label, `code-review` when it came from a review, and one `severity:*` label, always `severity:info` for
+  title; a type label, `code-review` when it came from a review, and one `severity:*` label, never above `severity:medium` for
   best-practice findings; Severity, CVE and CWE lines; Repro, Root cause, Fix and Acceptance). Check `gh issue list --state all` for duplicates first. Parked issues get the `deferred`
   label.
 - **QA and hardware**: the maintainer tests physical cuts on a WeCreat Vision Pro (MakeIT) and a Silhouette Cameo 4
@@ -94,7 +96,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 ## CHANGELOG consolidation at release
 
 When a release bumps the major or minor version, squash the iterative entries
-it covers into that version's section. The individual `x.y.N` headings are
+it covers into that version's section. This happens with the `X.Y.0` bump at
+the merge into `main`, not at the cut. The individual `x.y.N` headings are
 removed from the file; git history keeps them.
 
 Scope:

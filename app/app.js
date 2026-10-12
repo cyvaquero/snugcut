@@ -3,7 +3,7 @@
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
 import {ABORT, CL, IN, S, SVGNS, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
-  fitsPlate, invalidateGeometry, isCurrent, kerfC, measureScale, n4, newRun, parseSVG, plateDXF,
+  fitsPlate, invalidateGeometry, isCompensated, isCurrent, kerfC, measureScale, n4, newRun, parseSVG, plateDXF,
   plateSVG, rectFits, searchParts, setMessages, setVersion, shape, startWorker, toPlates} from "../lib/snugcut.js";
 import {EN} from "./strings-en.js";
 
@@ -53,6 +53,8 @@ $("more").textContent = t("search.more", {s: MORE_MS / 1000});
 const MAX_LEN = 100000;
 // the rail panels' open state (#344, #347): page-only, saved with the settings; the library never reads it
 Object.assign(S, {openSearch:false, openPlate:true});
+// the output file prefix's one length limit (#386): the field's maxlength, saved settings and file names
+const PREFIX_MAX = 60; $("prefix").maxLength = PREFIX_MAX;
 try { loadSettings(JSON.parse(localStorage.getItem("snugcut.settings") || localStorage.getItem("platenester.settings") || "{}")); } catch(e) {}   // settings saved under the old name (Plate Nester) carry over
 // saved settings are checked before use (#75): a value of the wrong type or outside what the page offers keeps its
 // default, so a planted or stale value can't reach the page's markup or stall the nesting
@@ -65,7 +67,7 @@ function loadSettings(saved){
   for (const k of ["plateW", "plateH"]) pick(k, v => num(v) && v > 0 && v <= MAX_LEN);
   for (const k of ["kerf", "gap", "margin"]) pick(k, v => num(v) && v >= 0 && v <= MAX_LEN);
   for (const k of ["rotate", "outline", "comp", "openSearch", "openPlate"]) pick(k, v => typeof v === "boolean");
-  pick("prefix", v => typeof v === "string" && v.length <= 200);
+  if (Object.hasOwn(saved, "prefix") && typeof saved.prefix === "string") S.prefix = saved.prefix.slice(0, PREFIX_MAX);   // a longer one is cut to what the field allows
 }
 const save = () => { panelSummary(); try { localStorage.setItem("snugcut.settings", JSON.stringify(S)); localStorage.removeItem("platenester.settings"); } catch(e) {} };
 
@@ -165,7 +167,7 @@ $("dpi").onchange = e => { S.dpi = +e.target.value; save(); parts.forEach(measur
 function filePrefix(){
   // the user's prefix made safe for file names on every OS (no path or reserved characters, no leading dots), plus "-"
   const p = String(S.prefix || "").replace(/[\/\\:*?"<>|\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim()
-    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, 60).trim();
+    .replace(/^[.\s]+/, "").replace(/[.\s]+$/, "").slice(0, PREFIX_MAX).trim();
   return p ? p + "-" : "";
 }
 function prefixEx(){ const n = layout && layout.plates.length || 3; $("prefixEx").textContent = `${filePrefix()}plate-01-of-${String(n).padStart(2,"0")}.${ext()}`; }
@@ -185,14 +187,11 @@ $("kUse").onclick = () => { const k = kerfCalc(); if (k != null) { S.kerf = k; s
 /* ---------- search controller ---------- */
 let search = null;   // {items, oversize, minPlates, F, st: the search state, see searchParts}
 async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
-  const token = newRun();
-  if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); setRunning(false, quiet); return; }
-  const F = binFrame();
-  $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
-  const plateA = S.plateW * S.plateH;
-  setRunning(true);
-  const t0 = performance.now();
-  try {
+  const token = newRun(), F = binFrame(), plateA = S.plateW * S.plateH, t0 = performance.now();
+  try {     // an error while drawing a layout stops the run with a notice in both modes (#385)
+    if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); return; }
+    $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
+    setRunning(true);
     if (fresh || !search || !search.st.bestScore) {   // no finished pack yet (stopped during the first one): start over
       const items = [], oversize = [];
       if (F.mR <= F.mL || F.mB <= F.mT) { search = null; layout = {plates:[], oversize:[], minPlates:0, noArea:true}; renderLayout(); return; }   // no old search to continue (#71)
@@ -216,8 +215,9 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
-    if (e !== ABORT) { console.error(e); notice(t("notice.nestError", {error: e.message || e}), true); }
-    else return;
+    if (e === ABORT) return;
+    console.error(e); notice(t("notice.nestError", {error: e.message || e}), true);
+    newRun(); setRunning(false, quiet);     // the pool's other workers stop too, as on Stop
   } finally {
     if (isCurrent(token)) setRunning(false, quiet);
   }
@@ -329,12 +329,19 @@ function updateCount(){
 // quantity and orientation
 function reunit(p, units){
   try {
-    const np = parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name);
+    const np = addThumb(parseSVG(dxfToSVG(p.dxf.text, p.name, {units}).svg, p.name));
     Object.assign(np, {fromDXF:true, qty:p.qty, qtyDraft:p.qtyDraft, lock:p.lock, grain:p.grain, useHoles:p.useHoles, precomp:p.precomp, dxf:{text:p.dxf.text, units}});
     parts[parts.indexOf(p)] = np; URL.revokeObjectURL(p.thumb); return np;
   } catch(e) { notice(e.message, true); return null; }
 }
-function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); return false; } return true; }); }
+// a removed part's pending Qty error isn't announced after it's gone (#379)
+// a part's thumbnail in the parts list: an object URL the app makes and releases (#392)
+function addThumb(p){
+  const svg = `<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${p.bbox.x} ${p.bbox.y} ${p.bbox.width} ${p.bbox.height}"><g ${p.rootAttrs}>${p.inner}</g></svg>`;
+  p.thumb = URL.createObjectURL(new Blob([svg], {type:"image/svg+xml"}));
+  return p;
+}
+function removeParts(fn){ parts = parts.filter(p => { if (fn(p)) { URL.revokeObjectURL(p.thumb); sayLater("q-" + p.uid); return false; } return true; }); }
 
 /* ---------- files ---------- */
 const drop = $("drop"), file = $("file");
@@ -344,12 +351,6 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); };
 file.onchange = () => { addFiles(file.files); file.value = ""; };
-// A file says it already has kerf compensation built in only where SnugCut (once Plate Nester) writes that: the comment
-// right after the <svg> tag, or the 999 comment that opens a DXF. The same words anywhere else, such as in a <desc>,
-// don't count (#179).
-const builtInComp = (text, dxf) => (dxf
-  ? /^\uFEFF?\s*999\r?\n(?:SnugCut|Plate Nester) \S+ kerf-compensated: [\d.]+ mm per side/
-  : /^\uFEFF?\s*(?:<\?xml[^>]*>\s*)?<svg\b[^>]*>\s*<!-- (?:SnugCut|Plate Nester) [^<>]*?-->\s*<!-- kerf-compensated: [\d.]+ mm per side/).test(text);
 async function readText(f, dxf){
   // an SVG is decoded as its byte-order mark or XML declaration says (Latin-1 text came out as "Gr��e"), else as
   // UTF-8, as File.text() always did (#269)
@@ -364,17 +365,19 @@ async function readText(f, dxf){
 }
 async function addFiles(list){
   const isDXF = f => /\.dxf$/i.test(f.name);
-  const files = [...list].filter(f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f));
+  const ok = f => /\.svg$/i.test(f.name) || f.type === "image/svg+xml" || isDXF(f);
+  const files = [...list].filter(ok), refused = [...list].filter(f => !ok(f)).map(f => f.name);
   if (!files.length) { notice(t("files.only"), true); return; }
   if (parts.some(p => p.sample)) removeParts(p => p.sample);
-  const errs = [], notes = [];                                // errors: files that couldn't be added
+  // errors: files that couldn't be added, starting with those of another type chosen with valid ones (#372)
+  const errs = refused.length ? [t("files.refused", {n: refused.length, list: refused.join(", ")})] : [], notes = [];
   const stripped = [], hiddenIn = [];
   for (const f of files) { try {
     let text = await readText(f, isDXF(f));
-    const pre = builtInComp(text, isDXF(f));
+    const pre = isCompensated(text, isDXF(f));
     let dxf = null;
     if (isDXF(f)) { const r = dxfToSVG(text, f.name); if (r.units) dxf = {text, units:r.units}; text = r.svg; notes.push(...r.notes); }
-    const p = parseSVG(text, f.name); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
+    const p = addThumb(parseSVG(text, f.name)); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
     if (p.tangled) notes.push(t("files.tangled", {name: p.name}));
     if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
@@ -534,7 +537,7 @@ const SAMPLES = [
 fillInputs();
 // text the app writes into the page from the string table, the first time (#279)
 $("kOut").textContent = t("kcalc.none"); $("sEffK").textContent = t("stat.effNone");
-for (const [n, q, svg] of SAMPLES) { try { const p = parseSVG(svg, n); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
+for (const [n, q, svg] of SAMPLES) { try { const p = addThumb(parseSVG(svg, n)); p.qty = q; p.sample = true; parts.push(p); } catch(e) { console.error(e); } }
 startWorker({url: $("clipper-lib").src, integrity: $("clipper-lib").integrity});   // fetched and built while the parts list is drawn (#4)
 renderParts();
 run(SEARCH_MS, true, true);   // the sample parts: shown, not announced, since the user hasn't done anything yet (#241)
