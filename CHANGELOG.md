@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.2-beta
+
+- **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
+  branch after the tag, the fixture regression checks each workbook test's expected sizes, colors, layers and notices
+  against the build (failing, naming the test, when one no longer matches), and `python3 tools/qa_workbooks.py --issue N`
+  prints a QA issue's body from the same app list and version as its workbook (#488). The workbooks themselves are
+  unchanged.
+
 ## 1.5.1-beta
 
 - **Changed:** the export QA workbooks test 1.5.0-beta and link its source zip (#49, #50, #51, #52, #132, #133).
