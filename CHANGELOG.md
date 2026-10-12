@@ -6,6 +6,11 @@ a major rewrite of what the app does or how it works.
 
 ## 1.5.5-beta
 
+- **Changed:** for maintainers, CI now also runs the fixture regression (`.github/workflows/regression.yml`) on every
+  pull request and push to `main` or `develop`: it opens `snugcut.html` in headless Chrome with the libraries checked
+  against the page's integrity hashes, so a script error fails the check, and compares the exports with the base
+  branch's. A pull request meant to change exports lists them on a line starting `Export changes:` in its body. The
+  regression gained `--allow-diff` and `--no-sandbox` options (#471).
 - **Fixed:** circles, ellipses, arcs and rounded corners are now exported as curve segments of at most 45° instead of
   90°, so they follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle
   (it was up to 0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs

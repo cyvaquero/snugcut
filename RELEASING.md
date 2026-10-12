@@ -125,6 +125,15 @@ It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usu
 two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
 worker can't start from a file, so the nests then run on the page only. `--json FILE` keeps the new build's raw
 results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build.
+`--allow-diff` lists differing entries without failing on them (nest failures, worker-vs-page differences and workbook
+mismatches still fail), and `--no-sandbox` starts Chrome without its sandbox, for CI runners.
+
+**In CI**, `.github/workflows/regression.yml` runs it on every pull request (against the base branch) and every push to
+`main` or `develop` (against the previous commit), on `ubuntu-latest`'s Chrome. It downloads the two libraries from the
+URLs in `app/index.html`, fails if their sha384 differs from the page's integrity hashes, and passes them with
+`--libs`. A page script error therefore fails the check, as does any difference from the base. A pull request that is
+meant to alter exports has a line starting `Export changes:` in its body (the entries that change and why); the job then
+passes `--allow-diff`, and the differences are listed in its log. On a push it always does.
 
 **What it does to each build** (the same to both, in a temporary folder): replaces the page's startup `run(…)` (the
 last statement of its script, after `renderParts()`) with its test, which calls the library and app functions directly,
