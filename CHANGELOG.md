@@ -6,6 +6,10 @@ a major rewrite of what the app does or how it works.
 
 ## 1.5.5-beta
 
+- **Fixed:** circles, ellipses, arcs and rounded corners are now exported as curve segments of at most 45° instead of
+  90°, so they follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle
+  (it was up to 0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs
+  are slightly larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
 - **Changed:** Bounding box's swap search after the MaxRects packing now runs a fixed number of tries (about 350 ms
   for the sample parts) instead of 350 ms of clock time, so the same parts and settings give the same layout on a fast
   or a slow machine, or under load. Layouts can differ once from earlier versions; the README describes the search
