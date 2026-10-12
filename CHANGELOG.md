@@ -6,6 +6,10 @@ a major rewrite of what the app does or how it works.
 
 ## 1.5.5-beta
 
+- **Changed:** Bounding box's swap search after the MaxRects packing now runs a fixed number of tries (about 350 ms
+  for the sample parts) instead of 350 ms of clock time, so the same parts and settings give the same layout on a fast
+  or a slow machine, or under load. Layouts can differ once from earlier versions; the README describes the search
+  (#460).
 - **Fixed:** if fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in
   the browser console and tries again on the next run instead of searching on the page for the rest of the session. A
   worker that can't start at all (blocked or unsupported) is logged too and still falls back once (#472).

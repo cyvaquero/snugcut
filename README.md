@@ -11,7 +11,9 @@ Two modes:
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded search: an order walk by
   default, or a genetic search ("Search 30 s more", Stop). The search runs in a background worker, so the page stays
   responsive; the **Workers** setting adds up to 3 more.
-- **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation.
+- **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation, then a swap search on the
+  best order: a fixed number of tries (about 350 ms for the sample parts, fewer per item on larger jobs) that swap two
+  parts or change the heuristic, seeded, so the same parts and settings give the same layout on any machine.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
 follows each part. Rounded rectangles nest by their rounded corners and `<use>` copies by the shapes they copy; text,

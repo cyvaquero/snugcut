@@ -142,8 +142,9 @@ defaults. The test prints its results as one JSON string to the console.
    It keeps the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has
    to match too.
 2. Whole nests of the sample parts the page opens with. The starting packs, no search (`run(0, true)`: True shape packs
-   both sorted orders and keeps the better, Bounding box runs its MaxRects packing), every plate exported with the
-   app's own `plateFile`, keeping each file and its notices, six times:
+   both sorted orders and keeps the better, Bounding box runs its MaxRects packing and then its swap search, a fixed
+   number of seeded tries), every plate exported with the app's own `plateFile`, keeping each file and its notices,
+   six times:
    - True shape: SVG, then DXF, with compensation off;
    - True shape: SVG, then DXF, with compensation on;
    - Bounding box: SVG, then DXF, with compensation off.
