@@ -148,8 +148,9 @@ defaults. The test prints its results as one JSON string to the console.
    - place it alone, unrotated, at (10, 10) mm on a plate of its own size;
    - export it with `plateSVG` and with `plateDXF`.
 
-   It keeps the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has
-   to match too.
+   It keeps the SVG text, the DXF text and the export notices, plus the part's width, height and outline area (mm,
+   rounded to 1e-6) and its number of outer contours, which the exports don't show, or the error message if any step
+   fails. A failure has to match too.
 2. Whole nests of the sample parts the page opens with. The starting packs, no search (`run(0, true)`: True shape packs
    both sorted orders and keeps the better, Bounding box runs its MaxRects packing and then its swap search, seeded and
    run for a fixed amount of packing work), every plate exported with the app's own `plateFile`, keeping each file and its notices,
