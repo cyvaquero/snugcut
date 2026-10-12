@@ -10,6 +10,11 @@ between zlib builds).
 
     python3 tools/qa_workbooks.py           # write qa/*.docx
     python3 tools/qa_workbooks.py --check   # fail if a workbook is out of date
+    python3 tools/qa_workbooks.py --issue N # print QA issue N's body (for gh issue edit N --body-file)
+
+Each test also carries a machine-checkable form of its Expected text (the last element of its TESTS entry). The fixture
+regression, tools/regression.py, runs every test on the new build and fails, naming the test, when a result no longer
+matches, so a change that alters what testers see updates the workbook text in the same pull request.
 
 Python 3, standard library only.
 """
@@ -94,7 +99,33 @@ APPS = [
 SHOT_CANVAS = "the imported plate on the canvas, with a shape selected so its size shows"
 SHOT_LAYERS = "the layers or colors panel ({colors})"
 
-# group heading, intro paragraph or None, tests: (number, title, issues, steps, expected, screenshots)
+# Each test's last element is its machine-checkable Expected text, or None for a test that doesn't run SnugCut's export
+# (test 4). tools/regression.py runs it on the new build: it applies `set` to SnugCut's settings (on top of the
+# defaults the Setup asks for, with Rotation: None), adds `files` from fixtures/ as the tests do, nests, exports the
+# first plate and compares what a tester would measure:
+#   shapes        every non-text shape of the exported plate (a DXF export is read back in first), exactly: size in
+#                 mm (0.02 tolerance), stroke and fill, closed or open, subpaths, dashed. No more, no fewer
+#   texts         (content, color) of <text> elements that must be present; their sizes depend on fonts, so they
+#                 aren't compared
+#   notices       substrings of the notices shown after adding the files, one each, and no others
+#   export_notes  substrings of the notes the download shows, one each, and no others
+#   layers        DXF layer names (or colors) that must be present
+# Colors are hex without the #; a shape's `fill` is "gradient" for any url() paint, None for no fill.
+R, B, K = "ff0000", "0000ff", "000000"
+GREEN, PURPLE, CYAN, LIME = "00aa00", "aa00aa", "00ffff", "00ff00"
+
+def shape(w, h, stroke=None, fill=None, closed=False, dash=False, sub=1, n=1):
+    return {"w": w, "h": h, "stroke": stroke, "fill": fill, "closed": closed, "dash": dash, "sub": sub, "n": n}
+
+def check(files, settings=None, shapes=(), texts=(), notices=(), export_notes=(), layers=()):
+    return {"files": list(files), "set": settings or {}, "shapes": list(shapes), "texts": [list(t) for t in texts],
+            "notices": list(notices), "export_notes": list(export_notes), "layers": list(layers)}
+
+KERF_NOTES = ["Kerf compensation is built in (0.1 mm per side)", "narrower than the kerf, so it was left as drawn"]
+BRACKET_NOTICES = ["left out 3 items on frozen, off, non-plotting or Defpoints layers",
+                   "skipped 1 text (only lines, arcs, circles, ellipses, polylines and splines are cut)"]
+
+# group heading, intro paragraph or None, tests: (number, title, issues, steps, expected, screenshots, check)
 TESTS = [
     ("SVG export", None, [
         (1, "Scale", "", [
@@ -104,7 +135,9 @@ TESTS = [
         ], [
             "A red 300 × 300 mm square (the plate), and a red 38 × 28 mm rectangle with a blue 20 mm line inside.",
             "The rectangle is **one closed shape**, not four separate lines.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/cad-lines.svg"], {"outline": True}, shapes=[
+            shape(300, 300, R, closed=True), shape(38, 28, R, closed=True), shape(20, 0, B)])),
         (2, "Line styles", "#14, #46", [
             "Add `geometry/stroke-styles.svg`, download the plate and import it.",
         ], [
@@ -112,14 +145,18 @@ TESTS = [
             "line.",
             "Note whether dashes, round caps and joins are shown or simply ignored. Ignored is acceptable for cutting; "
             "record it.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/stroke-styles.svg"], shapes=[
+            shape(59, 39, K, closed=True), shape(18, 12, R), shape(20, 12, GREEN), shape(15, 8, PURPLE),
+            shape(50, 0, B, dash=True)])),
         (3, "currentColor", "#44", [
             "Switch your OS to **dark mode** and reload SnugCut.",
             "Add `css/current-color.svg`, download the plate and import it.",
             "Switch back to light mode if you like.",
         ], [
             "A black rounded rectangle and a blue circle.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["css/current-color.svg"], shapes=[shape(38, 28, K, closed=True), shape(16, 16, B, closed=True)])),
         (4, "CSS support, direct (baseline)", "", [
             "Import `makeit/makeit-css-support.svg` **directly** into {app}, without SnugCut.",
             "Then import `makeit/makeit-css-universal.svg` directly.",
@@ -128,39 +165,49 @@ TESTS = [
             "Record whether the square in `makeit-css-universal.svg` is red.",
             "No result is \"wrong\" here: this shows what {app} does with raw `<style>`. Mark it **N/A** and write "
             "the red squares in the notes.",
-        ], ["makeit-css-support.svg imported directly", "makeit-css-universal.svg imported directly"]),
+        ], ["makeit-css-support.svg imported directly", "makeit-css-universal.svg imported directly"],
+        None),
         (5, "CSS support, via SnugCut", "#38, #42", [
             "Add `makeit/makeit-css-support.svg`, download the plate and import it.",
         ], [
             "Squares 1–8 are **all red**, and \"ref black\" is black.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["makeit/makeit-css-support.svg"], shapes=[shape(25, 25, R, closed=True, n=7), shape(25, 25, K, closed=True)])),
         (6, "Selector leak", "#38", [
             "Add `css/selector-leak-a.svg` and `css/selector-leak-b.svg` together, download the plate and import it.",
         ], [
             "A is a red rectangle with small text. B is a **black** rectangle with large text.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["css/selector-leak-a.svg", "css/selector-leak-b.svg"], shapes=[
+            shape(38, 28, R, closed=True), shape(38, 28, K, closed=True)], texts=[("A", K), ("B", K)])),
         (7, "Ids that look like colors", "#13", [
             "Add `makeit/makeit-id-colors.svg`, download the plate and import it.",
         ], [
             "Squares 1, 2, 3 and \"ctrl red\" are red; \"ref black\" is black.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["makeit/makeit-id-colors.svg"], shapes=[shape(20, 20, R, closed=True, n=4), shape(20, 20, K, closed=True)])),
         (8, "Class clash", "#12", [
             "Add `css/class-clash-a.svg` and `css/class-clash-b.svg` together, download the plate and import it.",
         ], [
             "A's rectangle is **red** with a blue \"A\". B's circle is blue with a blue outlined \"B\".",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["css/class-clash-a.svg", "css/class-clash-b.svg"], shapes=[
+            shape(38, 28, R, closed=True), shape(24, 24, B, closed=True)], texts=[("A", B), ("B", B)])),
         (9, "UI class names", "#63", [
             "Add `css/ui-class-names.svg`, download the plate and import it.",
         ], [
             "A red 99.8 × 49.8 mm outline, with a black circle and a black square inside.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["css/ui-class-names.svg"], shapes=[shape(99.8, 49.8, R, closed=True), shape(65, 20, K, closed=True, sub=2)])),
         (10, "Text and gradient fallback", "", [
             "Add `geometry/text.svg` and `geometry/gradient.svg` together, download the plate and import it.",
         ], [
             "The text \"Nest\" inside its frame.",
             "A rounded square with a red-to-blue gradient fill, or a solid fill if {app} doesn't do gradients. Record "
             "which.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/text.svg", "geometry/gradient.svg"], shapes=[
+            shape(59.8, 24.8, K, closed=True), shape(40, 40, K, "gradient", closed=True)], texts=[("Nest", K)])),
         (11, "Attributes on the root <svg>", "#64", [
             "Add `geometry/root-attrs-stroke.svg`, `geometry/root-attrs-stroke-only.svg` and "
             "`geometry/root-attrs-font-size.svg` together, download the plate and import it.",
@@ -169,20 +216,29 @@ TESTS = [
             "From `root-attrs-stroke-only`: a red 99 × 49 mm outline.",
             "From `root-attrs-font-size`: a small red square and large blue \"Hello World\" text (about 197 mm wide), "
             "not overlapping the other parts.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/root-attrs-stroke.svg", "geometry/root-attrs-stroke-only.svg",
+               "geometry/root-attrs-font-size.svg"], shapes=[
+            shape(99.8, 49.8, R, closed=True, sub=2), shape(99, 49, R, closed=True), shape(10, 10, R, closed=True)],
+            texts=[("Hello World", B)])),
         (12, "viewBox aspect ratio", "#65", [
             "Add `geometry/viewbox-aspect-meet.svg`, `geometry/viewbox-aspect-none.svg` and "
             "`geometry/viewbox-aspect-slice.svg` together, download the plate and import it.",
         ], [
             "All red: a 50 mm circle (meet), a 100 × 50 mm ellipse (none) and a 100 mm circle (slice).",
             "The slice circle is whole: SnugCut doesn't crop to the viewBox.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/viewbox-aspect-meet.svg", "geometry/viewbox-aspect-none.svg",
+               "geometry/viewbox-aspect-slice.svg"], shapes=[
+            shape(50, 50, R, closed=True), shape(100, 50, R, closed=True), shape(100, 100, R, closed=True)])),
         (13, "Hidden shapes", "#17", [
             "Add `geometry/hidden-shapes.svg`. A notice says 7 hidden shapes were left out.",
             "Download the plate and import it.",
         ], [
             "Only a red 40 × 30 mm frame and a small blue 5 mm square inside it. Nothing else.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/hidden-shapes.svg"], shapes=[shape(40, 30, R, closed=True), shape(5, 5, B, closed=True)],
+              notices=["Left out hidden shapes (not shown, so not cut): 7 from hidden-shapes.svg"])),
     ]),
     ("Kerf compensation", None, [
         (14, "Kerf, SVG", "#36", [
@@ -194,7 +250,10 @@ TESTS = [
         ], [
             "A red 20.2 × 20.2 mm outline, a red 9.8 mm square hole and a red 5.8 mm round hole.",
             "Unchanged: the blue 14 mm score line, the black 4 × 2 mm filled mark and the tiny pin hole.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["test-cuts/kerf-test.svg"], {"kerf": 0.2, "comp": True}, shapes=[
+            shape(20.2, 20.2, R, closed=True, sub=4), shape(14, 0, B), shape(4, 2, None, K, closed=True)],
+            export_notes=KERF_NOTES)),
     ]),
     ("DXF import, SVG export", "Set kerf back to 0.1 mm and untick **Compensate kerf on objects** for tests 15–21.", [
         (15, "mm DXF", "#31", [
@@ -203,24 +262,34 @@ TESTS = [
             "Download the plate and import it.",
         ], [
             "An 80 × 50 mm bracket, every line, arc and hole present, in the DXF's colors.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["dxf/dxf-mm-bracket.dxf"], shapes=[
+            shape(80, 50, R, closed=True, sub=3), shape(8, 8, CYAN, closed=True), shape(16, 6.4, B, closed=True),
+            shape(36, 8.07, LIME)], notices=BRACKET_NOTICES)),
         (16, "Inch DXF", "#31", [
             "Add `dxf/dxf-inch-plate.dxf`, download the plate and import it.",
         ], [
             "A 101.6 × 92.0 mm (4 × 3.62 in) plate.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["dxf/dxf-inch-plate.dxf"], shapes=[shape(101.6, 91.98, K, closed=True, sub=3)])),
         (17, "Blocks", "#31", [
             "Add `dxf/dxf-blocks.dxf`, download the plate and import it.",
         ], [
             "A 100 × 60 mm part with every block copy present (scaled, rotated, mirrored and arrayed copies).",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["dxf/dxf-blocks.dxf"], shapes=[
+            shape(100, 60, R, closed=True), shape(71.66, 48, R, sub=12), shape(10.13, 29.03, R, closed=True, sub=2),
+            shape(83.09, 33.59, B, sub=10), shape(40, 15, B, sub=2), shape(9.17, 27.46, B, sub=2),
+            shape(9, 9, LIME, closed=True)])),
         (18, "No units", "#31, #90", [
             "Add `dxf/dxf-r12-unitless.dxf`. A notice says it doesn't say what units it's drawn in, so it was read as "
             "millimeters. The part's row in the parts list shows a **Drawn in** menu set to mm; leave it there.",
             "Download the plate and import it.",
         ], [
             "A 30 × 26 mm part.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["dxf/dxf-r12-unitless.dxf"], shapes=[shape(30, 26, K, closed=True, sub=2)],
+              notices=["doesn't say what units it's drawn in, so it was read as millimeters"])),
     ]),
     ("DXF export", "Set **Export format** to **DXF (R12, mm)**. The plate button now reads **Download DXF**.", [
         (19, "Scale, DXF", "#32", [
@@ -230,7 +299,10 @@ TESTS = [
         ], [
             "A 300 × 300 mm plate square, and a 38 × 28 mm rectangle (**one closed shape**) with a 20 mm line inside, "
             "in separate colors or layers.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["geometry/cad-lines.svg"], {"outline": True, "format": "dxf"}, shapes=[
+            shape(300, 300, R, closed=True), shape(38, 28, R, closed=True), shape(20, 0, B)],
+            layers=["FF0000", "0000FF"])),
         (20, "Layers that share a color", "#66", [
             "Add `dxf/dxf-same-color-layers.dxf`, download the plate and import it.",
         ], [
@@ -238,12 +310,18 @@ TESTS = [
             "color.",
             "Lines are not joined across layers: the CUT line at y = 30 mm ends where a SCORE line starts, and the "
             "SCORE diagonal meets two corners of the CUT outline.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["dxf/dxf-same-color-layers.dxf"], {"format": "dxf"}, shapes=[
+            shape(60, 40, K, closed=True), shape(60, 40, K), shape(15, 0, K, n=3)], layers=["CUT", "SCORE", "0"])),
         (21, "Layer names", "#32", [
             "Add `dxf/dxf-mm-bracket.dxf`, download the plate and import it.",
         ], [
             "An 80 × 50 mm bracket on layers **CUT**, **ENGRAVE** and **SCORE**.",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["dxf/dxf-mm-bracket.dxf"], {"format": "dxf"}, shapes=[
+            shape(80, 50, R, closed=True), shape(30, 10, R, closed=True), shape(8, 8, R, closed=True),
+            shape(8, 8, CYAN, closed=True), shape(16, 6.4, B, closed=True), shape(36, 8.07, LIME)],
+            layers=["CUT", "ENGRAVE", "SCORE"], notices=BRACKET_NOTICES)),
         (22, "Kerf, DXF", "#36, #32", [
             "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects** again.",
             "Add `test-cuts/kerf-test.svg`, download the plate and import it. The download says kerf compensation is "
@@ -253,9 +331,57 @@ TESTS = [
         ], [
             "The same sizes as test 14: a 20.2 × 20.2 mm outline, a 9.8 mm square hole and a 5.8 mm round hole.",
             "The 4 × 2 mm mark comes through as an outline (DXF has no fills).",
-        ], [SHOT_CANVAS, SHOT_LAYERS]),
+        ], [SHOT_CANVAS, SHOT_LAYERS],
+        check(["test-cuts/kerf-test.svg"], {"kerf": 0.2, "comp": True, "format": "dxf"}, shapes=[
+            shape(20.2, 20.2, R, closed=True), shape(9.8, 9.8, R, closed=True), shape(5.8, 5.8, R, closed=True),
+            shape(0.06, 0.06, R, closed=True), shape(4, 2, K, closed=True), shape(14, 0, B)],
+            export_notes=KERF_NOTES + ["Filled areas are written as their outlines"])),
     ]),
 ]
+
+# The body of an app's QA issue, from the same APPS and VERSION as its workbook: `--issue N` prints it, and the release
+# step is `gh issue edit N --body-file` (RELEASING.md section 4). The ending is the issue's own, byte for byte.
+ISSUE_BODY = """\
+Run the export compatibility suite against **{app}**, using SnugCut **{version}** (tag `{version}`), and post the results here.
+
+The SVG tests were verified in WeCreat MakeIT 3.06 (#12, #13, #14, #38, #42, #44, #46, #63, #64, #65). The kerf compensation (#36), DXF import (#31, #90) and DXF export (#32, #66) tests are new to this suite.
+
+**Goal:** confirm that plates exported by SnugCut import into {app} at the right size, with the right colors (and so the right layers or operations), and with nothing dropped.
+
+## Workbook
+**Download: [{slug}.docx](https://github.com/cyvaquero/snugcut/raw/develop/qa/{slug}.docx)** (Word; also opens in Google Docs, Apple Pages and LibreOffice).
+
+It holds everything for this test run:
+- the setup, with the link to the {version} source zip (`snugcut.html` and the `fixtures/` folder);
+- notes on importing and measuring in {app};
+- all {count} tests, each with steps, the expected result, a results table (Pass / Fail / N/A, sizes measured, colors or layers, notes) and boxes to paste screenshots into;
+- a results summary.
+
+## Reporting
+1. Fill in the workbook and paste a screenshot into each box.
+2. Attach the filled workbook to a comment on this issue: drag the `.docx` into the comment box. If it's over GitHub's 25 MB limit, save it as PDF and attach that, or paste the screenshots straight into the comment under each test number.
+3. Say in the comment which tests failed. Each failure gets its own bug issue (plain title, `severity:*` label), linked here.
+
+## Tests
+| # | Group | Tests |
+|---|---|---|
+| 1–13 | SVG export | scale, line styles, currentColor, CSS direct and via SnugCut, selector leak, ids that look like colors, class clash, UI class names, text and gradient, root `<svg>` attributes, viewBox aspect ratio, hidden shapes |
+| 14 | Kerf compensation | kerf, SVG |
+| 15–18 | DXF import, SVG export | mm DXF, inch DXF, blocks, no units |
+| 19–22 | DXF export | scale, layers that share a color, layer names, kerf |
+
+If a newer release is cut before this issue is closed, the workbook and this issue are moved to it.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_017HvDcuheawf6ger4p9Vj6i
+"""
+
+
+def issue_body(slug, app):
+    count = sum(len(tests) for _, _, tests in TESTS)
+    return ISSUE_BODY.format(app=app, slug=slug, version=VERSION, count=count)
+
 
 # ---- WordprocessingML -------------------------------------------------------------------------------------------------
 
@@ -483,7 +609,7 @@ def workbook(app, issue, colors, notes):
         d.p(group, style="Heading1")
         if intro:
             d.p(intro)
-        for n, title, refs, steps, expect, shots in tests:
+        for n, title, refs, steps, expect, shots, _check in tests:
             d.p(f"Test {n}: {title}" + (f" ({refs})" if refs else ""), style="Heading2")
             d.p("Steps", style="Heading3")
             d.steps([sub(s) for s in steps])
@@ -515,9 +641,29 @@ def contents(data):
         return None
 
 
+def die(msg):
+    print("qa_workbooks.py: " + msg, file=sys.stderr)
+    sys.exit(2)
+
+
 def main():
     root = pathlib.Path(__file__).resolve().parent.parent
-    check = "--check" in sys.argv[1:]
+    args = sys.argv[1:]
+    check, issue = False, None
+    while args:
+        a = args.pop(0)
+        if a == "--check": check = True
+        elif a == "--issue":
+            if not args or not args[0].isdigit(): die("usage: --issue N (an export QA issue number)")
+            issue = int(args.pop(0))
+        else: die(f"unknown option {a}; usage: qa_workbooks.py [--check | --issue N]")
+    if issue is not None:
+        if check: die("--check and --issue can't be combined")
+        for slug, app, number, *_ in APPS:
+            if number == issue:
+                sys.stdout.write(issue_body(slug, app))      # no added newline: it is the issue's body as it stands
+                return
+        die(f"no QA workbook for issue #{issue}; the QA issues are " + ", ".join(f"#{a[2]}" for a in APPS))
     stale = []
     for slug, *rest in APPS:
         path = root / "qa" / (slug + ".docx")
