@@ -10,6 +10,50 @@ a major rewrite of what the app does or how it works.
   outer contours, and has fixtures for overlapping shapes drawn in opposite directions and for a rotated circle and
   ellipse, so undoing the outline fixes from 1.5.0-beta shows as a difference. Nothing in the app changes (#484).
 
+## 1.5.5-beta
+
+- **Changed:** for maintainers, CI now also runs the fixture regression (`.github/workflows/regression.yml`) on every
+  pull request and push to `main` or `develop`: it opens `snugcut.html` in headless Chrome with the libraries checked
+  against the page's integrity hashes, so a script error fails the check, and compares the exports with the base
+  branch's. A pull request meant to change exports lists them on a line starting `Export changes:` in its body. The
+  regression gained `--allow-diff` and `--no-sandbox` options (#471).
+- **Fixed:** circles, ellipses, arcs and rounded corners are now exported as curve segments of at most 45° instead of
+  90°, so they follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle
+  (it was up to 0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs
+  are slightly larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
+- **Changed:** Bounding box's swap search after the MaxRects packing now runs for a fixed amount of packing work
+  (about 350 ms for the sample parts, under half a second for thousands of parts) instead of 350 ms of clock time, so the
+  same parts and settings give the same layout on a fast or a slow machine, or under load. Layouts can differ once
+  from earlier versions; the README describes the search (#460).
+- **Fixed:** circles, ellipses, arcs and rounded corners are now exported as curve segments of at most 45° instead of
+  90°, so they follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle
+  (it was up to 0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs
+  are slightly larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
+- **Fixed:** if fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in
+  the browser console and tries again on the next run instead of searching on the page for the rest of the session. A
+  worker that can't start at all (blocked or unsupported) is logged too and still falls back once (#472).
+- **Changed:** for maintainers, `tools/build.py` and `tools/qa_workbooks.py` reject an unknown argument (such as a
+  mistyped `--chek`) with a usage message and exit status 2 instead of writing their output (#468); `build.py` fails
+  when the Content-Security-Policy has no `script-src 'self'` to put the inline script's hash in (#469); the fixture
+  regression no longer fails with a traceback when it reads Chrome's log while the results are half written, or when
+  Chrome is still writing to its scratch profile as the run cleans up (#470, #471);
+  and `build.py`'s string check ignores comments, so a key named only in one counts as neither used nor missing (#473).
+  The built `snugcut.html` is unchanged by these.
+
+## 1.5.4-beta
+
+- **Security:** a file with thousands of ids (Inkscape and Illustrator can put one on every element) no longer makes
+  every plate preview and export slow when its part is kept as original markup (text, images, `<use>`, filters): the
+  ids are now rewritten in one pass, so 16,000 ids take well under 100 ms per plate instead of about 5 seconds. The
+  exported markup is unchanged (#461).
+
+## 1.5.3-beta
+
+- **Security:** a CDATA section in an imported SVG (`<![CDATA[…]]>`) is now turned into plain text on import, so an
+  exported plate escapes it instead of writing it back as is. Markup inside one, such as `</text><img onerror=…>`, can
+  no longer become live elements if the exported SVG is later inlined into an HTML page. CSS in a CDATA section
+  (as Illustrator and Inkscape write it) still styles the part the same way (#453).
+
 ## 1.5.2-beta
 
 - **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
