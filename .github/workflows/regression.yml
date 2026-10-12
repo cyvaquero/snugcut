@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
+# The fixture regression (RELEASING.md) on every pull request and every push to main or develop: snugcut.html is opened
+# in headless Chrome, so a script error fails the check, and its exports are compared byte for byte with the base
+# branch's (the previous commit on a push), along with the QA workbook tests' expected results. The two libraries come
+# from the CDN URLs the app uses and must match the integrity hashes in app/index.html. The search worker can't start
+# from a file, so the nests run on the page only. A change meant to alter exports says so in its pull request body with
+# a line starting "Export changes:" (CLAUDE.md); the differences are then listed but don't fail the check. On a push
+# they never do, since the pull request already vetted them. Python 3 standard library only.
+name: Fixture regression
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+        with:
+          fetch-depth: 0     # the base branch's snugcut.html comes from git
+          persist-credentials: false
+      - name: Fetch the libraries and check them against the integrity hashes in app/index.html
+        run: |
+          mkdir libs
+          python3 - <<'PY'
+          import base64, hashlib, re, urllib.request
+          html = open("app/index.html", encoding="utf-8").read()
+          tags = re.findall(r'<script\b[^>]*\ssrc="(https://[^"]+)"[^>]*\sintegrity="sha384-([^"]+)"', html)
+          assert len(tags) == 2, f"expected 2 library scripts with sha384 integrity, found {len(tags)}"
+          for url, want in tags:
+              data = urllib.request.urlopen(url, timeout=60).read()
+              got = base64.b64encode(hashlib.sha384(data).digest()).decode()
+              assert got == want, f"{url}: sha384-{got} does not match the page's sha384-{want}"
+              open("libs/" + url.rsplit("/", 1)[1], "wb").write(data)
+              print("ok", url)
+          PY
+      - name: Exports match the base, and the page and the QA workbook tests run
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+          EVENT: ${{ github.event_name }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          opts="--libs libs --no-sandbox"
+          if [ "$EVENT" = push ] || printf '%s\n' "$PR_BODY" | grep -q '^Export changes:'; then opts="$opts --allow-diff"; fi
+          python3 tools/regression.py "$BASE" snugcut.html $opts
