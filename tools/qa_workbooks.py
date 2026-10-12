@@ -371,9 +371,6 @@ It holds everything for this test run:
 | 19–22 | DXF export | scale, layers that share a color, layer names, kerf |
 
 If a newer release is cut before this issue is closed, the workbook and this issue are moved to it.
-
-
-
 """
 
 

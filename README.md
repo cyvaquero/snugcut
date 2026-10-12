@@ -405,7 +405,8 @@ python3 tools/build.py
 ```
 
 and commit the sources and `snugcut.html` together. `python3 tools/regression.py` then checks that the exports are
-byte-identical to `develop`'s and that the QA workbook tests' expected results still hold. Every pull request and every push to `main` or `develop` runs both `--check` commands
+byte-identical to `develop`'s and that the QA workbook tests' expected results still hold. Every pull request and
+every push to `main` or `develop` runs both `--check` commands
 (`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
