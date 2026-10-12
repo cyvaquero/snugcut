@@ -12,8 +12,9 @@ Two modes:
   default, or a genetic search ("Search 30 s more", Stop). The search runs in a background worker, so the page stays
   responsive; the **Workers** setting adds up to 3 more.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation, then a swap search on the
-  best order: a fixed number of tries (about 350 ms for the sample parts, fewer per item on larger jobs) that swap two
-  parts or change the heuristic, seeded, so the same parts and settings give the same layout on any machine.
+  best order: seeded tries that swap two parts or change the heuristic, run until a fixed amount of packing work is
+  spent (counted in free-rectangle comparisons, not time; about 350 ms for the sample parts and under a second for
+  thousands of parts), so the same parts and settings give the same layout on any machine.
 
 **Outline precision** (True shape; Standard 0.25 mm or Fine 0.1 mm) sets how closely the outline used for nesting
 follows each part. Rounded rectangles nest by their rounded corners and `<use>` copies by the shapes they copy; text,
@@ -55,8 +56,8 @@ invisible entities are left out without a notice.
 
 Exports one SVG per plate (sizes in mm, one object per part, unique ids) or a zip of all plates. The SVG export
 format was verified in WeCreat MakeIT 3.06 (macOS) for the WeCreat Vision Pro 45W and must not change. Circles,
-ellipses and arcs are written as Bézier segments of at most 45°, which stay within 0.00001 of the radius (0.005 mm on
-a 500 mm circle).
+ellipses and arcs are written as Bézier segments of at most 45°, which stay within about 4e-6 of the radius (0.002 mm
+on a 500 mm circle).
 
 **Compensate kerf on objects** (off by default) builds the kerf into the downloaded files. Closed cut paths move by
 half the kerf, outlines outward and holes inward, so parts come out at their drawn size. Filled areas and open lines
