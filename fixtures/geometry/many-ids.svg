@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50mm" height="20mm" viewBox="0 0 50 20">
+  <!-- Many ids in a part kept as original markup (#461): every id gets a per-copy prefix and the references to it
+       (url(#id), href="#id", #id in <style>) follow, in one pass over the markup whatever the number of ids. -->
+  <style>#r1 { fill: #00f; }</style>
+  <defs><linearGradient id="gr"><stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#00f"/></linearGradient></defs>
+  <rect id="r1" x="1" y="1" width="8" height="8"/>
+  <g id="a$'b"><rect width="50" height="20" fill="none" stroke="#f00" stroke-width="0.2"/><text x="12" y="12" font-size="6" fill="url(#gr)">Hi</text></g>
+  <use href="#n150" x="0" y="0" id="u1"/><use href="#r1" x="20" y="0" id="u2"/>
+  <g id="n0"/><g id="n1"/><g id="n2"/><g id="n3"/><g id="n4"/><g id="n5"/><g id="n6"/><g id="n7"/><g id="n8"/><g id="n9"/>
+<g id="n10"/><g id="n11"/><g id="n12"/><g id="n13"/><g id="n14"/><g id="n15"/><g id="n16"/><g id="n17"/><g id="n18"/><g id="n19"/>
+<g id="n20"/><g id="n21"/><g id="n22"/><g id="n23"/><g id="n24"/><g id="n25"/><g id="n26"/><g id="n27"/><g id="n28"/><g id="n29"/>
+<g id="n30"/><g id="n31"/><g id="n32"/><g id="n33"/><g id="n34"/><g id="n35"/><g id="n36"/><g id="n37"/><g id="n38"/><g id="n39"/>
+<g id="n40"/><g id="n41"/><g id="n42"/><g id="n43"/><g id="n44"/><g id="n45"/><g id="n46"/><g id="n47"/><g id="n48"/><g id="n49"/>
+<g id="n50"/><g id="n51"/><g id="n52"/><g id="n53"/><g id="n54"/><g id="n55"/><g id="n56"/><g id="n57"/><g id="n58"/><g id="n59"/>
+<g id="n60"/><g id="n61"/><g id="n62"/><g id="n63"/><g id="n64"/><g id="n65"/><g id="n66"/><g id="n67"/><g id="n68"/><g id="n69"/>
+<g id="n70"/><g id="n71"/><g id="n72"/><g id="n73"/><g id="n74"/><g id="n75"/><g id="n76"/><g id="n77"/><g id="n78"/><g id="n79"/>
+<g id="n80"/><g id="n81"/><g id="n82"/><g id="n83"/><g id="n84"/><g id="n85"/><g id="n86"/><g id="n87"/><g id="n88"/><g id="n89"/>
+<g id="n90"/><g id="n91"/><g id="n92"/><g id="n93"/><g id="n94"/><g id="n95"/><g id="n96"/><g id="n97"/><g id="n98"/><g id="n99"/>
+<g id="n100"/><g id="n101"/><g id="n102"/><g id="n103"/><g id="n104"/><g id="n105"/><g id="n106"/><g id="n107"/><g id="n108"/><g id="n109"/>
+<g id="n110"/><g id="n111"/><g id="n112"/><g id="n113"/><g id="n114"/><g id="n115"/><g id="n116"/><g id="n117"/><g id="n118"/><g id="n119"/>
+<g id="n120"/><g id="n121"/><g id="n122"/><g id="n123"/><g id="n124"/><g id="n125"/><g id="n126"/><g id="n127"/><g id="n128"/><g id="n129"/>
+<g id="n130"/><g id="n131"/><g id="n132"/><g id="n133"/><g id="n134"/><g id="n135"/><g id="n136"/><g id="n137"/><g id="n138"/><g id="n139"/>
+<g id="n140"/><g id="n141"/><g id="n142"/><g id="n143"/><g id="n144"/><g id="n145"/><g id="n146"/><g id="n147"/><g id="n148"/><g id="n149"/>
+<g id="n150"/><g id="n151"/><g id="n152"/><g id="n153"/><g id="n154"/><g id="n155"/><g id="n156"/><g id="n157"/><g id="n158"/><g id="n159"/>
+<g id="n160"/><g id="n161"/><g id="n162"/><g id="n163"/><g id="n164"/><g id="n165"/><g id="n166"/><g id="n167"/><g id="n168"/><g id="n169"/>
+<g id="n170"/><g id="n171"/><g id="n172"/><g id="n173"/><g id="n174"/><g id="n175"/><g id="n176"/><g id="n177"/><g id="n178"/><g id="n179"/>
+<g id="n180"/><g id="n181"/><g id="n182"/><g id="n183"/><g id="n184"/><g id="n185"/><g id="n186"/><g id="n187"/><g id="n188"/><g id="n189"/>
+<g id="n190"/><g id="n191"/><g id="n192"/><g id="n193"/><g id="n194"/><g id="n195"/><g id="n196"/><g id="n197"/><g id="n198"/><g id="n199"/>
+<g id="n200"/><g id="n201"/><g id="n202"/><g id="n203"/><g id="n204"/><g id="n205"/><g id="n206"/><g id="n207"/><g id="n208"/><g id="n209"/>
+<g id="n210"/><g id="n211"/><g id="n212"/><g id="n213"/><g id="n214"/><g id="n215"/><g id="n216"/><g id="n217"/><g id="n218"/><g id="n219"/>
+<g id="n220"/><g id="n221"/><g id="n222"/><g id="n223"/><g id="n224"/><g id="n225"/><g id="n226"/><g id="n227"/><g id="n228"/><g id="n229"/>
+<g id="n230"/><g id="n231"/><g id="n232"/><g id="n233"/><g id="n234"/><g id="n235"/><g id="n236"/><g id="n237"/><g id="n238"/><g id="n239"/>
+<g id="n240"/><g id="n241"/><g id="n242"/><g id="n243"/><g id="n244"/><g id="n245"/><g id="n246"/><g id="n247"/><g id="n248"/><g id="n249"/>
+<g id="n250"/><g id="n251"/><g id="n252"/><g id="n253"/><g id="n254"/><g id="n255"/><g id="n256"/><g id="n257"/><g id="n258"/><g id="n259"/>
+<g id="n260"/><g id="n261"/><g id="n262"/><g id="n263"/><g id="n264"/><g id="n265"/><g id="n266"/><g id="n267"/><g id="n268"/><g id="n269"/>
+<g id="n270"/><g id="n271"/><g id="n272"/><g id="n273"/><g id="n274"/><g id="n275"/><g id="n276"/><g id="n277"/><g id="n278"/><g id="n279"/>
+<g id="n280"/><g id="n281"/><g id="n282"/><g id="n283"/><g id="n284"/><g id="n285"/><g id="n286"/><g id="n287"/><g id="n288"/><g id="n289"/>
+<g id="n290"/><g id="n291"/><g id="n292"/><g id="n293"/><g id="n294"/><g id="n295"/><g id="n296"/><g id="n297"/><g id="n298"/><g id="n299"/>
+
+</svg>
