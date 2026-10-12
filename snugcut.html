@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vBOXTe5Ggmae8y2hPW0pi7opFKMpgWdOJ1ckVb6Gtq8=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-S4zSj+3qeZBOgUiPKtET9SUMmOnGOmdQKzc+THvVZiU=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -621,9 +621,11 @@ function stripExternal(root){
   let n = 0;
   // comments and processing instructions go (#360): an HTML parser ends "\x3C!-->" or "<?…>" at the first ">", so markup
   // inside them would become live elements in software that reads the export as HTML. Nothing in them is cut.
-  const w = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_PROCESSING_INSTRUCTION), drop = [];
+  const w = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_COMMENT | NodeFilter.SHOW_PROCESSING_INSTRUCTION | NodeFilter.SHOW_CDATA_SECTION), drop = [];
   while (w.nextNode()) drop.push(w.currentNode);
-  for (const c of drop) c.remove();
+  // a CDATA section becomes a text node of the same data (#453): the serializer would write it back unescaped, and an
+  // HTML parser ends it at the first "]]>" or reads it as a comment, so its markup would become live elements
+  for (const c of drop) if (c.nodeType === Node.CDATA_SECTION_NODE) c.replaceWith(root.ownerDocument.createTextNode(c.data)); else c.remove();
   for (const el of [...root.querySelectorAll("*")]) {
     if (!root.contains(el)) continue;                   // already removed with its parent
     // HTML/MathML elements (img, link, iframe, …) fetch even when not rendered; SMIL can set href/fill to a URL.
