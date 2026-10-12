@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.4.47-beta
+
+- **Fixed:** overlapping closed shapes drawn in opposite directions (a square next to a circle, or a shape and its
+  mirrored copy) no longer lose their overlap from the part's outline. The overlap used to become a hole, so the area
+  was under-reported (1,600 mm² instead of about 1,953 for a 40 mm square with a 15 mm circle on its edge) and the
+  utilization and efficiency figures came out too low (#456).
+
 ## 1.4.46-beta
 
 - **Fixed:** hardening against a drawing that freezes the import: thousands of LINEs that all start or end at one point
