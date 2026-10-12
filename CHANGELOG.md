@@ -6,6 +6,9 @@ a major rewrite of what the app does or how it works.
 
 ## 1.5.5-beta
 
+- **Fixed:** if fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in
+  the browser console and tries again on the next run instead of searching on the page for the rest of the session. A
+  worker that can't start at all (blocked or unsupported) is logged too and still falls back once (#472).
 - **Changed:** for maintainers, `tools/build.py` and `tools/qa_workbooks.py` reject an unknown argument (such as a
   mistyped `--chek`) with a usage message and exit status 2 instead of writing their output (#468); `build.py` fails
   when the Content-Security-Policy has no `script-src 'self'` to put the inline script's hash in (#469); the fixture
