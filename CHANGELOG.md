@@ -33,6 +33,20 @@ a major rewrite of what the app does or how it works.
   and `build.py`'s string check ignores comments, so a key named only in one counts as neither used nor missing (#473).
   The built `snugcut.html` is unchanged by these.
 
+## 1.5.4-beta
+
+- **Security:** a file with thousands of ids (Inkscape and Illustrator can put one on every element) no longer makes
+  every plate preview and export slow when its part is kept as original markup (text, images, `<use>`, filters): the
+  ids are now rewritten in one pass, so 16,000 ids take well under 100 ms per plate instead of about 5 seconds. The
+  exported markup is unchanged (#461).
+
+## 1.5.3-beta
+
+- **Security:** a CDATA section in an imported SVG (`<![CDATA[…]]>`) is now turned into plain text on import, so an
+  exported plate escapes it instead of writing it back as is. Markup inside one, such as `</text><img onerror=…>`, can
+  no longer become live elements if the exported SVG is later inlined into an HTML page. CSS in a CDATA section
+  (as Illustrator and Inkscape write it) still styles the part the same way (#453).
+
 ## 1.5.2-beta
 
 - **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
