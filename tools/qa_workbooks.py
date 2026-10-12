@@ -246,7 +246,6 @@ TESTS = [
             "Add `test-cuts/kerf-test.svg`.",
             "Download the plate and import it. The download says kerf compensation is built in, and that a hole is "
             "narrower than the kerf and was left as drawn: that's the pin hole.",
-            "Leave kerf and compensation as they are for test 22.",
         ], [
             "A red 20.2 × 20.2 mm outline, a red 9.8 mm square hole and a red 5.8 mm round hole.",
             "Unchanged: the blue 14 mm score line, the black 4 × 2 mm filled mark and the tiny pin hole.",

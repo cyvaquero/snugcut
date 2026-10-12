@@ -91,7 +91,7 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
   - on the release branch, set `<version>` (`X.Y.0` for a major or minor release) in the page footer
     (`app/index.html`), run `python3 tools/build.py`, and add its `CHANGELOG.md` section. For a major or minor version,
     consolidate `CHANGELOG.md` in the same commit: squash the iterative entries the release covers (and backfill earlier
-    unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release). Major and minor
+    unconsolidated ranges) as described in [CHANGELOG consolidation at release](#changelog-consolidation-at-release). Major and minor
     versions change only when the maintainer asks;
   - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
@@ -108,10 +108,60 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
     `python3 tools/qa_workbooks.py --issue N > body.md` (outside the repo) and `gh issue edit N --body-file body.md`.
     The body comes from the same `APPS` and `VERSION` as the workbook. No separate branch or version bump is needed.
 
+## CHANGELOG consolidation at release
+
+When a release bumps the major or minor version, squash the iterative entries
+it covers into that version's section. This happens with the `X.Y.0` bump at
+the merge into `main`, not at the cut. The individual `x.y.N` headings are
+removed from the file; git history keeps them.
+
+Scope:
+- The squash covers every iterative entry from the previous major or minor
+  heading down to (not including) this one.
+- A bump with no feature content of its own still consolidates the range below
+  it. "Same features as <previous>" is not a reason to skip it.
+- Never touch a section at or below an already-consolidated heading.
+
+Backfill:
+- Before consolidating the current release, walk the file for earlier major or
+  minor headings whose range still has loose `x.y.N` entries under it. Squash
+  each, same rules, oldest first.
+- A heading is already consolidated when no `x.y.N` headings remain between it
+  and the next major or minor heading below. Don't re-process those.
+- Report what you backfilled, separately from the current release.
+
+How to squash:
+- Group under Keep a Changelog headings in this order: Added, Changed,
+  Deprecated, Removed, Fixed, Security. Omit empty groups.
+- One bullet per user-visible outcome, not per iterative entry or per PR.
+  Several entries that moved one feature forward collapse into the single
+  sentence describing where it landed.
+- Carry every issue number forward. A merged bullet cites all of them:
+  `(#12, #19, #23)`. Losing a reference is a defect.
+- Write the end state, not the journey. An add-then-fix pair inside the range
+  becomes the end state alone, since no user saw the intermediate.
+- Every security entry in the range gets a bullet. Security is not subject to
+  the merging and dropping rules above — under-reporting hardening in a public
+  repo is a defect.
+- Drop entries with no user-facing effect (test fixtures with no app change,
+  internal reorganization, docs-only corrections) unless they changed behavior,
+  defaults, or output.
+- Preserve the exact wording of any entry that already reads as a release-level
+  statement rather than rewriting it for style.
+- Keep measured figures (timings, percentages, dimensions) where the entry gave
+  them; they're the evidence the change was verified.
+
+Constraints:
+- Do not renumber, re-date, or reorder released sections.
+- Do not invent entries. If a referenced issue number has no matching iterative
+  entry, stop and ask rather than reconstructing from the diff.
+- Report per range: range covered, entries in, bullets out, and anything
+  dropped with the reason.
+
 ## Fixture regression
 
 CLAUDE.md requires a structural or refactoring change to leave every export from `snugcut.html` byte-identical, and
-section 1 above requires the same of an optimization. `tools/regression.py` checks it (#394): it runs two builds of
+section 1 above requires the same of an optimization. `tools/regression.py` checks it: it runs two builds of
 `snugcut.html` in headless Chrome and compares their exports.
 
 ```sh

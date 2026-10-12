@@ -4,6 +4,29 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.7-beta
+
+- **Fixed:** the confirmation that appears after a download or a kerf change ("Saved plate-01-of-01.svg") now has a
+  Dismiss button, so a pointer, touch or keyboard user can close it. It also stays while focus is inside it, as it
+  already did while the pointer was over it; Esc still closes it. Opening it doesn't move focus, and closing it with
+  the button returns focus to where it was. Screen readers still hear the text once (#464, #455).
+- **Fixed:** at a width of 480 px or less (a phone, or 400% zoom) the settings fields stack in one column, so the full
+  text of each choice and the prefix placeholder show instead of being cut off; wider layouts are unchanged (#463).
+  The plate previews no longer force a horizontal scroll below 300 px (#455).
+- **Fixed:** with JavaScript turned off, the page now says that SnugCut needs it instead of showing controls that do
+  nothing (#454).
+- **Fixed:** the notice for a part with too many crossing lines now also covers lines that meet at one point (a star or
+  sunburst), and the README lists that case (#465). The README also lists the limits that refuse a value or a file
+  (fields above 100,000 mm, DXFs above 250,000 items, more than 100,000 `<use>` copies) (#474), and says how to adapt
+  the box-corner test cut to other stock instead of pointing at a generator that doesn't exist (#475).
+- **Fixed:** for maintainers, QA workbook test 14 no longer tells testers to keep kerf and compensation for test 22
+  (which sets its own), so tests 15 to 21 start from the right settings (#466); the regression's page code encodes its
+  results with `TextEncoder` instead of the deprecated `unescape()`, with the same output (#476); and a code comment in
+  `app.js` now sits with the code it describes (#477).
+- **Changed:** for maintainers, the README no longer cites issue numbers as history, and `CLAUDE.md` is under 120 lines:
+  the CHANGELOG consolidation procedure moved to `RELEASING.md`, and the hotfix version format `X.Y.Z.H` is written
+  down (#486).
+
 ## 1.5.6-beta
 
 - **Changed:** for maintainers, the fixture regression now also records each fixture's size, outline area and number of
