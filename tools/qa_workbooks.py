@@ -652,6 +652,7 @@ def main():
     check, issue = False, None
     while args:
         a = args.pop(0)
+        if a in ("-h", "--help"): print(__doc__); return
         if a == "--check": check = True
         elif a == "--issue":
             if not args or not args[0].isdigit(): die("usage: --issue N (an export QA issue number)")

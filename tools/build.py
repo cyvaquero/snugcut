@@ -5,6 +5,7 @@
 
     python3 tools/build.py          write snugcut.html
     python3 tools/build.py --check  exit 1 if snugcut.html is out of date
+    (any other argument: usage and exit status 2, nothing written; -h or --help prints this)
 
 app/index.html, app/snugcut.css, app/app.js, app/strings-en.js and lib/snugcut.js are the source of truth. The page's
 stylesheet link and module script are replaced by the CSS and the JavaScript inline: the library first, then the
@@ -13,6 +14,7 @@ string table, then the app, in one strict classic script (export/import lines re
 Both runs check that each library <script> URL is in the CSP's script-src (and clipper-lib's in connect-src) with
 integrity and crossorigin (#387), and the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
 message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
+The string-table check ignores comments, so a key named only in one counts as neither used nor missing.
 Python 3 standard library only.
 """
 import base64, hashlib, pathlib, re, sys
@@ -39,7 +41,60 @@ def module_body(src, rel):
         if re.search(re.escape(seq), src, flags=re.I): fail(f"{rel} contains '{seq}', which can break the inline script")
     return src
 
+_RE_BEFORE = set("(,=:[!&|?{};+-*%<>~^")   # a "/" after one of these starts a regex literal, after anything else it divides
+_RE_WORDS = {"return", "typeof", "case", "do", "else", "in", "of", "new", "delete", "void", "throw", "yield", "await"}
+
+def strip_comments(src):
+    """src with its // and /* */ comments removed, strings, template literals and regex literals left as they are (#473)."""
+    def scan(i, inner):
+        out, depth, prev, word = [], 0, "", ""
+        while i < len(src):
+            c, two = src[i], src[i:i + 2]
+            if two == "//":
+                i = src.find("\n", i) if "\n" in src[i:] else len(src)
+            elif two == "/*":
+                j = src.find("*/", i + 2)
+                i = len(src) if j < 0 else j + 2
+                out.append(" ")
+            elif c in "\"'":
+                j = i + 1
+                while j < len(src) and src[j] != c: j += 2 if src[j] == "\\" else 1
+                out.append(src[i:j + 1]); i, prev, word = j + 1, c, ""
+            elif c == "`":
+                text, i = template(i + 1)
+                out.append("`" + text); prev, word = "`", ""
+            elif c == "/" and (prev == "" or prev in _RE_BEFORE or word in _RE_WORDS):
+                j, cls = i + 1, False
+                while j < len(src) and (cls or src[j] != "/"):
+                    if src[j] == "\\": j += 1
+                    elif src[j] == "[": cls = True
+                    elif src[j] == "]": cls = False
+                    j += 1
+                out.append(src[i:j + 1]); i, prev, word = j + 1, "/", ""
+            else:
+                if inner and c == "}" and depth == 0: return "".join(out), i
+                depth += (c == "{") - (c == "}")
+                out.append(c); i += 1
+                if not c.isspace():
+                    prev = c
+                    word = word + c if c.isalnum() or c in "_$" else ""
+                else: word = ""
+        return "".join(out), i
+    def template(i):
+        out = []
+        while i < len(src):
+            c = src[i]
+            if c == "\\": out.append(src[i:i + 2]); i += 2
+            elif c == "`": out.append("`"); return "".join(out), i + 1
+            elif src[i:i + 2] == "${":
+                inner, i = scan(i + 2, True)
+                out.append("${" + inner + "}"); i += 1
+            else: out.append(c); i += 1
+        return "".join(out), i
+    return scan(0, False)[0]
+
 def check_text(html, strings, app, lib):
+    app, lib = strip_comments(app), strip_comments(lib)   # a key mentioned only in a comment is neither used nor missing
     defined = re.findall(r'^\s*"([\w.]+)":', strings, flags=re.M)
     twice = sorted({k for k in defined if defined.count(k) > 1})
     if twice: fail(f"app/strings-en.js defines {', '.join(twice)} more than once")
@@ -93,6 +148,8 @@ def build():
         if d.startswith("script-src"): d = d.replace("'self'", digest)    # the one inline script, by hash
         else: d = " ".join(w for w in d.split() if w != "'self'")   # wherever it stands in the directive (#296)
         dirs.append(d)
+    if sum(d.startswith("script-src") and digest in d for d in dirs) != 1:   # no 'self' in script-src would leave the page without its script (#469)
+        fail("app/index.html: the CSP needs exactly one script-src directive containing 'self', which the build replaces with the inline script's hash")
     html = html.replace(csp.group(0), csp.group(1) + "; ".join(dirs) + csp.group(3), 1)
     if re.search(r"</style", css, flags=re.I): fail("app/snugcut.css contains '</style', which would end the inline style")
     html = html.replace(link, "<style>\n" + css + "</style>\n", 1)
@@ -101,8 +158,12 @@ def build():
     return html.replace("<!doctype html>\n", "<!doctype html>\n" + NOTICE + "\n", 1)
 
 if __name__ == "__main__":
+    args = sys.argv[1:]
+    if args in (["-h"], ["--help"]): print(__doc__); sys.exit(0)
+    if args not in ([], ["--check"]):   # an unknown option must not fall through to writing snugcut.html (#468)
+        print(f"build.py: unknown argument {' '.join(args)}; usage: build.py [--check]", file=sys.stderr); sys.exit(2)
     out = build()
-    if "--check" in sys.argv[1:]:
+    if args:
         # compared as bytes and written with \n on every platform, so a Windows build can't turn every line into \r\n
         # unseen (#292)
         if not OUT.exists() or OUT.read_bytes() != out.encode("utf-8"):
