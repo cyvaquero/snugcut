@@ -109,5 +109,5 @@ if __name__ == "__main__":
             fail("snugcut.html is out of date: run python3 tools/build.py")
         print("snugcut.html is up to date")
     else:
-        OUT.write_text(out, encoding="utf-8", newline="\n")
+        OUT.write_bytes(out.encode("utf-8"))   # bytes, so \n stays \n; write_text(newline=) needs Python 3.10 (#459)
         print(f"wrote {OUT.relative_to(ROOT)} ({len(out.encode('utf-8'))} bytes)")
