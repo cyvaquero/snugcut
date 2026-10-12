@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.5-beta
+
+- **Changed:** for maintainers, `tools/build.py` and `tools/qa_workbooks.py` reject an unknown argument (such as a
+  mistyped `--chek`) with a usage message and exit status 2 instead of writing their output (#468); `build.py` fails
+  when the Content-Security-Policy has no `script-src 'self'` to put the inline script's hash in (#469); the fixture
+  regression no longer fails with a traceback when it reads Chrome's log while the results are half written (#470);
+  and `build.py`'s string check ignores comments, so a key named only in one counts as neither used nor missing (#473).
+  The built `snugcut.html` is unchanged by these.
+
 ## 1.5.2-beta
 
 - **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate

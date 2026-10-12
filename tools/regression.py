@@ -117,7 +117,7 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
     }
     Object.assign(S, saved); __bump();
   }
-  console.log("OUT:" + btoa(unescape(encodeURIComponent(JSON.stringify(out)))));
+  console.log("OUT:" + btoa(unescape(encodeURIComponent(JSON.stringify(out)))) + ":END");
 })();
 })();
 """
@@ -181,8 +181,11 @@ def run_build(chrome, html, label, tag, scratch, libs, qa=None):
         try:
             end = time.time() + TIMEOUT
             while time.time() < end and p.poll() is None:
-                m = re.search(rb"OUT:([A-Za-z0-9+/=]+)", log.read_bytes())
-                if m: return json.loads(base64.b64decode(m.group(1)).decode("utf-8"))
+                # only a complete payload (closed by :END) is decoded; a line half-written is read on the next poll (#470)
+                m = re.search(rb"OUT:([A-Za-z0-9+/=]+):END", log.read_bytes())
+                if m:
+                    try: return json.loads(base64.b64decode(m.group(1)).decode("utf-8"))
+                    except ValueError: pass   # binascii.Error, UnicodeDecodeError and JSONDecodeError are all ValueErrors
                 time.sleep(0.5)
         finally:
             p.kill(); p.wait()
