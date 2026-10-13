@@ -4,119 +4,55 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
-## 1.5.12-beta
+## 1.6.0-beta
 
-- **Changed:** release prep for 1.6.0-beta: the export QA workbooks in `qa/` now test SnugCut 1.6.0-beta and link its
-  source zip. Documentation corrections from the release's documentation review: the README's search comparison no
-  longer quotes figures measured on older versions, says where the Nesting mode switch is, and lists the CI workflows
-  and license in its Files table; `fixtures/README.md` names every fixture file (#500).
+Release of 1.5.1-beta through 1.5.8-beta, with the fixes from the release review (1.5.9-beta through 1.5.12-beta).
 
-## 1.5.11-beta
+### Changed
 
-- **Security:** a program using `lib/snugcut.js` that calls `startWorker` with a URL but no integrity hash now gets the
-  search on the page, instead of search workers running clipper-lib fetched without an integrity check. The app itself
-  always passed the hash, so it is unchanged (#499).
+- Bounding box's swap search after the MaxRects packing now runs for a fixed amount of packing work (about 350 ms for
+  the sample parts, under half a second for thousands of parts) instead of 350 ms of clock time, so the same parts and
+  settings give the same layout on a fast or a slow machine, or under load. Layouts can differ once from earlier
+  versions; the README describes the search (#460).
 
-## 1.5.10-beta
+### Fixed
 
-- **Fixed:** a crafted SVG with a long run of `url(#` inside a part kept as original markup (one with text, `<use>`,
-  an image or a filter) no longer makes every preview and export of that part take seconds to minutes; it now takes
-  milliseconds. References to ids are rewritten as before (#498).
+- Circles, ellipses, arcs and rounded corners are exported as curve segments of at most 45° instead of 90°, so they
+  follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle (it was up to
+  0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs are slightly
+  larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
+- A DXF polyline segment with a near-zero bulge (CAD rounding noise such as 2.2e-16 in group code 42) is imported as a
+  straight line, so the part keeps its drawn size instead of coming out wider (a 100 mm rectangle imported at 107 mm),
+  and every bulge arc ends exactly on its vertex (#497).
+- The confirmation that appears after a download or a kerf change ("Saved plate-01-of-01.svg") has a Dismiss button, so
+  a pointer, touch or keyboard user can close it. It stays while the pointer is over it or focus is inside it, and Esc
+  closes it. Opening it doesn't move focus, and closing it with the button returns focus to where it was. Screen
+  readers hear the text once (#464, #455).
+- At a width of 480 px or less (a phone, or 400% zoom) the settings fields stack in one column, so the full text of
+  each choice and the prefix placeholder show instead of being cut off; wider layouts are unchanged (#463). The plate
+  previews no longer force a horizontal scroll below 300 px (#455).
+- With JavaScript turned off, the page says that SnugCut needs it instead of showing controls that do nothing (#454).
+- The notice for a part with too many crossing lines also covers lines that meet at one point, such as a star or
+  sunburst (#465).
+- If fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in the browser
+  console and tries again on the next run instead of searching on the page for the rest of the session. A worker that
+  can't start at all (blocked or unsupported) is logged too and still falls back once (#472).
 
-## 1.5.9-beta
+### Security
 
-- **Fixed:** a DXF polyline segment with a near-zero bulge (CAD rounding noise such as 2.2e-16 in group code 42) is now
-  imported as a straight line, so the part keeps its drawn size instead of coming out wider (a 100 mm rectangle imported
-  at 107 mm). Every bulge arc now also ends exactly on its vertex (#497).
-
-## 1.5.8-beta
-
-- **Fixed:** adding the `Export changes:` line to the body of an open pull request now runs the fixture regression check
-  again with the new body, so the check can pass without a new push; re-running the failed job had checked the old
-  body (#495).
-
-## 1.5.7-beta
-
-- **Fixed:** the confirmation that appears after a download or a kerf change ("Saved plate-01-of-01.svg") now has a
-  Dismiss button, so a pointer, touch or keyboard user can close it. It also stays while focus is inside it, as it
-  already did while the pointer was over it; Esc still closes it. Opening it doesn't move focus, and closing it with
-  the button returns focus to where it was. Screen readers still hear the text once (#464, #455).
-- **Fixed:** at a width of 480 px or less (a phone, or 400% zoom) the settings fields stack in one column, so the full
-  text of each choice and the prefix placeholder show instead of being cut off; wider layouts are unchanged (#463).
-  The plate previews no longer force a horizontal scroll below 300 px (#455).
-- **Fixed:** with JavaScript turned off, the page now says that SnugCut needs it instead of showing controls that do
-  nothing (#454).
-- **Fixed:** the notice for a part with too many crossing lines now also covers lines that meet at one point (a star or
-  sunburst), and the README lists that case (#465). The README also lists the limits that refuse a value or a file
-  (fields above 100,000 mm, DXFs above 250,000 items, more than 100,000 `<use>` copies) (#474), and says how to adapt
-  the box-corner test cut to other stock instead of pointing at a generator that doesn't exist (#475).
-- **Fixed:** for maintainers, QA workbook test 14 no longer tells testers to keep kerf and compensation for test 22
-  (which sets its own), so tests 15 to 21 start from the right settings (#466); the regression's page code encodes its
-  results with `TextEncoder` instead of the deprecated `unescape()`, with the same output (#476); and a code comment in
-  `app.js` now sits with the code it describes (#477).
-- **Changed:** for maintainers, the README no longer cites issue numbers as history, and `CLAUDE.md` is under 120 lines:
-  the CHANGELOG consolidation procedure moved to `RELEASING.md`, and the hotfix version format `X.Y.Z.H` is written
-  down (#486).
-
-## 1.5.6-beta
-
-- **Changed:** for maintainers, the fixture regression now also records each fixture's size, outline area and number of
-  outer contours, and has fixtures for overlapping shapes drawn in opposite directions and for a rotated circle and
-  ellipse, so undoing the outline fixes from 1.5.0-beta shows as a difference. Nothing in the app changes (#484).
-
-## 1.5.5-beta
-
-- **Changed:** for maintainers, CI now also runs the fixture regression (`.github/workflows/regression.yml`) on every
-  pull request and push to `main` or `develop`: it opens `snugcut.html` in headless Chrome with the libraries checked
-  against the page's integrity hashes, so a script error fails the check, and compares the exports with the base
-  branch's. A pull request meant to change exports lists them on a line starting `Export changes:` in its body. The
-  regression gained `--allow-diff` and `--no-sandbox` options (#471).
-- **Fixed:** circles, ellipses, arcs and rounded corners are now exported as curve segments of at most 45° instead of
-  90°, so they follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle
-  (it was up to 0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs
-  are slightly larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
-- **Changed:** Bounding box's swap search after the MaxRects packing now runs for a fixed amount of packing work
-  (about 350 ms for the sample parts, under half a second for thousands of parts) instead of 350 ms of clock time, so the
-  same parts and settings give the same layout on a fast or a slow machine, or under load. Layouts can differ once
-  from earlier versions; the README describes the search (#460).
-- **Fixed:** if fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in
-  the browser console and tries again on the next run instead of searching on the page for the rest of the session. A
-  worker that can't start at all (blocked or unsupported) is logged too and still falls back once (#472).
-- **Changed:** for maintainers, `tools/build.py` and `tools/qa_workbooks.py` reject an unknown argument (such as a
-  mistyped `--chek`) with a usage message and exit status 2 instead of writing their output (#468); `build.py` fails
-  when the Content-Security-Policy has no `script-src 'self'` to put the inline script's hash in (#469); the fixture
-  regression no longer fails with a traceback when it reads Chrome's log while the results are half written, or when
-  Chrome is still writing to its scratch profile as the run cleans up (#470, #471);
-  and `build.py`'s string check ignores comments, so a key named only in one counts as neither used nor missing (#473).
-  The built `snugcut.html` is unchanged by these.
-
-## 1.5.4-beta
-
-- **Security:** a file with thousands of ids (Inkscape and Illustrator can put one on every element) no longer makes
-  every plate preview and export slow when its part is kept as original markup (text, images, `<use>`, filters): the
-  ids are now rewritten in one pass, so 16,000 ids take well under 100 ms per plate instead of about 5 seconds. The
-  exported markup is unchanged (#461).
-
-## 1.5.3-beta
-
-- **Security:** a CDATA section in an imported SVG (`<![CDATA[…]]>`) is now turned into plain text on import, so an
-  exported plate escapes it instead of writing it back as is. Markup inside one, such as `</text><img onerror=…>`, can
-  no longer become live elements if the exported SVG is later inlined into an HTML page. CSS in a CDATA section
-  (as Illustrator and Inkscape write it) still styles the part the same way (#453).
-
-## 1.5.2-beta
-
-- **Changed:** for maintainers, the export QA workbooks now move to a release at release prep instead of in a separate
-  branch after the tag, the fixture regression checks each workbook test's expected sizes, colors, layers and notices
-  against the build (failing, naming the test, when one no longer matches), and `python3 tools/qa_workbooks.py --issue N`
-  prints a QA issue's body from the same app list and version as its workbook (#488). The workbooks themselves are
-  unchanged.
-
-## 1.5.1-beta
-
-- **Changed:** the export QA workbooks test 1.5.0-beta and link its source zip (#49, #50, #51, #52, #132, #133).
-  No test's expected result changes: every test run in 1.5.0-beta gives the same exports and notices as in
-  1.4.0.1-beta.
+- A CDATA section in an imported SVG (`<![CDATA[…]]>`) is turned into plain text on import, so an exported plate
+  escapes it instead of writing it back as is. Markup inside one, such as `</text><img onerror=…>`, can no longer
+  become live elements if the exported SVG is later inlined into an HTML page. CSS in a CDATA section (as Illustrator
+  and Inkscape write it) still styles the part the same way (#453).
+- A file with thousands of ids (Inkscape and Illustrator can put one on every element) no longer makes every plate
+  preview and export slow when its part is kept as original markup (text, images, `<use>`, filters): the ids are
+  rewritten in one pass, so 16,000 ids take well under 100 ms per plate instead of about 5 seconds. The exported markup
+  is unchanged (#461).
+- A crafted SVG with a long run of `url(#` inside a part kept as original markup no longer makes every preview and
+  export of that part take seconds to minutes; it takes milliseconds. References to ids are rewritten as before (#498).
+- A program using `lib/snugcut.js` that calls `startWorker` with a URL but no integrity hash gets the search on the
+  page, instead of search workers running clipper-lib fetched without an integrity check. The app always passed the
+  hash, so it is unchanged (#499).
 
 ## 1.5.0-beta
 
