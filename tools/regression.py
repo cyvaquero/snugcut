@@ -7,25 +7,21 @@ headless Chrome, and compare them byte for byte.
     python3 tools/regression.py                 develop's snugcut.html against the one in the working tree
     python3 tools/regression.py BASE [NEW]      each a file or a git ref (its snugcut.html); NEW defaults to the tree's
 
-Options:
-    --chrome PATH   the Chrome or Chromium binary (default: $CHROME, then the usual install locations)
-    --libs DIR      load clipper.js and jszip.min.js from DIR instead of the CDN, to run offline. The search worker
-                    can't load from a file, so the nests then run on the page only.
-    --json FILE     also write NEW's raw results to FILE
-    --allow-diff    entries that differ between the builds are listed but don't fail the run (a change meant to alter
-                    exports); nest failures, worker-vs-page differences and workbook mismatches still do
-    --no-sandbox    start Chrome with --no-sandbox, for CI runners whose Chrome can't create its sandbox
+Options are listed by --help.
 
 It also runs the export QA workbooks' tests (tools/qa_workbooks.py) on NEW only, each with its own settings and
 fixture files, and checks the measured sizes, colors, closed or open shapes, notices and DXF layers against the
 expected results stored beside each test. A mismatch is reported as "workbook test N: expected ..., got ...".
+On NEW it also fails a fixture that errors without being a listed refusal (the huge-coordinate and item-cap files must
+be refused), and checks the stated values of the large circle, the opposite-direction overlap, the rotated circle and
+ellipse, the CDATA sections and the many ids, because two builds that fail alike would otherwise compare equal.
 
 Exit status: 0 when every entry matches (with --allow-diff: when nothing but entries differ); 1 when an entry differs,
-a nest failed, the worker's nests differ from the page's, or a workbook test doesn't match its expected result; 2 when
+a nest failed, the worker's nests differ from the page's, a workbook test or a fixture check doesn't match its expected result; 2 when
 a build gives no results (Chrome missing, a timeout, or the page failed before finishing).
 Python 3 standard library only.
 """
-import base64, glob, json, os, pathlib, re, shutil, subprocess, sys, tempfile, threading, time
+import argparse, base64, glob, json, math, os, pathlib, re, shutil, subprocess, sys, tempfile, threading, time
 
 sys.dont_write_bytecode = True   # importing qa_workbooks would otherwise leave tools/__pycache__ in the tree
 import qa_workbooks   # the export QA workbooks' tests and their machine-checkable expected results (same folder)
@@ -75,7 +71,7 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
   out.worker = typeof getWorkers === "function" && !!(await getWorkers());
   await nests(out.worker ? "worker" : "page");
   if (out.worker) { broken = true; await nests("page"); }   // the same nests searched on the page
-  // 3. the QA workbooks' tests (tools/qa_workbooks.py), NEW only (__QA__ is null for BASE): each test's settings and
+  // 3. the QA workbooks' tests (tools/qa_workbooks.py), NEW only (null for BASE): each test's settings and
   // files as a tester sets them, nested without search, the first plate exported with plateFile and measured as a tester
   // would. It replaces the page's parts, so it runs last
   if (__QA__) {
@@ -170,7 +166,11 @@ def prepare(html, label, libs, qa=None):
     # the test in place of the startup run(); no CSP (the test changes the inline script's hash) and no web fonts
     tail = re.findall(r"renderParts\(\);\nrun\(\w+, true, true\);[^\n]*\n\}\)\(\);\n", html)
     if len(tail) != 1: fail(2, f"{label}: can't find the page's startup run() to replace")
-    html = html.replace(tail[0], "renderParts();\n" + TEST.replace("__CASES__", json.dumps(cases())).replace("__QA__", json.dumps(qa)), 1)
+    # "<" as \u003c, so a fixture holding </script> or <!-- can't end the script or swallow the page; both placeholders
+    # are filled in one pass, so fixture text that contains the other placeholder isn't substituted again
+    blobs = {"__CASES__": json.dumps(cases()).replace("<", "\\u003c"), "__QA__": json.dumps(qa).replace("<", "\\u003c")}
+    test = re.sub("__CASES__|__QA__", lambda m: blobs[m.group()], TEST)
+    html = html.replace(tail[0], "renderParts();\n" + test, 1)
     html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>', "", html)
     html = re.sub(r'<link[^>]*fonts\.googleapis[^>]*>', "", html)
     if libs:
@@ -213,30 +213,85 @@ def check_qa(got):
     bad = []
     for n, c in sorted(qa_checks().items()):
         r = got.get(str(n))
-        fail = lambda what: bad.append(f"workbook test {n}: {what}")
-        if r is None: fail("expected a result, got none"); continue
-        if "err" in r: fail(f"expected an export, got the error: {r['err']}"); continue
-        if r["plates"] != 1: fail(f"expected 1 plate, got {r['plates']}")
+        mismatch = lambda what: bad.append(f"workbook test {n}: {what}")
+        if r is None: mismatch("expected a result, got none"); continue
+        if "err" in r: mismatch(f"expected an export, got the error: {r['err']}"); continue
+        if r["plates"] != 1: mismatch(f"expected 1 plate, got {r['plates']}")
         for label, want, have in (("notice", c["notices"], r["notices"]), ("export note", c["export_notes"], r["exportNotes"])):
             left = list(have)
             for w in want:
                 hit = next((h for h in left if w in h), None)
-                if hit is None: fail(f"expected {label} containing \"{w}\", got {have or 'none'}")
+                if hit is None: mismatch(f"expected {label} containing \"{w}\", got {have or 'none'}")
                 else: left.remove(hit)
-            for h in left: fail(f"expected no other {label}, got \"{h}\"")
+            for h in left: mismatch(f"expected no other {label}, got \"{h}\"")
         for lay in c["layers"]:
             if lay.upper() not in [x.upper() for x in r.get("layers", [])]:
-                fail(f"expected DXF layer {lay}, got {r.get('layers') or 'none'}")
+                mismatch(f"expected DXF layer {lay}, got {r.get('layers') or 'none'}")
         for text, color in c["texts"]:
-            if [text, color] not in r["texts"]: fail(f"expected text \"{text}\" in #{color}, got {r['texts'] or 'none'}")
+            if [text, color] not in r["texts"]: mismatch(f"expected text \"{text}\" in #{color}, got {r['texts'] or 'none'}")
         left = list(r["shapes"])
         for e in c["shapes"]:
             for _ in range(e["n"]):
                 hit = next((s for s in left if abs(s["w"] - e["w"]) <= TOL and abs(s["h"] - e["h"]) <= TOL and all(
                     s[k] == e[k] for k in ("stroke", "fill", "closed", "dash", "sub"))), None)
-                if hit is None: fail(f"expected shape {describe(e)}, got none like it")
+                if hit is None: mismatch(f"expected shape {describe(e)}, got none like it")
                 else: left.remove(hit)
-        for s in left: fail(f"expected no other shape, got {describe(s)}")
+        for s in left: mismatch(f"expected no other shape, got {describe(s)}")
+    return bad
+
+# Fixtures a build must refuse, with a phrase of its message (the "too large" limits and the item cap, #458): any other
+# fixture that errors fails the run, even when both builds fail alike, and these must error
+REFUSED = {"fixtures/security/dxf-insert-array.dxf": "expands to more than",
+           **{"fixtures/security/" + f: "coordinates beyond" for f in (
+               "huge-dxf-bulge.dxf", "huge-dxf-circle.dxf", "huge-dxf-lines.dxf", "huge-dxf-polyline.dxf", "huge-svg-arc.svg", "huge-svg-coords.svg")}}
+
+def bezier_points(d):
+    # points along every cubic of a path "M x y C … Z" (as plateSVG writes it), 20 per segment
+    nums = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?(?:e-?\d+)?", d)]
+    pts, (x0, y0), i = [], nums[:2], 2
+    while i + 6 <= len(nums):
+        (x1, y1, x2, y2, x3, y3), t = nums[i:i + 6], None
+        for k in range(21):
+            t = k / 20; u = 1 - t
+            pts.append((u**3*x0 + 3*u*u*t*x1 + 3*u*t*t*x2 + t**3*x3, u**3*y0 + 3*u*u*t*y1 + 3*u*t*t*y2 + t**3*y3))
+        x0, y0, i = x3, y3, i + 6
+    return pts
+
+def check_fixtures(got):
+    # absolute checks of the new fixtures' stated values on NEW (comp off), as check_qa does for the workbook tests; returns the
+    # mismatches. Two builds that fail alike compare equal, so a regression that lands would become the next baseline
+    bad, byname = [], {}
+    for r in got["single"]:
+        if not r.get("comp"): byname[r["n"]] = r
+        if "err" in r and r["n"] not in REFUSED: bad.append(f"{r['n']}{' comp' if r['comp'] else ''}: unexpected error: {r['err']}")
+    for n, phrase in REFUSED.items():
+        r = byname.get(n)
+        if r is None: bad.append(f"{n}: expected a result, got none")
+        elif "err" not in r: bad.append(f"{n}: expected a refusal containing \"{phrase}\", it was accepted")
+        elif phrase not in r["err"]: bad.append(f"{n}: expected a refusal containing \"{phrase}\", got: {r['err']}")
+    def need(n, what, ok):
+        r = byname.get(f"fixtures/{n}")
+        if r is None: bad.append(f"fixtures/{n}: expected a result, got none")
+        elif "err" not in r and not ok(r): bad.append(f"fixtures/{n}: {what}")
+    def circle(r):   # a circle of 500 mm radius: the curve within 0.01 mm of it (the center is the middle of the points' box)
+        m = re.search(r' d="([^"]+)"', r["svg"]); pts = bezier_points(m.group(1)) if m else []
+        if not pts: return False
+        cx, cy = (min(p[0] for p in pts) + max(p[0] for p in pts)) / 2, (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2
+        return max(abs(math.hypot(x - cx, y - cy) - 500) for x, y in pts) <= 0.01
+    need("geometry/large-circle.svg", "the exported curve is more than 0.01 mm from the 500 mm circle", circle)
+    # the square (40 x 40) plus the half of the r 15 circle outside it, and two overlapping r 15 circles 15 mm apart
+    union = 1600 + math.pi * 225 / 2 + 2 * math.pi * 225 - (450 * math.acos(0.5) - 7.5 * math.sqrt(675))
+    need("geometry/overlap-opposite.svg", f"expected the union's area {union:.1f} mm2 in 2 outlines", lambda r: r["outers"] == 2 and abs(r["size"][2] - union) <= 1)
+    # a circle of r 10 at (20, 20) and an ellipse rx 30, ry 10 turned 30 degrees at (50, 70): the box of both
+    w, h = 50 + math.sqrt(900 * 0.75 + 100 * 0.25) - 10, 70 + math.sqrt(900 * 0.25 + 100 * 0.75) - 10
+    need("geometry/rotated-circle-ellipse.svg", f"expected the size {w:.3f} x {h:.3f} mm", lambda r: abs(r["size"][0] - w) <= TOL and abs(r["size"][1] - h) <= TOL)
+    need("security/cdata.svg", "expected the markup in <text> as escaped text, and the CSS rect outlined in red",
+         lambda r: "<img" not in r["svg"] and "&lt;/text&gt;&lt;img src=x onerror=alert(1)&gt;" in r["svg"] and 'stroke="#ff0000"' in r["svg"])
+    def ids(r):   # every id is the part's own or prefixed with it, 300 or more of them, and every reference lands on one
+        svg = r["svg"]; found = re.findall(r'\sid="([^"]*)"', svg); top = found[0] if found else ""
+        refs = re.findall(r'url\(#([^)]*)\)|href="#([^"]*)"', svg)
+        return len(found) >= 300 and all(i == top or i.startswith(top + "_") for i in found) and all((a or b) in found for a, b in refs) and bool(refs)
+    need("geometry/many-ids.svg", "expected 300 or more ids, each prefixed, and every reference to one of them", ids)
     return bad
 
 NORM = [(re.compile(r"SnugCut v[0-9][0-9.]*(?:-[a-z]+)?"), "SnugCut v"),   # the version in the export comment
@@ -246,17 +301,24 @@ def norm(v):
     for rx, to in NORM: s = rx.sub(to, s)
     return s
 
+def options():
+    ap = argparse.ArgumentParser(prog="regression.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
+    ap.add_argument("builds", nargs="*", metavar="BASE [NEW]", help="each a file or a git ref (its snugcut.html); BASE defaults to develop, NEW to the working tree's")
+    ap.add_argument("--chrome", metavar="PATH", help="the Chrome or Chromium binary (default: $CHROME, then the usual install locations)")
+    ap.add_argument("--libs", metavar="DIR", help="load clipper.js and jszip.min.js from DIR instead of the CDN, to run offline; the search worker "
+                    "can't load from a file, so the nests then run on the page only")
+    ap.add_argument("--json", metavar="FILE", help="also write NEW's raw results to FILE")
+    ap.add_argument("--allow-diff", action="store_true", help="entries that differ between the builds are listed but don't fail the run (a change meant "
+                    "to alter exports); errors, nest failures, worker-vs-page differences and workbook mismatches still do")
+    ap.add_argument("--no-sandbox", action="store_true", help="start Chrome with --no-sandbox, for CI runners whose Chrome can't create its sandbox")
+    return ap.parse_args()   # a mistyped option or a missing value ends the run with status 2
+
 def main():
-    args, opts, flags = [], {"--chrome": None, "--libs": None, "--json": None}, set()
-    it = iter(sys.argv[1:])
-    for a in it:
-        if a in opts: opts[a] = next(it, None)
-        elif a in ("--allow-diff", "--no-sandbox"): flags.add(a)
-        elif a in ("-h", "--help"): print(__doc__); return
-        else: args.append(a)
-    if len(args) > 2: fail(2, "at most two builds: BASE [NEW]")
-    base, new = (args + [None, None])[:2]
-    chrome = find_chrome(opts["--chrome"])
+    o = options()
+    if len(o.builds) > 2: fail(2, "at most two builds: BASE [NEW]")
+    base, new = (o.builds + [None, None])[:2]
+    opts, flags = {"--libs": o.libs, "--json": o.json}, {f for f, on in (("--allow-diff", o.allow_diff), ("--no-sandbox", o.no_sandbox)) if on}
+    chrome = find_chrome(o.chrome)
     builds = [source(base or "develop"), source(new or str(ROOT / "snugcut.html"))]
     tmp = tempfile.mkdtemp(prefix="snugcut-regression-")
     try:
@@ -290,7 +352,10 @@ def main():
     qa = check_qa(b.get("qa") or {})
     print(f"workbook tests: {len(qa_checks())} checked, {len(qa)} mismatches" + "".join("\n  " + m for m in qa))
     bad |= bool(qa)
-    print("FAIL" if bad else "OK: " + ("exports differ as allowed" if differs else "byte-identical") + ", workbook tests match")
+    fx = check_fixtures(b)
+    print(f"fixture checks: {len(REFUSED)} refusals and 5 values checked, {len(fx)} mismatches" + "".join("\n  " + m for m in fx))
+    bad |= bool(fx)
+    print("FAIL" if bad else "OK: " + ("exports differ as allowed" if differs else "byte-identical") + ", workbook tests and fixture checks match")
     sys.exit(1 if bad else 0)
 
 if __name__ == "__main__":
