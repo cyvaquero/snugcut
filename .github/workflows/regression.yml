@@ -7,7 +7,9 @@
 # from a file, so the nests run on the page only. A change meant to alter exports says so in its pull request body with
 # a line starting "Export changes:" (CLAUDE.md); the differences are then listed but don't fail the check. Editing the
 # pull request runs the check again with the new body (re-running a finished job reuses the old one). On a push they
-# never do, since the pull request already vetted them. Python 3 standard library only.
+# never do, since the pull request already vetted them. A newer run for the same pull request cancels the one still
+# running (an edit after a push, or two pushes in a row); pushes to main and develop are never cancelled. Python 3
+# standard library only.
 name: Fixture regression
 
 on:
@@ -18,6 +20,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: regression-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   regression:

@@ -78,8 +78,9 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
   `localStorage` (`snugcut.settings`, validated on load) is the one exception.
 - **Units**: all internal lengths are mm, and mm is the default unit in every locale; inches only by the user's choice.
 - **License**: AGPL-3.0-or-later, copyright Guy Heckman (`LICENSE`). Every source file starts with the SPDX identifier
-  and copyright notice (`// SPDX-License-Identifier: AGPL-3.0-or-later`, or an HTML comment in `app/index.html`). A new
-  library must have a license compatible with the AGPL and be listed in the README's License section.
+  and copyright notice (`// SPDX-License-Identifier: AGPL-3.0-or-later`, or an HTML comment in `app/index.html`);
+  `fixtures/` is test data and carries no header. A new library must have a license compatible with the AGPL and be
+  listed in the README's License section.
 - **American English** in all text: UI, docs, CHANGELOG, code comments, fixture names and comments (color, behavior,
   recognize, millimeters, …). HTML/ARIA names keep their spec spelling (`aria-labelledby`).
 - **Git identity**: commit as the GitHub no-reply address only, never a personal email (the repo is public). The

@@ -289,7 +289,7 @@ SnugCut.
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
 | `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
 | `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
-| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' expected results (Python 3, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
+| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' and the new fixtures' expected results (Python 3, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
 | `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |

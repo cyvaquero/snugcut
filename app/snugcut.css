@@ -129,7 +129,8 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plist ul{margin:6px 0 0;padding-left:18px;font-size:13px}
 .bar{height:5px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ok)}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px);display:flex;gap:10px;align-items:center}
+.toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;max-width:calc(100% - 32px);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;display:flex;gap:10px;align-items:center}
+.toast span{min-width:0;overflow-wrap:anywhere}
 .toast[hidden]{display:none}
 .toast .x:focus-visible{outline-color:var(--bg)}
 .note{font-size:13px;color:var(--muted)}
@@ -157,4 +158,6 @@ footer a,header p a{color:var(--accent)}
   /* the parts are drawn in their own colors inside <img>, so keep the tan plate behind them: forced colors turned it
      into Canvas, black on black in dark themes (#157) */
   .part img,.sheet{forced-color-adjust:none;outline:1px solid CanvasText}
+  /* its Canvas background would otherwise leave the toast without an edge */
+  .toast{border:1px solid CanvasText}
 }

@@ -47,7 +47,7 @@ _RE_WORDS = {"return", "typeof", "case", "do", "else", "in", "of", "new", "delet
 def strip_comments(src):
     """src with its // and /* */ comments removed, strings, template literals and regex literals left as they are (#473)."""
     def scan(i, inner):
-        out, depth, prev, word = [], 0, "", ""
+        out, depth, prev, word, gap = [], 0, "", "", False   # word: the last identifier, kept across whitespace
         while i < len(src):
             c, two = src[i], src[i:i + 2]
             if two == "//":
@@ -77,8 +77,8 @@ def strip_comments(src):
                 out.append(c); i += 1
                 if not c.isspace():
                     prev = c
-                    word = word + c if c.isalnum() or c in "_$" else ""
-                else: word = ""
+                    word = (word if not gap else "") + c if c.isalnum() or c in "_$" else ""
+                gap = c.isspace()
         return "".join(out), i
     def template(i):
         out = []

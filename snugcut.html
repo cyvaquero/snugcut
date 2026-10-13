@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ur2SQP5vgNRlvFBRvs24QTmAQFDRdoPSATtgNcXsayk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-NxmRTRrZVVc0wmDxZsoPoiB6Sn21B3069zUhTitp+dQ=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,7 +143,8 @@ button.btn:disabled,button.btn[aria-disabled="true"]{opacity:.5;cursor:default}
 .plist ul{margin:6px 0 0;padding-left:18px;font-size:13px}
 .bar{height:5px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ok)}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;max-width:calc(100% - 32px);display:flex;gap:10px;align-items:center}
+.toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;max-width:calc(100% - 32px);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:14px;display:flex;gap:10px;align-items:center}
+.toast span{min-width:0;overflow-wrap:anywhere}
 .toast[hidden]{display:none}
 .toast .x:focus-visible{outline-color:var(--bg)}
 .note{font-size:13px;color:var(--muted)}
@@ -171,6 +172,8 @@ footer a,header p a{color:var(--accent)}
   /* the parts are drawn in their own colors inside <img>, so keep the tan plate behind them: forced colors turned it
      into Canvas, black on black in dark themes (#157) */
   .part img,.sheet{forced-color-adjust:none;outline:1px solid CanvasText}
+  /* its Canvas background would otherwise leave the toast without an edge */
+  .toast{border:1px solid CanvasText}
 }
 </style>
 
@@ -295,7 +298,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.1-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -789,7 +792,7 @@ function dxfToSVG(text, name, opts = {}){
       x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
     const ell = (cx, cy, ax, ay, bx, by, ta, tb, move, end) => {
       // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 45° each, error about 4e-6 × the radius, #462)
-      const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 4) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
+      const {n, step:dt, k:h} = arcSteps(tb - ta);
       const pt = t => [cx + ax*Math.cos(t) + bx*Math.sin(t), cy + ay*Math.cos(t) + by*Math.sin(t)];
       const dv = t => [-ax*Math.sin(t) + bx*Math.cos(t), -ay*Math.sin(t) + by*Math.cos(t)];
       if (move) d.push(["M", P(...pt(ta))]);
@@ -1223,6 +1226,14 @@ function parsePathD(d){
   }
   return out;
 }
+// An arc of the given sweep (radians) as the fewest cubics of at most 45° each: how many, the sweep of each, and the control
+// points' distance along the tangents as a fraction of the radius, 4/3·tan(θ/4). The DXF import, the SVG arc conversion and
+// the DXF export's test for a circular arc all use it, so their accuracy can't drift apart (#462)
+const arcK = th => 4 / 3 * Math.tan(th / 4);
+function arcSteps(sweep){
+  const n = Math.max(1, Math.ceil(Math.abs(sweep) / (Math.PI / 4) - 1e-9)), step = sweep / n;
+  return {n, step, k:arcK(step)};
+}
 function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
   // segments of at most 45°, whose radial error is about 4e-6 × the radius (90° ones: 2.7e-4, 0.14 mm on a 1 m circle, #462)
   if (x1 === x2 && y1 === y2) return [];
@@ -1240,7 +1251,7 @@ function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2){
   const t1 = ang(1, 0, (x1p - cxp)/rx, (y1p - cyp)/ry);
   let dt = ang((x1p - cxp)/rx, (y1p - cyp)/ry, (-x1p - cxp)/rx, (-y1p - cyp)/ry);
   if (!fs && dt > 0) dt -= 2*Math.PI; else if (fs && dt < 0) dt += 2*Math.PI;
-  const segs = Math.max(1, Math.ceil(Math.abs(dt) / (Math.PI/4) - 1e-9)), del = dt / segs, k = 4/3 * Math.tan(del/4);
+  const {n:segs, step:del, k} = arcSteps(dt);
   const map = (u, v) => [cx + rx*cp*u - ry*sp*v, cy + rx*sp*u + ry*cp*v];
   const out = [];
   for (let s = 0; s < segs; s++) {
@@ -1375,16 +1386,32 @@ function placeMatrix(tx, ty, deg, kx, ky, cx, cy){
 const n3 = v => { const r = Math.round(v * 1000) / 1000; return Object.is(r, -0) ? "0" : String(r); };
 const slug = s => (s.replace(/\.(svg|dxf)$/i, "").replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "part").replace(/^(\d)/, "p$1");
 function uniquifyIds(markup, prefix){
-  // give every id in original markup a per-instance prefix and rewrite url(#id), href="#id" and #id in <style>
-  const has = new Set([...markup.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]));
+  // give every id in original markup a per-instance prefix and rewrite url(#id), href="#id" and #id in <style>. It works on
+  // the parsed markup and touches attributes and <style> text only, so a <text> that merely contains id="x" or url(#x) keeps its
+  // words and adds no id (#500). The markup comes from XMLSerializer, so it parses as XML.
+  if (!/\sid="[^"]/.test(markup)) return markup;
+  const doc = new DOMParser().parseFromString(`<svg xmlns="${SVGNS}">${markup}</svg>`, "image/svg+xml");
+  if (doc.querySelector("parsererror")) return markup;
+  const all = [...doc.getElementsByTagName("*")];
+  const has = new Set(all.map(el => el.getAttributeNode("id")).filter(a => a && a.value).map(a => a.value));
   if (!has.size) return markup;
-  // one pass per pattern, each match looked up in the set of ids: the cost grows with the markup, not ids x markup (#461).
+  // each pattern is one pass over a value, each match looked up in the set of ids: the cost grows with the markup, not ids x markup (#461).
   // The id stops at a delimiter, so a run of url(# with no ) can't make each opener rescan to the end of the line (#498).
   // Replacer functions, not replacement strings: a $ in an id ($', $&, $1…) must not expand (#76)
-  markup = markup.replace(/(\sid=")([^"]+)(")/g, (m, a, id, z) => a + prefix + id + z)
-    .replace(/url\(\s*(['"]?)#([^()\s"]*)\1\s*\)/g, (m, q, id) => has.has(id) ? `url(#${prefix}${id})` : m)
-    .replace(/(href\s*=\s*(["']))#(.*?)\2/g, (m, a, q, id) => has.has(id) ? a + "#" + prefix + id + q : m);
-  return markup.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/g, (m, a, css, z) => a + renameSelectors(css, (k, id) => k === "#" && has.has(id) ? prefix + id : null) + z);
+  const urls = v => v.replace(/url\(\s*(['"]?)#([^()\s"]*)\1\s*\)/g, (m, q, id) => has.has(id) ? `url(#${prefix}${id})` : m);
+  for (const el of all) {
+    for (const a of [...el.attributes]) {
+      if (a.name === "id" && a.value) a.value = prefix + a.value;
+      else if (a.localName === "href" && a.value[0] === "#" && has.has(a.value.slice(1))) a.value = "#" + prefix + a.value.slice(1);
+      else if (a.value.includes("url(")) a.value = urls(a.value);
+    }
+    if (el.localName === "style" && el.namespaceURI === SVGNS) {
+      const css = renameSelectors(urls(el.textContent), (k, id) => k === "#" && has.has(id) ? prefix + id : null);
+      if (css !== el.textContent) el.textContent = css;
+    }
+  }
+  const ser = new XMLSerializer();
+  return [...doc.documentElement.children].map(n => ser.serializeToString(n)).join("");
 }
 // whether point q ([x, y]) is inside the ring poly ([[x, y], …]), by the even-odd rule
 function insideRing(q, poly){
@@ -2489,7 +2516,7 @@ function workerSource(){
   if (typeof Worker !== "function" || !CL || !clipperSrc || !clipperSrc.integrity) return srcP = Promise.resolve(null);
   const p = srcP = (async () => {
     try {
-      const res = await fetch(clipperSrc.url, {integrity:clipperSrc.integrity});
+      const res = await fetch(clipperSrc.url, {integrity:clipperSrc.integrity, signal:AbortSignal.timeout(10000)});   // a stalled CDN fetch ends like a failed one
       // the app's own code runs strict in the worker too, as in the page (#289); clipper-lib before it stays as it is
       if (res.ok) return `${await res.text()}\n;(function(){ "use strict"; (${searchWorker})(self, ${nestCore}, ${SC}); })();\n`;
       console.warn(`SnugCut: the search worker's clipper-lib fetch gave HTTP ${res.status}; searching on the page.`);
@@ -2640,6 +2667,7 @@ async function searchParts(st, o){
 
 /* ---------- bounding-box mode: MaxRects packing ---------- */
 const EPS = 1e-7;
+const RECT_HEURISTICS = 4;   // the placement rules RectBin.find knows, numbered from 0
 let rectWork = 0;   // free-rectangle comparisons so far: the deterministic cost of a pack, for computeRectLayout's swap search
 class RectBin {
   constructor(W, H){ this.W = W; this.H = H; this.free = [{x:0,y:0,w:W,h:H}]; this.used = []; this.area = 0; }
@@ -2652,7 +2680,7 @@ class RectBin {
       if (heur === 0) { s1 = Math.min(lw, lh); s2 = Math.max(lw, lh); }        // best short side
       else if (heur === 1) { s1 = Math.max(lw, lh); s2 = Math.min(lw, lh); }   // best long side
       else if (heur === 2) { s1 = f.w*f.h - ww*hh; s2 = Math.min(lw, lh); }    // best area
-      else { s1 = f.y + hh; s2 = f.x; }                                        // bottom-left
+      else { s1 = f.y + hh; s2 = f.x; }                                        // bottom-left (3, the last)
       if (!best || s1 < best.s1 - EPS || (Math.abs(s1 - best.s1) <= EPS && s2 < best.s2)) best = {x:f.x, y:f.y, w:ww, h:hh, rot, s1, s2};
     };
     rectWork += 20 + this.free.length;   // the scan, plus about what a call and a bin cost besides
@@ -2701,7 +2729,7 @@ function computeRectLayout(parts){
   const idx = items.map((_, i) => i);
   for (const key of keys) {
     const order = [...idx].sort((a, b) => key(items[b]) - key(items[a]));
-    for (let h = 0; h < 4; h++) {
+    for (let h = 0; h < RECT_HEURISTICS; h++) {
       const bins = rectPackOnce(items, order, h, W, H), sc = score(bins, plateA);
       if (!best || better(sc, bestScore)) { best = bins; bestScore = sc; bestOrder = {order, h}; }
     }
@@ -2715,7 +2743,7 @@ function computeRectLayout(parts){
   for (let k = 0; k < SWAP_TRIES && rectWork < stop; k++) {
     const o = cur.slice(), n = o.length, a = Math.floor(rnd()*n), b = Math.floor(rnd()*n);
     [o[a], o[b]] = [o[b], o[a]];
-    const h = rnd() < 0.8 ? curH : Math.floor(rnd()*4);
+    const h = rnd() < 0.8 ? curH : Math.floor(rnd()*RECT_HEURISTICS);
     const bins = rectPackOnce(items, o, h, W, H), sc = score(bins, plateA);
     if (!better(bestScore, sc)) { cur = o; curH = h; if (better(sc, bestScore)) { best = bins; bestScore = sc; } }
   }
@@ -2839,7 +2867,7 @@ function plateDXF(plate){
     // 0.01 mm, the precision the file promises (#366): a tolerance growing with the radius took curves that are only
     // nearly circular, a 100 × 99.9 mm ellipse quarter 0.036 mm off, as arcs. True circles and arcs, which every SVG
     // arc, circle and rounded corner is drawn with, match it to rounding
-    const k = 4 / 3 * Math.tan(th / 4), q1 = [ax - k * (ay - oy), ay + k * (ax - ox)], q2 = [cx + k * (cy - oy), cy - k * (cx - ox)];
+    const k = arcK(th), q1 = [ax - k * (ay - oy), ay + k * (ax - ox)], q2 = [cx + k * (cy - oy), cy - k * (cx - ox)];
     const S = t => { const u = 1 - t; return [u*u*u*ax + 3*u*u*t*q1[0] + 3*u*t*t*q2[0] + t*t*t*cx, u*u*u*ay + 3*u*u*t*q1[1] + 3*u*t*t*q2[1] + t*t*t*cy]; };
     for (const t of [0.15, 0.3, 0.5, 0.7, 0.85]) { const q = B(t), w = S(t); if (Math.hypot(q[0] - w[0], q[1] - w[1]) > 0.01) return null; }
     return Math.tan(th / 4);
@@ -3484,6 +3512,7 @@ function showStale(){
   $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st || busy);
     b.title = st ? t("plate.staleTitle") : busy ? t("plate.busyTitle") : ""; });
   $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
+  $("dlAll").title = st ? t("plate.staleTitle") : "";
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
 const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";
@@ -3509,7 +3538,8 @@ function exportPlate(i){
   } catch(e) { exportFailed(e); }
 }
 $("dlAll").onclick = async () => {
-  if (!layout || layout.stale || !window.JSZip) return;
+  if (layout && layout.stale) { say(t("plate.staleTitle")); return; }   // aria-disabled still takes the click: say why nothing happens
+  if (!layout || !window.JSZip) return;
   try {
     const zip = new JSZip();
     const notes = new Set();
