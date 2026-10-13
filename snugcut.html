@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2ToCrTLUKbxWRcAqqVHbA/TaMDlwHog5aQ4LmxUzz0Q=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1teT3jSw4SZz1riLrK0OuaQCYq4a7gsGDHt2BsJNZ4g=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -295,7 +295,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.10-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.11-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2483,12 +2483,13 @@ let srcP = null, pool = [], broken = false, workersQ = Promise.resolve(null), wo
 function workerSource(){
   // clipper-lib's text, fetched with the page's own SRI hash, and the search code: or null where that fails. A null
   // from a failed fetch (offline, an SRI mismatch) is logged and not kept, so the next run tries again; one from a
-  // browser without workers or a page without clipper-lib stays, as retrying can't change it (#472)
+  // browser without workers or a page without clipper-lib stays, as retrying can't change it (#472). Without a hash the
+  // code isn't fetched at all, since the worker would run whatever the URL serves (#499)
   if (srcP) return srcP;
-  if (typeof Worker !== "function" || !CL || !clipperSrc) return srcP = Promise.resolve(null);
+  if (typeof Worker !== "function" || !CL || !clipperSrc || !clipperSrc.integrity) return srcP = Promise.resolve(null);
   const p = srcP = (async () => {
     try {
-      const res = await fetch(clipperSrc.url, clipperSrc.integrity ? {integrity:clipperSrc.integrity} : {});
+      const res = await fetch(clipperSrc.url, {integrity:clipperSrc.integrity});
       // the app's own code runs strict in the worker too, as in the page (#289); clipper-lib before it stays as it is
       if (res.ok) return `${await res.text()}\n;(function(){ "use strict"; (${searchWorker})(self, ${nestCore}, ${SC}); })();\n`;
       console.warn(`SnugCut: the search worker's clipper-lib fetch gave HTTP ${res.status}; searching on the page.`);
@@ -2529,7 +2530,7 @@ function getWorkers(){
 }
 // start building the workers early, while the page loads. src = {url, integrity}: where the page loaded clipper-lib
 // from, and its SRI hash, which the worker loads it with; the library doesn't look for it in the page (#295). Without
-// it, the search runs on the page.
+// either, the search runs on the page.
 const startWorker = src => { if (src && src.url) clipperSrc = {url:String(src.url), integrity:String(src.integrity || "")}; getWorkers().catch(() => null); };
 // a worker's placements (uid, angle, x, y) back into bins, with the page's own core
 const rebuild = (bins, byUid) => bins.map(b => { const bin = core.newBin(); for (const [uid, ang, x, y] of b) core.addTo(bin, shape(byUid.get(uid), ang), {x, y}); return bin; });
