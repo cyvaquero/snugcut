@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tAWq1NSu3dDfdtqxkQUT9U46T80a+3tCxyPnFOAkSPI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-k/wiG3eMaCKsMXFv+m+RyaFykKaQ2ajgZs3KrB2fM8U=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -295,7 +295,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.8-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.5.9-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -787,7 +787,7 @@ function dxfToSVG(text, name, opts = {}){
       const X = (M[0]*x + M[2]*y + M[4]) * k, Y = -(M[1]*x + M[3]*y + M[5]) * k;
       if (!(Math.abs(X) <= COORD_LIMIT && Math.abs(Y) <= COORD_LIMIT)) throw fail("dxf.tooLarge", {name, limit:COORD_LIMIT});   // also not finite (#458)
       x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); return [X, Y]; };
-    const ell = (cx, cy, ax, ay, bx, by, ta, tb, move) => {
+    const ell = (cx, cy, ax, ay, bx, by, ta, tb, move, end) => {
       // elliptical arc C + A cos t + B sin t from ta to tb, as cubics (≤ 45° each, error about 4e-6 × the radius, #462)
       const n = Math.max(1, Math.ceil(Math.abs(tb - ta) / (Math.PI / 4) - 1e-9)), dt = (tb - ta) / n, h = 4 / 3 * Math.tan(dt / 4);
       const pt = t => [cx + ax*Math.cos(t) + bx*Math.sin(t), cy + ay*Math.cos(t) + by*Math.sin(t)];
@@ -795,14 +795,15 @@ function dxfToSVG(text, name, opts = {}){
       if (move) d.push(["M", P(...pt(ta))]);
       for (let j = 0; j < n; j++) {
         const s = ta + j*dt, e = s + dt, [px, py] = pt(s), [qx, qy] = pt(e), [ux, uy] = dv(s), [vx, vy] = dv(e);
-        d.push(["C", P(px + h*ux, py + h*uy), P(qx - h*vx, qy - h*vy), P(qx, qy)]);
+        d.push(["C", P(px + h*ux, py + h*uy), P(qx - h*vx, qy - h*vy), end && j === n - 1 ? P(...end) : P(qx, qy)]);   // end: an exact vertex (#497)
       }
     };
     const bulgeTo = (ax, ay, bx, by, bu) => {
-      if (!bu || (ax === bx && ay === by)) { d.push(["L", P(bx, by)]); return; }
+      // no bulge, or CAD float noise such as 2e-16 (its arc's center would be ~1e17 mm away): a straight line (#497)
+      if (!(Math.abs(bu) >= 1e-9) || (ax === bx && ay === by)) { d.push(["L", P(bx, by)]); return; }
       const th = 4 * Math.atan(bu), ch = Math.hypot(bx - ax, by - ay), off = ch / 2 / Math.tan(th / 2), r0 = ch / 2 / Math.sin(th / 2);
       const cx = (ax + bx) / 2 - (by - ay) / ch * off, cy = (ay + by) / 2 + (bx - ax) / ch * off, s = Math.atan2(ay - cy, ax - cx), rr = Math.abs(r0);
-      ell(cx, cy, rr, 0, 0, rr, s, s + th, false);
+      ell(cx, cy, rr, 0, 0, rr, s, s + th, false, [bx, by]);
     };
     const poly = (vs, closed) => {                                             // vs: [[x, y, bulge]]
       if (vs.length < 2) return;
