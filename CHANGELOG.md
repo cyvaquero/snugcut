@@ -4,6 +4,56 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.0-beta
+
+Release of 1.5.1-beta through 1.5.8-beta, with the fixes from the release review (1.5.9-beta through 1.5.12-beta).
+
+### Changed
+
+- Bounding box's swap search after the MaxRects packing now runs for a fixed amount of packing work (about 350 ms for
+  the sample parts, under half a second for thousands of parts) instead of 350 ms of clock time, so the same parts and
+  settings give the same layout on a fast or a slow machine, or under load. Layouts can differ once from earlier
+  versions; the README describes the search (#460).
+
+### Fixed
+
+- Circles, ellipses, arcs and rounded corners are exported as curve segments of at most 45° instead of 90°, so they
+  follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle (it was up to
+  0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs are slightly
+  larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
+- A DXF polyline segment with a near-zero bulge (CAD rounding noise such as 2.2e-16 in group code 42) is imported as a
+  straight line, so the part keeps its drawn size instead of coming out wider (a 100 mm rectangle imported at 107 mm),
+  and every bulge arc ends exactly on its vertex (#497).
+- The confirmation that appears after a download or a kerf change ("Saved plate-01-of-01.svg") has a Dismiss button, so
+  a pointer, touch or keyboard user can close it. It stays while the pointer is over it or focus is inside it, and Esc
+  closes it. Opening it doesn't move focus, and closing it with the button returns focus to where it was. Screen
+  readers hear the text once (#464, #455).
+- At a width of 480 px or less (a phone, or 400% zoom) the settings fields stack in one column, so the full text of
+  each choice and the prefix placeholder show instead of being cut off; wider layouts are unchanged (#463). The plate
+  previews no longer force a horizontal scroll below 300 px (#455).
+- With JavaScript turned off, the page says that SnugCut needs it instead of showing controls that do nothing (#454).
+- The notice for a part with too many crossing lines also covers lines that meet at one point, such as a star or
+  sunburst (#465).
+- If fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in the browser
+  console and tries again on the next run instead of searching on the page for the rest of the session. A worker that
+  can't start at all (blocked or unsupported) is logged too and still falls back once (#472).
+
+### Security
+
+- A CDATA section in an imported SVG (`<![CDATA[…]]>`) is turned into plain text on import, so an exported plate
+  escapes it instead of writing it back as is. Markup inside one, such as `</text><img onerror=…>`, can no longer
+  become live elements if the exported SVG is later inlined into an HTML page. CSS in a CDATA section (as Illustrator
+  and Inkscape write it) still styles the part the same way (#453).
+- A file with thousands of ids (Inkscape and Illustrator can put one on every element) no longer makes every plate
+  preview and export slow when its part is kept as original markup (text, images, `<use>`, filters): the ids are
+  rewritten in one pass, so 16,000 ids take well under 100 ms per plate instead of about 5 seconds. The exported markup
+  is unchanged (#461).
+- A crafted SVG with a long run of `url(#` inside a part kept as original markup no longer makes every preview and
+  export of that part take seconds to minutes; it takes milliseconds. References to ids are rewritten as before (#498).
+- A program using `lib/snugcut.js` that calls `startWorker` with a URL but no integrity hash gets the search on the
+  page, instead of search workers running clipper-lib fetched without an integrity check. The app always passed the
+  hash, so it is unchanged (#499).
+
 ## 1.5.0-beta
 
 Release of 1.4.6-beta through 1.4.46-beta (1.4.34-beta was not used), with the fixes from the release review

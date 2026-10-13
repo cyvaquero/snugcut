@@ -10,9 +10,8 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - `app/index.html`, `app/snugcut.css`, `app/app.js`: the app split into page, styles and UI code. `app.js` is an ES
   module that imports the library. Served over HTTP only: `file://` (modules don't load) and Node are out of scope.
 - `app/strings-en.js`: the text of every message `app.js` shows, by key (`t("key", {values})`), in whole sentences with
-  `{name}` and `{n, plural, …}` placeholders; the page's own text stays in `index.html`, marked with `data-t` keys
-  (#128). New UI text goes there, never inline. The build fails on a key that is used but missing, or defined but
-  unused.
+  `{name}` and `{n, plural, …}` placeholders; the page's own text stays in `index.html`, marked with `data-t` keys.
+  New UI text goes there, never inline. The build fails on a key that is used but missing, or defined but unused.
 - `snugcut.html`: **generated** from `app/` and `lib/` by `python3 tools/build.py`. Never edit it by hand. Edit the
   sources, run the script, and commit the sources and the regenerated `snugcut.html` together;
   `python3 tools/build.py --check` fails when it is out of date.
@@ -20,23 +19,20 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 ## Rules
 
 - **No Node app**: no npm, package.json, TypeScript or bundler. The only build step is `tools/build.py` (Python 3,
-  standard library only), which inlines `app/` and `lib/` into `snugcut.html`; keep it small and dependency-free.
-  Libraries come in by `<script>` tag, as in the original reference apps (clipper-lib 6.4.2, jszip 3.10.1), with
-  Subresource Integrity.
+  standard library only), which inlines `app/` and `lib/` into `snugcut.html`. Don't add tooling, dependencies or build
+  steps without asking. Libraries come in by `<script>` tag (clipper-lib 6.4.2, jszip 3.10.1) with Subresource
+  Integrity.
 - **CSP**: `app/index.html` carries its own Content-Security-Policy `<meta>`, as strict as `snugcut.html`'s plus
   `'self'` for its own module and stylesheet. Any new or changed library/CDN URL goes into both: edit the CSP in
-  `app/index.html`, and the build writes it into `snugcut.html` (minus `'self'`). Otherwise the browser blocks it.
-  clipper-lib's URL is also in `connect-src`: the search worker (#4, `worker-src blob:`) fetches it with the script
-  tag's integrity hash.
+  `app/index.html`, and the build writes it into `snugcut.html` (minus `'self'`). clipper-lib's URL is also in
+  `connect-src`: the search worker (`worker-src blob:`) fetches it with the script tag's integrity hash.
   `script-src` never allows `'unsafe-inline'`: the build puts the sha256 hash of `snugcut.html`'s one inline script into
-  its `script-src` on every run, so injected inline handlers can't run. Never add inline `on…=` handlers or
-  `javascript:` URLs; attach handlers in `app.js`.
+  its `script-src` on every run. Never add inline `on…=` handlers or `javascript:` URLs; attach handlers in `app.js`.
 - **Exports must not change by accident**: a structural or refactoring change must leave SVG and DXF exports from
-  `snugcut.html` byte-identical. Run the [fixture regression](RELEASING.md#fixture-regression) (`python3 tools/regression.py`:
-  every fixture, SVG and DXF, compensation off and on, and the sample nests) and report it.
+  `snugcut.html` byte-identical. Run the [fixture regression](RELEASING.md#fixture-regression) (`python3 tools/regression.py`)
+  and report it; CI runs it too. A change meant to alter exports adds a PR body line `Export changes: …` (entries, why).
 - **Verify before claiming a fix works**: run the real code (a headless browser or scripts kept outside the repo) and
-  compare before and after; say what was verified and what wasn't. Don't add tooling, dependencies or build steps
-  without asking.
+  compare before and after; say what was verified and what wasn't.
 - **Git-flow**: `main` + `develop`, and only `feature/`, `bugfix/`, `release/`, `hotfix/` and `support/` branches, one
   change per branch and PR.
   - `feature/` and `bugfix/` branch off `develop`, with PRs into `develop`. Fixes during a release go on `bugfix/`
@@ -47,98 +43,45 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
     branch locally and on origin.
   - The GitHub default branch is `main`, so only PRs into `main` close issues automatically. Close the others by hand
     with "Fixed in #PR (X.Y.Z)".
-- **Versioning** `#.#.#` (major.minor.iterative), kept in the page footer (`app/index.html`, built into `snugcut.html`)
-  and `CHANGELOG.md`:
-  - major: only bumped when the user explicitly says so; zeroes minor and iterative.
-  - minor: only bumped when the user explicitly says so; keeps major, zeroes iterative.
-  - the bump to `X.Y.0` happens only when a release is finished, on the release branch just before it merges into
-    `main` ([RELEASING.md](RELEASING.md) section 4); cutting the release branch doesn't bump the version.
-  - iterative: bump automatically with every change (once per change, not per commit: follow-up commits on an unmerged
-    PR keep its version).
-  - pre-release suffix: a `-beta` (or similar) suffix follows the number only when the user asks for it. It stays on
-    every later version, and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta…), until the user says to
-    drop it. Once dropped, a suffix comes back only for a major rewrite of what the app does or how it works.
-  - every change gets a `CHANGELOG.md` entry saying what changed for the user, with its issue numbers. Follow-up fixes
-    on an unmerged PR update that entry instead of adding one.
-- **Releases** follow [RELEASING.md](RELEASING.md). A `release/*` branch is cut only when the user says so, never
-  automatically, and the maintainer names the version. Before cutting it, ask whether to run a code efficiency review
-  and optimization first. After cutting it, run the blind review prompt in that file. Finishing a release (merge into
-  `main`, tag `<version>` (no `v` prefix), merge back into `develop`) needs the maintainer's approval.
-  A major or minor release consolidates `CHANGELOG.md` with its `X.Y.0` bump at the merge into `main`, as described in
-  [CHANGELOG consolidation at release](#changelog-consolidation-at-release).
-- **Findings become issues**: every code-review, bug, security, documentation, accessibility and best-practice finding is
-  filed as a GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md) (plain
-  title; a type label, `code-review` when it came from a review, and one `severity:*` label, never above `severity:medium` for
-  best-practice findings; Severity, CVE and CWE lines; Repro, Root cause, Fix and Acceptance). Check `gh issue list --state all` for duplicates first. Parked issues get the `deferred`
-  label.
+- **Versioning** `major.minor.iterative`, kept in the page footer (`app/index.html`, built into `snugcut.html`) and
+  `CHANGELOG.md`:
+  - major and minor change only when the user explicitly says so; major zeroes minor and iterative, minor zeroes
+    iterative. The bump to `X.Y.0` happens only when a release is finished, on the release branch just before it
+    merges into `main` ([RELEASING.md](RELEASING.md) section 4); cutting the branch doesn't bump.
+  - iterative: bumped automatically once per change, not per commit; follow-up commits on an unmerged PR keep its
+    version and update its CHANGELOG entry.
+  - hotfixes are numbered `X.Y.Z.H` (H counts the hotfixes on release X.Y.Z and is omitted while zero, as in
+    `1.4.0.1-beta`). A hotfix bumps only H, has its own CHANGELOG section and tag, and develop keeps its own version
+    when the hotfix merges back.
+  - a `-beta` (or similar) suffix follows the number only when the user asks for it. It stays on every later version,
+    and the iterative number keeps bumping (1.1.0-beta → 1.1.1-beta…), until the user says to drop it. Once dropped,
+    it comes back only for a major rewrite of what the app does or how it works.
+  - every change gets a `CHANGELOG.md` entry saying what changed for the user, with its issue numbers.
+- **Releases** follow [RELEASING.md](RELEASING.md). Cut a `release/*` branch only when the user says so and names the
+  version; before cutting, ask whether to run a code efficiency review and optimization; after cutting, run the blind
+  review prompt in that file. Finishing (merge into `main`, tag `<version>` with no `v` prefix, merge back into
+  `develop`) needs the maintainer's approval. A major or minor release also consolidates `CHANGELOG.md`, as
+  [RELEASING.md](RELEASING.md#changelog-consolidation-at-release) describes.
+- **Findings become issues**: every code-review, bug, security, documentation, accessibility and best-practice finding
+  is filed as a GitHub issue before it is reported, in the format of section 3 of [RELEASING.md](RELEASING.md); a
+  best-practice finding is never above `severity:medium`. Check `gh issue list --state all` for duplicates first.
+  Parked issues get the `deferred` label.
 - **QA and hardware**: the maintainer tests physical cuts on a WeCreat Vision Pro (MakeIT) and a Silhouette Cameo 4
-  only; anything else can be checked in software only. The export QA issues (LightBurn #49, Bambu Suite #50, xTool
-  Studio #51, Silhouette Studio #52, Creality Print #132, Cricut Design Space #133) are owned by named testers: never
+  only; anything else can be checked in software only. The export QA issues, one per cutter app (LightBurn, Bambu
+  Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space), are owned by named testers: never
   label them `deferred` or `help wanted`. Each issue links its Word workbook in `qa/`, generated by
   `python3 tools/qa_workbooks.py` (`--check` fails when one is out of date): edit the tests and `VERSION` there,
-  never the `.docx` files. When a release is tagged while those issues are open, set `VERSION` to it (the workbooks
-  link the tag's source zip, which exists only once the tag does), check every expected result against that release,
-  regenerate, and update the issues' version, on a `feature/` branch as [RELEASING.md](RELEASING.md) describes.
+  never the `.docx` files. A test's expected result is also checked by the fixture regression. At release prep, set
+  `VERSION` to the release and regenerate; after the tag, update the issues' bodies ([RELEASING.md](RELEASING.md) §4).
 - **No stored or uploaded user data**: everything stays in the browser. Don't add features that keep or send the user's
   information (presets, history, recent files, accounts, sync, analytics). Remembering the last-used settings in
   `localStorage` (`snugcut.settings`, validated on load) is the one exception.
 - **Units**: all internal lengths are mm, and mm is the default unit in every locale; inches only by the user's choice.
 - **License**: AGPL-3.0-or-later, copyright Guy Heckman (`LICENSE`). Every source file starts with the SPDX identifier
-  and copyright notice (`// SPDX-License-Identifier: AGPL-3.0-or-later`, or an HTML comment in `app/index.html`); add
-  it to new source files. A new library must have a license compatible with the AGPL and be listed in the README's
-  License section.
+  and copyright notice (`// SPDX-License-Identifier: AGPL-3.0-or-later`, or an HTML comment in `app/index.html`). A new
+  library must have a license compatible with the AGPL and be listed in the README's License section.
 - **American English** in all text: UI, docs, CHANGELOG, code comments, fixture names and comments (color, behavior,
   recognize, millimeters, …). HTML/ARIA names keep their spec spelling (`aria-labelledby`).
 - **Git identity**: commit as the GitHub no-reply address only, never a personal email (the repo is public). The
   identity lives in this clone's `.git/config`. Sandboxed sessions may not be able to read `~/.gitconfig`: run git with
   `GIT_CONFIG_GLOBAL` set to a file holding only the gh credential helper.
-
-## CHANGELOG consolidation at release
-
-When a release bumps the major or minor version, squash the iterative entries
-it covers into that version's section. This happens with the `X.Y.0` bump at
-the merge into `main`, not at the cut. The individual `x.y.N` headings are
-removed from the file; git history keeps them.
-
-Scope:
-- The squash covers every iterative entry from the previous major or minor
-  heading down to (not including) this one.
-- A bump with no feature content of its own still consolidates the range below
-  it. "Same features as <previous>" is not a reason to skip it.
-- Never touch a section at or below an already-consolidated heading.
-
-Backfill:
-- Before consolidating the current release, walk the file for earlier major or
-  minor headings whose range still has loose `x.y.N` entries under it. Squash
-  each, same rules, oldest first.
-- A heading is already consolidated when no `x.y.N` headings remain between it
-  and the next major or minor heading below. Don't re-process those.
-- Report what you backfilled, separately from the current release.
-
-How to squash:
-- Group under Keep a Changelog headings in this order: Added, Changed,
-  Deprecated, Removed, Fixed, Security. Omit empty groups.
-- One bullet per user-visible outcome, not per iterative entry or per PR.
-  Several entries that moved one feature forward collapse into the single
-  sentence describing where it landed.
-- Carry every issue number forward. A merged bullet cites all of them:
-  `(#12, #19, #23)`. Losing a reference is a defect.
-- Write the end state, not the journey. An add-then-fix pair inside the range
-  becomes the end state alone, since no user saw the intermediate.
-- Every security entry in the range gets a bullet. Security is not subject to
-  the merging and dropping rules above — under-reporting hardening in a public
-  repo is a defect.
-- Drop entries with no user-facing effect (test fixtures with no app change,
-  internal reorganization, docs-only corrections) unless they changed behavior,
-  defaults, or output.
-- Preserve the exact wording of any entry that already reads as a release-level
-  statement rather than rewriting it for style.
-- Keep measured figures (timings, percentages, dimensions) where the entry gave
-  them; they're the evidence the change was verified.
-
-Constraints:
-- Do not renumber, re-date, or reorder released sections.
-- Do not invent entries. If a referenced issue number has no matching iterative
-  entry, stop and ask rather than reconstructing from the diff.
-- Report per range: range covered, entries in, bullets out, and anything
-  dropped with the reason.
