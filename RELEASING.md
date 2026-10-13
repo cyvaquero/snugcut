@@ -183,7 +183,8 @@ mismatches still fail), and `--no-sandbox` starts Chrome without its sandbox, fo
 URLs in `app/index.html`, fails if their sha384 differs from the page's integrity hashes, and passes them with
 `--libs`. A page script error therefore fails the check, as does any difference from the base. A pull request that is
 meant to alter exports has a line starting `Export changes:` in its body (the entries that change and why); the job then
-passes `--allow-diff`, and the differences are listed in its log. On a push it always does.
+passes `--allow-diff`, and the differences are listed in its log. Editing the pull request's title or body runs the
+check again with the new body; re-running a finished job doesn't, since it reuses the old one. On a push it always does.
 
 **What it does to each build** (the same to both, in a temporary folder): replaces the page's startup `run(…)` (the
 last statement of its script, after `renderParts()`) with its test, which calls the library and app functions directly,

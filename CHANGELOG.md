@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.8-beta
+
+- **Fixed:** adding the `Export changes:` line to the body of an open pull request now runs the fixture regression check
+  again with the new body, so the check can pass without a new push; re-running the failed job had checked the old
+  body (#495).
+
 ## 1.5.7-beta
 
 - **Fixed:** the confirmation that appears after a download or a kerf change ("Saved plate-01-of-01.svg") now has a
