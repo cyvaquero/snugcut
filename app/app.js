@@ -469,6 +469,7 @@ function showStale(){
   $("plates").querySelectorAll(".plate .hd button").forEach(b => { b.setAttribute("aria-disabled", st || busy);
     b.title = st ? t("plate.staleTitle") : busy ? t("plate.busyTitle") : ""; });
   $("dlAll").setAttribute("aria-disabled", st);   // aria-disabled, not disabled: a focused button keeps focus (#95)
+  $("dlAll").title = st ? t("plate.staleTitle") : "";
 }
 const fname = i => `${filePrefix()}plate-${String(i+1).padStart(2,"0")}-of-${String(layout.plates.length).padStart(2,"0")}.${ext()}`;
 const zipName = () => filePrefix() ? `${filePrefix()}plates.zip` : "nested-plates.zip";
@@ -494,7 +495,8 @@ function exportPlate(i){
   } catch(e) { exportFailed(e); }
 }
 $("dlAll").onclick = async () => {
-  if (!layout || layout.stale || !window.JSZip) return;
+  if (layout && layout.stale) { say(t("plate.staleTitle")); return; }   // aria-disabled still takes the click: say why nothing happens
+  if (!layout || !window.JSZip) return;
   try {
     const zip = new JSZip();
     const notes = new Set();
