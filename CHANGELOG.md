@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.12-beta
+
+- **Changed:** release prep for 1.6.0-beta: the export QA workbooks in `qa/` now test SnugCut 1.6.0-beta and link its
+  source zip. Documentation corrections from the release's documentation review: the README's search comparison no
+  longer quotes figures measured on older versions, says where the Nesting mode switch is, and lists the CI workflows
+  and license in its Files table; `fixtures/README.md` names every fixture file (#500).
+
 ## 1.5.11-beta
 
 - **Security:** a program using `lib/snugcut.js` that calls `startWorker` with a URL but no integrity hash now gets the
@@ -72,10 +79,6 @@ a major rewrite of what the app does or how it works.
   (about 350 ms for the sample parts, under half a second for thousands of parts) instead of 350 ms of clock time, so the
   same parts and settings give the same layout on a fast or a slow machine, or under load. Layouts can differ once
   from earlier versions; the README describes the search (#460).
-- **Fixed:** circles, ellipses, arcs and rounded corners are now exported as curve segments of at most 45° instead of
-  90°, so they follow the drawn shape more closely: a circle of 500 mm radius is within 0.002 mm of the true circle
-  (it was up to 0.14 mm off), and small ones were already within 0.03 mm. The SVG and DXF files of anything with arcs
-  are slightly larger (eight segments, or eight arcs in a DXF, per circle instead of four) (#462).
 - **Fixed:** if fetching clipper-lib for the search worker fails once (a network blip, a bad hash), the app logs it in
   the browser console and tries again on the next run instead of searching on the page for the rest of the session. A
   worker that can't start at all (blocked or unsupported) is logged too and still falls back once (#472).
