@@ -5,12 +5,14 @@
 # branch's (the previous commit on a push), along with the QA workbook tests' expected results. The two libraries come
 # from the CDN URLs the app uses and must match the integrity hashes in app/index.html. The search worker can't start
 # from a file, so the nests run on the page only. A change meant to alter exports says so in its pull request body with
-# a line starting "Export changes:" (CLAUDE.md); the differences are then listed but don't fail the check. On a push
-# they never do, since the pull request already vetted them. Python 3 standard library only.
+# a line starting "Export changes:" (CLAUDE.md); the differences are then listed but don't fail the check. Editing the
+# pull request runs the check again with the new body (re-running a finished job reuses the old one). On a push they
+# never do, since the pull request already vetted them. Python 3 standard library only.
 name: Fixture regression
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main, develop]
 
