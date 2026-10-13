@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50mm" height="20mm" viewBox="0 0 50 20">
+  <!-- CDATA sections (#453): the one in <text> holds markup that would be live if an exported plate were inlined into an
+       HTML page, so it must export as escaped text; the one in <style> is how Illustrator and Inkscape write their CSS
+       (a child combinator), and the rect must stay red-outlined with no fill. -->
+  <style><![CDATA[
+    g > rect { fill: none; stroke: #f00; stroke-width: 0.2; }
+  ]]></style>
+  <g><rect width="50" height="20"/></g>
+  <text x="5" y="12" font-size="4" fill="#00f"><![CDATA[</text><img src=x onerror=alert(1)>]]></text>
+</svg>

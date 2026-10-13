@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100" fill="none" stroke="#ff0000" stroke-width="0.2">
+  <!-- Overlapping closed shapes drawn in opposite directions (#456): the outline is their union, so the part's area is
+       the square plus the half circle outside it (about 1953 mm2 for the top pair), not a pinched polygon that leaves
+       the overlap out. Below: two circles drawn with opposite arc sweeps. -->
+  <rect x="10" y="10" width="40" height="40"/>
+  <circle cx="50" cy="30" r="15"/>
+  <path d="M15 75A15 15 0 1 1 45 75A15 15 0 1 1 15 75Z"/>
+  <path d="M30 75A15 15 0 1 0 60 75A15 15 0 1 0 30 75Z"/>
+</svg>

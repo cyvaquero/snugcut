@@ -45,7 +45,7 @@ Launch 5 independent subagents in ONE message, in the background. Give each the 
 
 The five reviewers:
 1. **Code correctness**: wrong output, crashes, lost parts, units/scale, overlaps in nesting, export geometry, DXF import/export, kerf/gap/margin math, rotation, UI state/race bugs, edge cases. The SVG export format is verified in WeCreat MakeIT and must not change, but wrong values inside it are in scope.
-2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, RELEASING.md, fixtures/**/README.md, the UI text (the page text in app/index.html and every message in app/strings-en.js: labels, hints, messages, footer) and the QA workbook tests in tools/qa_workbooks.py (steps and expected results) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
+2. **Documentation**: check every claim in README.md, CHANGELOG.md, CLAUDE.md, RELEASING.md, fixtures/README.md, the UI text (the page text in app/index.html and every message in app/strings-en.js: labels, hints, messages, footer) and the QA workbook tests in tools/qa_workbooks.py (steps and expected results) against the code: features, defaults, formats, limits, fixtures referenced vs present, version consistency (footer vs top CHANGELOG entry), stale names and links, contradictions, undocumented features, spelling consistency (the project uses American English; any British spelling is a finding).
 3. **Security**: threat model is malicious SVG/DXF files, malicious file names, and CDN supply chain. Cover XSS through imported markup, external references and exfiltration, what exported files carry downstream, CSP strength, SRI (fetch the CDN files and compute sha384), DoS from crafted files, filename injection, eval, localStorage, prototype pollution. Give a CWE id for each finding, and a CVE where a library version has one (else "none applicable"). Don't report what the CSP or sanitizer fully blocks; name the defense instead.
 4. **Accessibility**: WCAG 2.1 A/AA and Revised Section 508 (E205/E207, Chapter 3 302 FPCs, Chapter 5 502/503 including the 501.1 web-app exception, Chapter 6 602). Say which 508 provisions apply and why. Test the accessibility tree, keyboard and focus, live regions, contrast in BOTH themes (computed from the CSS variables, including non-text contrast), reflow at 320 px, text spacing, target size, reduced motion, forced colors, text alternatives for previews, a keyboard alternative to drag-and-drop, timing, labels and errors, and the accessibility documentation. Map each finding to both standards (WCAG SC + level, and 508 provision or "not required by 508"). Add a section "Where WCAG 2.1 and Section 508 differ or conflict" that separates WCAG-2.1-only criteria, 508-only provisions, genuine conflicts and scope differences, without inventing conflicts.
 5. **Best practices**: code that works but departs from established practice for its stack and tools (web platform, JavaScript, CSS, Python), where the gap carries a concrete risk (a future bug, a maintenance trap, an API that will break). Severity by risk, never above `severity:medium`: **medium** when it will break builds or operations (a deprecated API with an announced removal, unpinned library versions, unsafe script defaults); **low** for maintainability and testability gaps; **info** for convention only. Look at:
@@ -91,22 +91,77 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
   - on the release branch, set `<version>` (`X.Y.0` for a major or minor release) in the page footer
     (`app/index.html`), run `python3 tools/build.py`, and add its `CHANGELOG.md` section. For a major or minor version,
     consolidate `CHANGELOG.md` in the same commit: squash the iterative entries the release covers (and backfill earlier
-    unconsolidated ranges) as described in [CLAUDE.md](CLAUDE.md#changelog-consolidation-at-release). Major and minor
+    unconsolidated ranges) as described in [CHANGELOG consolidation at release](#changelog-consolidation-at-release). Major and minor
     versions change only when the maintainer asks;
   - merge the release branch into `main` and tag it `<version>` (no `v` prefix);
   - merge it back into `develop`;
   - delete the release branch, locally and on origin.
 - Issues aren't closed automatically by PRs into branches other than `main`, so close them by hand with
   "Fixed in #PR (X.Y.Z)".
-- If export QA issues are still open (#49–#52, #132, #133), move them to the new release: set `VERSION` in
-  `tools/qa_workbooks.py`, check each test's expected sizes, colors, layers and notices against the release, run
-  `python3 tools/qa_workbooks.py`, and update the version in each issue (on a `feature/` branch after the release is
-  tagged).
+- If export QA issues are still open (#49–#52, #132, #133), move them to the new release:
+  - at release prep (the maintainer says to prep it), on the prep `bugfix/` branch into `release/<version>`, set
+    `VERSION` in `tools/qa_workbooks.py` to `<version>` and run `python3 tools/qa_workbooks.py`. The workbooks link the
+    tag's source zip, whose URL is known before the tag exists. The [fixture regression](#fixture-regression) checks
+    each workbook test's expected sizes, colors, layers and notices against the build, so it fails, naming the test,
+    when one no longer matches;
+  - after the tag is pushed at the finish, for each open QA issue run
+    `python3 tools/qa_workbooks.py --issue N > body.md` (outside the repo) and `gh issue edit N --body-file body.md`.
+    The body comes from the same `APPS` and `VERSION` as the workbook. No separate branch or version bump is needed.
+
+## CHANGELOG consolidation at release
+
+When a release bumps the major or minor version, squash the iterative entries
+it covers into that version's section. This happens with the `X.Y.0` bump at
+the merge into `main`, not at the cut. The individual `x.y.N` headings are
+removed from the file; git history keeps them.
+
+Scope:
+- The squash covers every iterative entry from the previous major or minor
+  heading down to (not including) this one.
+- A bump with no feature content of its own still consolidates the range below
+  it. "Same features as <previous>" is not a reason to skip it.
+- Never touch a section at or below an already-consolidated heading.
+
+Backfill:
+- Before consolidating the current release, walk the file for earlier major or
+  minor headings whose range still has loose `x.y.N` entries under it. Squash
+  each, same rules, oldest first.
+- A heading is already consolidated when no `x.y.N` headings remain between it
+  and the next major or minor heading below. Don't re-process those.
+- Report what you backfilled, separately from the current release.
+
+How to squash:
+- Group under Keep a Changelog headings in this order: Added, Changed,
+  Deprecated, Removed, Fixed, Security. Omit empty groups.
+- One bullet per user-visible outcome, not per iterative entry or per PR.
+  Several entries that moved one feature forward collapse into the single
+  sentence describing where it landed.
+- Carry every issue number forward. A merged bullet cites all of them:
+  `(#12, #19, #23)`. Losing a reference is a defect.
+- Write the end state, not the journey. An add-then-fix pair inside the range
+  becomes the end state alone, since no user saw the intermediate.
+- Every security entry in the range gets a bullet. Security is not subject to
+  the merging and dropping rules above — under-reporting hardening in a public
+  repo is a defect.
+- Drop entries with no user-facing effect (test fixtures with no app change,
+  internal reorganization, docs-only corrections) unless they changed behavior,
+  defaults, or output.
+- Preserve the exact wording of any entry that already reads as a release-level
+  statement rather than rewriting it for style.
+- Keep measured figures (timings, percentages, dimensions) where the entry gave
+  them; they're the evidence the change was verified.
+
+Constraints:
+- Do not renumber, re-date, or reorder released sections.
+- Do not invent entries. If a referenced issue number has no matching iterative
+  entry, stop and ask rather than reconstructing from the diff.
+- Report per range: range covered, entries in, bullets out, and anything
+  dropped with the reason.
 
 ## Fixture regression
 
 CLAUDE.md requires a structural or refactoring change to leave every export from `snugcut.html` byte-identical, and
-section 1 above requires the same of an optimization. `tools/regression.py` checks it (#394): it runs two builds of
+section 1 above requires the same of an optimization. `tools/regression.py` checks it: it runs two builds of
 `snugcut.html` in headless Chrome and compares their exports.
 
 ```sh
@@ -120,6 +175,16 @@ It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usu
 two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
 worker can't start from a file, so the nests then run on the page only. `--json FILE` keeps the new build's raw
 results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build.
+`--allow-diff` lists differing entries without failing on them (nest failures, worker-vs-page differences and workbook
+mismatches still fail), and `--no-sandbox` starts Chrome without its sandbox, for CI runners.
+
+**In CI**, `.github/workflows/regression.yml` runs it on every pull request (against the base branch) and every push to
+`main` or `develop` (against the previous commit), on `ubuntu-latest`'s Chrome. It downloads the two libraries from the
+URLs in `app/index.html`, fails if their sha384 differs from the page's integrity hashes, and passes them with
+`--libs`. A page script error therefore fails the check, as does any difference from the base. A pull request that is
+meant to alter exports has a line starting `Export changes:` in its body (the entries that change and why); the job then
+passes `--allow-diff`, and the differences are listed in its log. Editing the pull request's title or body runs the
+check again with the new body; re-running a finished job doesn't, since it reuses the old one. On a push it always does.
 
 **What it does to each build** (the same to both, in a temporary folder): replaces the page's startup `run(…)` (the
 last statement of its script, after `renderParts()`) with its test, which calls the library and app functions directly,
@@ -134,11 +199,13 @@ defaults. The test prints its results as one JSON string to the console.
    - place it alone, unrotated, at (10, 10) mm on a plate of its own size;
    - export it with `plateSVG` and with `plateDXF`.
 
-   It keeps the SVG text, the DXF text and the export notices, or the error message if any step fails. A failure has
-   to match too.
+   It keeps the SVG text, the DXF text and the export notices, plus the part's width, height and outline area (mm,
+   rounded to 1e-6) and its number of outer contours, which the exports don't show, or the error message if any step
+   fails. A failure has to match too.
 2. Whole nests of the sample parts the page opens with. The starting packs, no search (`run(0, true)`: True shape packs
-   both sorted orders and keeps the better, Bounding box runs its MaxRects packing), every plate exported with the
-   app's own `plateFile`, keeping each file and its notices, six times:
+   both sorted orders and keeps the better, Bounding box runs its MaxRects packing and then its swap search, seeded and
+   run for a fixed amount of packing work), every plate exported with the app's own `plateFile`, keeping each file and its notices,
+   six times:
    - True shape: SVG, then DXF, with compensation off;
    - True shape: SVG, then DXF, with compensation on;
    - Bounding box: SVG, then DXF, with compensation off.
@@ -151,6 +218,16 @@ defaults. The test prints its results as one JSON string to the console.
 - the version number in the export comment (`SnugCut v1.3.39-beta` and the like), which every version bump changes;
 - the per-import id prefix (`p<number>_`) that `parseSVG` adds to ids in the markup. It counts imports in the session,
   so it shifts when the number of sample parts changes.
+
+**Workbook tests** (new build only): the export QA workbooks in `qa/` come from the tests in `tools/qa_workbooks.py`,
+and each test that runs SnugCut (all but test 4) carries a machine-checkable form of its Expected text beside it. For
+each, the regression sets the test's settings (the Setup's defaults plus the test's own, such as kerf and **Export
+format**), adds its fixture files, nests with no search, exports the first plate with `plateFile`, and measures it as a
+tester would, reading a DXF export back in. It compares the non-text shapes (size to 0.02 mm, stroke and fill color,
+closed or open, subpaths, dashes), the text content and colors, the notices after adding the files, the export notes
+and the DXF layer names. Text sizes aren't compared, since they depend on installed fonts. A mismatch is reported as
+`workbook test N: expected …, got …` and fails the run. A change that alters what testers see therefore fails its own
+pull request, and that pull request updates the test's text and its check together.
 
 It reports the number of entries compared in each list and names any that differ. A change that is meant to alter
 exports says in its PR which entries changed and why. All other entries must still match.
