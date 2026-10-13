@@ -95,29 +95,24 @@ one-line summary under its heading, such as "Order walk, workers off" or "300 ×
 screen reader hears with the heading's button. Closing Plate & cutting brings the parts list up next to the results;
 the mm/in switch stays in its heading, and a field error opens the box again.
 
-- **Nesting mode**: True shape or Bounding box (top right).
+- **Nesting mode**: True shape or Bounding box (under the page intro).
 - **Search Options** (True shape, its own box above Plate & cutting):
   - **Method**: **Order walk** (the default) keeps changing the order the parts are placed in, 1–3 swaps or moves at
     a time, keeps each change that is no worse, and lets every part take its best angle where it lands. **Genetic**
     keeps 20 layouts, each an order and a fixed angle per part, and breeds new ones from the best of them; with
     one angle per part each layout is quicker to try, so it tries many more in the same time. When it stops
-    improving, it starts again from shaken copies of its best layout. In tests over 10 jobs (the sample parts, the
-    nesting and test-cut fixtures, and a 120-part mix with and without nesting in holes, at 90° and 15° steps, 8
-    seeds, 4 s and 30 s), Genetic did better than Order walk on 73 runs and worse on 22 with one worker, and better on
-    74 and worse on 14 with four; it saved plates on the nesting fixtures and filled plates noticeably better at 15°
-    and on the 120-part jobs. At 90° steps it can do slightly worse: in 4 s searches of the 120-part jobs with one
-    worker it filled plates a little less well in most runs, and with four workers it once stayed on 2 plates for a
-    4 s search where Order walk found 1. Those tests ran on 1.3.42-beta. Since 1.3.46-beta both methods try more
-    layouts in the same time, Order walk the most; in 4 s searches of the same jobs with one worker
-    (1.3.47-beta), Genetic did better on 33 runs and worse on 9. Both start from the same two sorted orders.
+    improving, it starts again from shaken copies of its best layout. Over a mix of jobs (the sample parts, the nesting
+    and test-cut fixtures, and a 120-part mix with and without nesting in holes), Genetic usually does better: it can
+    save plates on parts that nest in holes and fills plates noticeably better at 15° steps and on large jobs. At 90°
+    steps it can do slightly worse on large jobs, especially in short searches. Both start from the same two sorted
+    orders.
   - **Workers**: Off (the default) searches in one background worker; 2, 3 or 4 workers try that many layouts at
     once, so more layouts are tried in the same time. Each extra worker uses more memory, about 100 MB on a job of
     120 parts, so on a lower-spec computer (little memory or few processor cores) leave it off; the box says so.
     Layouts and exports don't depend on it beyond the number of layouts tried. How much it helps depends on the
-    method, measured on the sample parts (1.3.47-beta): with 4 workers Order walk tries 4.2–4.9× as many
-    layouts as one at 90° steps and 2–3.4× at 15°. Genetic waits at each step for the slowest of its layouts, and
-    each worker builds its own cache of part pairs, so it tries 2.5–2.9× as many at 90°, 1.9× at 15° in a 30 s
-    search, and no more than one worker in a 4 s search at 15°.
+    method: Order walk gains the most, several times as many layouts with 4 workers. Genetic waits at each step for
+    the slowest of its layouts, and each worker builds its own cache of part pairs, so it gains less, especially in
+    short searches at fine angle steps.
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
   Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
   German, for example); exported files always use `.`.
@@ -298,7 +293,9 @@ SnugCut.
 | `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
-| `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing |
+| `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing, CHANGELOG consolidation, the fixture regression |
+| `.github/workflows/` | CI: the generated-files check (`snugcut.html` and the QA workbooks current), the fixture regression, and issue triage labels |
+| `LICENSE`            | the AGPL-3.0-or-later license text |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `nesting/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
