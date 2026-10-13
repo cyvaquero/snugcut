@@ -4,6 +4,27 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.1-beta
+
+Fixes from the release review of 1.6.0-beta (#500).
+
+- **Fixed:** the confirmation that appears after a download ("Saved ...") now spans up to the window's width minus a
+  margin on each side, and wraps a long file name instead of pushing its Dismiss button off the screen. In Windows
+  High Contrast and other forced-colors modes it has a border.
+- **Fixed:** in a part kept as original markup, text that merely contains `id="..."` or `url(#...)` is exported as
+  written. Only real ids and the references to them (attributes and `<style>`) get the per-copy prefix.
+- **Fixed:** a stalled download of the search library no longer holds the first search: after 10 seconds the search
+  runs on the page, as when the download fails.
+- **Fixed:** clicking Download all while the plates are out of date now says why nothing happens ("Out of date: wait
+  for the new layout"), and the button carries the same tooltip as the plate buttons.
+- Tooling and docs only: the fixture regression (`tools/regression.py`) takes its options through `argparse` (a
+  mistyped option or a missing value is an error), copes with fixtures that contain `</script>`, fails on a fixture that
+  errors unexpectedly and checks the stated values of the new fixtures; its CI job cancels a superseded run for the same
+  pull request; `tools/build.py` strips comments after a regex literal that follows `return` or `typeof`; one shared
+  helper computes the 45-degree arc segments for DXF import, SVG arcs and the DXF export, and one constant counts
+  Bounding box's placement rules (exports unchanged); `CLAUDE.md` and `fixtures/README.md` say fixtures carry no SPDX
+  header.
+
 ## 1.6.0-beta
 
 Release of 1.5.1-beta through 1.5.8-beta, with the fixes from the release review (1.5.9-beta through 1.5.12-beta).

@@ -174,7 +174,8 @@ python3 tools/regression.py OLD.html NEW.html
 It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usual place) and network access for the
 two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
 worker can't start from a file, so the nests then run on the page only. `--json FILE` keeps the new build's raw
-results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build.
+results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build or an
+option it doesn't know (`--help` lists them).
 `--allow-diff` lists differing entries without failing on them (nest failures, worker-vs-page differences and workbook
 mismatches still fail), and `--no-sandbox` starts Chrome without its sandbox, for CI runners.
 
@@ -185,6 +186,8 @@ URLs in `app/index.html`, fails if their sha384 differs from the page's integrit
 meant to alter exports has a line starting `Export changes:` in its body (the entries that change and why); the job then
 passes `--allow-diff`, and the differences are listed in its log. Editing the pull request's title or body runs the
 check again with the new body; re-running a finished job doesn't, since it reuses the old one. On a push it always does.
+A newer run for the same pull request cancels the one still running, so an edit right after a push leaves one result;
+pushes to `main` and `develop` always finish.
 
 **What it does to each build** (the same to both, in a temporary folder): replaces the page's startup `run(…)` (the
 last statement of its script, after `renderParts()`) with its test, which calls the library and app functions directly,
@@ -228,6 +231,15 @@ closed or open, subpaths, dashes), the text content and colors, the notices afte
 and the DXF layer names. Text sizes aren't compared, since they depend on installed fonts. A mismatch is reported as
 `workbook test N: expected …, got …` and fails the run. A change that alters what testers see therefore fails its own
 pull request, and that pull request updates the test's text and its check together.
+
+**Fixture checks** (new build only): two builds that fail alike compare equal, so the new build is also checked on its
+own. A fixture that errors fails the run unless it is one of the listed refusals (the huge-coordinate files and the
+item-cap DXF), and each of those must be refused with its message. The stated values of the large circle (the curve
+within 0.01 mm of the true circle), the opposite-direction overlap (the union's area and two outlines), the rotated
+circle and ellipse (their true size, to 0.02 mm), the CDATA sections (escaped text, the CSS rect outlined) and the many
+ids (each prefixed, every reference landing on one) are checked, with kerf compensation off. A mismatch is reported as
+`fixtures/…: expected …` and fails the run; `--allow-diff` doesn't excuse it. A new fixture with a stated value gets its
+check in `check_fixtures()` in `tools/regression.py`.
 
 It reports the number of entries compared in each list and names any that differ. A change that is meant to alter
 exports says in its PR which entries changed and why. All other entries must still match.

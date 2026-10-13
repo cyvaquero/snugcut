@@ -3,6 +3,9 @@
 Files for manual testing: open `snugcut.html`, add them, and check the preview and exports (see each issue or
 CHANGELOG entry for what to expect). Red `#ff0000` = cut, blue `#0000ff` = score/engrave unless a file says otherwise.
 
+The files are test data, exempt from the SPDX license header that every source file carries. `python3 tools/regression.py` exports every one and checks the stated values of
+the new ones (RELEASING.md, fixture regression).
+
 | Folder | Contents |
 |---|---|
 | `geometry/` | Shape and transform handling: `transforms.svg`: nested transforms; `skew.svg`; `arcs.svg`; `hidden-group.svg`: hidden groups; `gradient.svg` and `text.svg`: parts kept as original markup; `cad-lines.svg`: CAD-style separate `<line>` outlines (#46); `stroke-styles.svg`: stroke caps/joins/dashes (#14); `hidden-shapes.svg`: shapes hidden by visibility, opacity 0 or no paint (#17); `root-attrs-stroke.svg`, `root-attrs-stroke-only.svg` and `root-attrs-font-size.svg`: fill/stroke/font-size set on the root `<svg>` (#64); `viewbox-aspect-meet.svg`, `viewbox-aspect-none.svg` and `viewbox-aspect-slice.svg`: a viewBox with another aspect ratio than width/height under `preserveAspectRatio` meet (default), none and slice (#65); `rounded-rect.svg` and `use-rotated.svg`: a rounded rect and a rotated `<use>` copy that nest by their real outlines (#15); `many-ids.svg`: 300 ids with `url(#id)`, `href` and `<style>` references in a part kept as markup, rewritten in one pass (#461); `large-circle.svg`: a circle of 500 mm radius whose exported curve must stay within 0.01 mm of the true circle (#462); `overlap-opposite.svg`: overlapping closed shapes drawn in opposite directions, whose outline must be their union (#456); `rotated-circle-ellipse.svg`: a rotated circle and ellipse whose size must be the true one (#457) |
