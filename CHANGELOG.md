@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.11-beta
+
+- **Security:** a program using `lib/snugcut.js` that calls `startWorker` with a URL but no integrity hash now gets the
+  search on the page, instead of search workers running clipper-lib fetched without an integrity check. The app itself
+  always passed the hash, so it is unchanged (#499).
+
 ## 1.5.10-beta
 
 - **Fixed:** a crafted SVG with a long run of `url(#` inside a part kept as original markup (one with text, `<use>`,
