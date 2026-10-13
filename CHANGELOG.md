@@ -4,6 +4,12 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.5.9-beta
+
+- **Fixed:** a DXF polyline segment with a near-zero bulge (CAD rounding noise such as 2.2e-16 in group code 42) is now
+  imported as a straight line, so the part keeps its drawn size instead of coming out wider (a 100 mm rectangle imported
+  at 107 mm). Every bulge arc now also ends exactly on its vertex (#497).
+
 ## 1.5.8-beta
 
 - **Fixed:** adding the `Export changes:` line to the body of an open pull request now runs the fixture regression check
