@@ -10,7 +10,8 @@ Two modes:
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded search: an order walk by
   default, or a genetic search ("Search 30 s more", Stop). The search runs in a background worker, so the page stays
-  responsive; the **Workers** setting adds up to 3 more.
+  responsive; the **Workers** setting adds up to 3 more. It ranks layouts by fewest plates first, then by the smallest
+  share of the last plate the parts use (the larger offcut, measured as Efficiency does), then by fuller plates.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation, then a swap search on the
   best order: seeded tries that swap two parts or change the heuristic, run until a fixed amount of packing work is
   spent (counted in free-rectangle comparisons, not time) or 30,000 tries have run (about 350 ms for the sample parts,
@@ -34,7 +35,8 @@ material).
 **Efficiency** rates the whole job from 1 to 10: the parts' real material divided by the material the job uses up,
 with the percentage next to it. Full plates count whole; the last plate counts only up to one straight cut just past
 its parts, across its width or its height, whichever leaves the larger offcut, and that offcut's size is shown on the
-last plate (when it's at least 10 mm across). Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
+last plate (when it's at least 10 mm across). Nesting parts inside holes raises it, and True shape's search prefers a
+layout that ends the last plate sooner. Bounding box ranks by fewest plates, then fuller plates. Part shapes cap it: round parts can't cover a plate the way
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new

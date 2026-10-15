@@ -4,6 +4,17 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.2-beta
+
+- **Changed:** among layouts with the same number of plates, the True shape search now prefers the one that leaves the
+  larger offcut on the last plate, before it prefers fuller plates. The offcut is measured as Efficiency measures it
+  (one straight cut past the parts, across the width or the height, with the plate's real width and height). Before,
+  nothing in the search rewarded a last plate whose parts end early, so a part could be left with an empty hole while
+  other parts were placed beside it, and a longer Genetic search could even rate worse. Sample parts, 300 x 300 mm
+  plate, holes on: Order walk 56.8% to 58.6% efficiency in 4 s and to 59.7% in 34 s; Genetic 55.8% to 57.2% in 4 s and
+  to 59.1% in 34 s. The same number of plates in every run, and about as many layouts tried in the same time. Nested
+  exports can differ; single-part exports don't. Bounding box is unchanged (#509).
+
 ## 1.6.1-beta
 
 Fixes from the release review of 1.6.0-beta (#500).
