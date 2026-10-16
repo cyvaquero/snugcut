@@ -44,8 +44,9 @@ def module_body(src, rel):
 _RE_BEFORE = set("(,=:[!&|?{};+-*%<>~^")   # a "/" after one of these starts a regex literal, after anything else it divides
 _RE_WORDS = {"return", "typeof", "case", "do", "else", "in", "of", "new", "delete", "void", "throw", "yield", "await"}
 
-def strip_comments(src):
-    """src with its // and /* */ comments removed, strings, template literals and regex literals left as they are (#473)."""
+def strip_comments(src, blank=False):
+    """src with its // and /* */ comments removed, strings, template literals and regex literals left as they are (#473);
+    with blank, the text of strings and regex literals is blanked out too, for scanning code alone."""
     def scan(i, inner):
         out, depth, prev, word, gap = [], 0, "", "", False   # word: the last identifier, kept across whitespace
         while i < len(src):
@@ -59,7 +60,7 @@ def strip_comments(src):
             elif c in "\"'":
                 j = i + 1
                 while j < len(src) and src[j] != c: j += 2 if src[j] == "\\" else 1
-                out.append(src[i:j + 1]); i, prev, word = j + 1, c, ""
+                out.append(c + "_" + c if blank else src[i:j + 1]); i, prev, word = j + 1, c, ""
             elif c == "`":
                 text, i = template(i + 1)
                 out.append("`" + text); prev, word = "`", ""
@@ -70,7 +71,7 @@ def strip_comments(src):
                     elif src[j] == "[": cls = True
                     elif src[j] == "]": cls = False
                     j += 1
-                out.append(src[i:j + 1]); i, prev, word = j + 1, "/", ""
+                out.append("/_/" if blank else src[i:j + 1]); i, prev, word = j + 1, "/", ""
             else:
                 if inner and c == "}" and depth == 0: return "".join(out), i
                 depth += (c == "{") - (c == "}")
@@ -127,6 +128,65 @@ def check_libs(html, csp):
     if not clip: fail('app/index.html has no <script id="clipper-lib">')
     if clip.group(1) not in dirs.get("connect-src", []): fail(f"app/index.html: {clip.group(1)} is not in the CSP's connect-src (the search worker fetches it)")
 
+BROWSER_ONLY = ("window", "document", "localStorage", "sessionStorage", "DOMParser", "XMLSerializer", "HTMLElement", "SVGElement", "getComputedStyle")
+
+def declared_names(code):
+    """the names declared in code (functions, const/let/var including destructuring, class, parameters of functions and
+    arrows, catch): roughly, not a parser. Used to tell a local name from a reference to something outside."""
+    names = set(re.findall(r"\b(?:function\*?|class)\s+([\w$]+)", code))
+    def pattern(p):   # the names bound by a declaration or parameter list: a, {a, b: c = 1}, [a, [b]], ...rest
+        p = re.sub(r"=[^,}\]]*", "", p)   # defaults
+        return re.findall(r"[\w$]+", re.sub(r"[\w$]+\s*:", "", p))
+    for m in re.finditer(r"\b(?:const|let|var)\s+([^=;]+?)\s*(?:=|;|\bof\b|\bin\b)", code): names.update(pattern(m.group(1)))
+    for m in re.finditer(r"\bfunction\*?\s*[\w$]*\s*\(([^)]*)\)", code): names.update(pattern(m.group(1)))
+    for m in re.finditer(r"\(([^()]*)\)\s*=>", code): names.update(pattern(m.group(1)))
+    for m in re.finditer(r"(?<![\w$.)])([\w$]+)\s*=>", code): names.add(m.group(1))
+    for m in re.finditer(r"\bcatch\s*\(\s*([\w$]+)", code): names.add(m.group(1))
+    return names
+
+def top_level_names(code):
+    """the names the library declares at the top level of its module (lines starting in column 0)"""
+    names = set(re.findall(r"^(?:export )?(?:async )?function\*? ([\w$]+)", code, flags=re.M))
+    names.update(re.findall(r"^(?:export )?class ([\w$]+)", code, flags=re.M))
+    for m in re.finditer(r"^(?:export )?(?:const|let|var) ([^\n]*)", code, flags=re.M):
+        depth, piece, pieces = 0, "", []
+        for ch in m.group(1):   # split the first line at its top-level commas: const A = 1, B = 2; and const {a, b} = x;
+            depth += ch in "([{" ; depth -= ch in ")]}"
+            if ch == "," and depth == 0: pieces.append(piece); piece = ""
+            else: piece += ch
+        pieces.append(piece)
+        for p in pieces:
+            head = p.split("=")[0]
+            names.update(re.findall(r"[\w$]+", re.sub(r"[\w$]+\s*:", "", head)) if head.lstrip().startswith(("{", "[")) else re.findall(r"^\s*([\w$]+)", head))
+    return names
+
+def function_text(code, name):
+    start = re.search(r"^function " + name + r"\(", code, flags=re.M)
+    if not start: fail(f"lib/snugcut.js has no top-level function {name}, which the search worker is built from")
+    i = code.index("{", code.index(")", start.end()))
+    depth = 0
+    for j in range(i, len(code)):
+        depth += code[j] == "{"; depth -= code[j] == "}"
+        if depth == 0: return code[start.start():j + 1]
+    fail(f"lib/snugcut.js: can't find the end of {name}")
+
+def check_worker(lib):
+    """nestCore and searchWorker are built into the search worker from their source text (workerSource), where none of the
+    library's other top-level names exist: one referenced inside them works on the page and throws in the worker, and
+    only on the path that reaches it (#520). Fails when their code names a top-level name of the library that it doesn't
+    declare itself, or a browser-only global."""
+    code = strip_comments(lib, blank=True)
+    top = top_level_names(code)
+    for name in ("nestCore", "searchWorker"):
+        body = function_text(code, name)
+        own = declared_names(body)
+        used = set(re.findall(r"(?<![\w$.])([\w$]+)(?![\w$])", re.sub(r"(?<=[{,])\s*[\w$]+\s*:(?!:)", " ", body)))   # not .property, and not an object key
+        outside = sorted((used & top) - own - {name})
+        browser = sorted(used & set(BROWSER_ONLY))
+        if outside or browser:
+            fail(f"lib/snugcut.js: {name} runs in the search worker, where the library's other names don't exist, but uses "
+                 + ", ".join(outside + browser) + ". Pass it in as an argument (nestCore's hooks, searchWorker's parameters) or declare it inside.")
+
 def build():
     html, css = read("app/index.html"), read("app/snugcut.css")
     check_text(html, read("app/strings-en.js"), read("app/app.js"), read("lib/snugcut.js"))
@@ -138,6 +198,7 @@ def build():
     csp = re.search(r'(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(">)', html)
     if not csp: fail("app/index.html has no Content-Security-Policy <meta>")
     check_libs(html, csp.group(2))
+    check_worker(read("lib/snugcut.js"))
     # strict, as app/ is as ES modules, so testing app/ covers the shipped file (#289)
     script = "\n(() => {\n\"use strict\";\n" + lib + app + "})();\n"
     digest = "'sha256-" + base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode() + "'"

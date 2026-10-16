@@ -102,7 +102,7 @@ export const EN = {
   "lib.dxf.tooManyItems": "{name} expands to more than {limit} items (blocks and arrays), so it wasn't added.",
   "lib.dxf.tooManyPoints": "{name} draws more than {limit} points (blocks and arrays repeat them), so it wasn't added.",
   "lib.dxf.tooLarge": "{name} has coordinates beyond {limit} mm, so it is too large and wasn't added.",
-  "lib.dxf.splineDegree": "{name} has a spline of degree {degree}, but only degrees 1 to 11 can be read, so it wasn't added.",
+  "lib.dxf.splineDegree": "{name} has a spline of degree {degree}, but only degrees 1 to {max} can be read, so it wasn't added.",
   "lib.dxf.hiddenLeftOut": "{name}: left out {count, plural, one {# item} other {# items}} on frozen, off, non-plotting or Defpoints layers.",
   "lib.dxf.skipped": "{name}: skipped {list} (only lines, arcs, circles, ellipses, polylines and splines are cut).",
   "lib.dxf.nothingToCut": "{name} has no lines, arcs, circles, ellipses, polylines or splines to cut on visible layers in model space{hidden, plural, =0 {.} one {; # item is on frozen, off, non-plotting or Defpoints layers.} other {; # items are on frozen, off, non-plotting or Defpoints layers.}}",
