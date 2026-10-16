@@ -168,8 +168,8 @@ What happens to imported files:
   (the field is marked and the last good value stays in use); a file whose curves would be sampled into more than
   2,000,000 points, or a DXF that draws more than that many, isn't added; a DXF that expands to more than 250,000 items
   (blocks and arrays), or has a spline of degree above 11, isn't added; an SVG that repeats shapes through `<use>`
-  more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (or not
-  finite) make the file too large to add. A part's quantity above 1,000, or quantities adding up to more than 20,000
+  more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (SVG) or the drawing's origin (DXF), or not
+  finite, make the file too large to add. A part's quantity above 1,000, or quantities adding up to more than 20,000
   parts, are refused the same way (see the parts list above).
 - A style sheet in a file that the browser can't read in full (it stops partway, or can't be read at all) is reported in a notice, since the part's
   export may then lack some of its styling.
@@ -183,7 +183,7 @@ What happens to imported files:
 `fixtures/test-cuts/` has small pieces for dialing in the kerf and the fit before cutting a real job. Red `#ff0000`
 is cut and blue `#0000ff` is score; set any black filled marks to engrave or turn them off. Cut each test from the
 material and with the speed and power you will use, because the kerf changes with all three. Set "Edge margin" and
-"Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), untick **Allow
+"Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), uncheck **Allow
 90° rotation** (Bounding box), or set each piece's orientation button to locked in the parts list.
 
 | File | Size | What it tells you |
@@ -398,7 +398,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxf.tooManyItems` | `limit` | blocks and arrays expand past the item limit |
 | `dxf.tooManyPoints` | `limit` | blocks and arrays draw past the point limit |
 | `dxf.tooLarge` | `limit` (mm) | a coordinate is not finite or lies beyond the size limit |
-| `dxf.splineDegree` | `degree` | a spline's degree is outside 1 to 11 |
+| `dxf.splineDegree` | `degree`, `max` | a spline's degree is outside 1 to 11 |
 | `dxf.hiddenLeftOut` | `count` | items on hidden layers were left out (note) |
 | `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
 | `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
@@ -415,6 +415,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.markers`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
 | `dxfOut.element` | `tag` | `<tag>` elements of a part aren't in the DXF (export note) |
 | `dxfOut.fills` | none | filled areas are written as outlines (export note) |
+| `layout.tooManyItems` | `limit` (no `name`) | the quantities add up to more than the job limit |
 | `search.workerFailed` | none | a search worker failed without a message of its own (ends "Nesting stopped after an error: …") |
 
 Exported files themselves (`.` decimals, the `SnugCut v…` and kerf-compensation markers) never change with the wording.
