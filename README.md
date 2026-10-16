@@ -133,7 +133,7 @@ the mm/in switch stays in its heading, and a field error opens the box again.
   more than one plate.
 - **Export format**: SVG, or DXF (R12, mm).
 
-In the parts list, each file has a **quantity** (0 leaves it out), an **orientation** button, and a remove button.
+In the parts list, each file has a **quantity** (0 leaves it out; at most 1,000 copies of a part and 20,000 parts in a job, past which the field says so), an **orientation** button, and a remove button.
 The orientation button cycles through three states, each with its own icon: **free** (an open lock: the part turns at
 the Rotation step), **grain** (wavy lines: the part only turns end for end, 0° or 180°, so wood grain or brushed metal
 runs the same way on every copy; in Bounding box mode it isn't turned at all, since 180° gives the same rectangle), and
