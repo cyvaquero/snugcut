@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2C4SstMWkY2x8zXRU3AC4U90Wx383ol6Iv6Iy8b6njA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8Zi01oX98zGCQM4m/vk8vLk1GG4lpEAFfqcsVp5u4mY=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2347,10 +2347,10 @@ function nestCore(CL, SC, hooks){
   function mulberry(seed){ return () => { const [s, v] = m32(seed | 0); seed = s; return v; }; }
   // The order search: the sorted starting orders still pending, then a random walk of 1–3 swaps or moves from the best
   // order, each try kept when it is no worse. st ({pending, seed, bestOrder, bestScore, tried}) is updated as it goes, so
-  // the caller can continue the search. o: {items, F, plateA, minPlates, ms, t0, angPick, pause, onBest(bins, score),
+  // the caller can continue the search. o: {items, F, plateA, ms, t0, angPick, pause, onBest(bins, score),
   // onStep(), onDraw()}.
   async function searchLoop(st, o){
-    const {items, F, plateA, minPlates, ms, t0, angPick, pause} = o;
+    const {items, F, plateA, ms, t0, angPick, pause} = o;
     while (st.pending.length) {
       // the time limit covers the starting packs too: on a big job at fine steps one pack can take longer than the
       // whole search, so the second is skipped once a layout exists and the time is up (#234). ms 0 packs both
@@ -2368,7 +2368,6 @@ function nestCore(CL, SC, hooks){
     if (items.length < 2) return;
     let cur = st.bestOrder, curScore = st.bestScore;
     while (performance.now() - t0 < ms) {
-      if (st.bestScore[0] <= minPlates && st.bestScore[0] === 1) break;
       const ord = cur.slice(), n = ord.length;
       const moves = 1 + Math.floor(rand(st) * 3);
       for (let m = 0; m < moves; m++) {
@@ -2398,7 +2397,7 @@ function nestCore(CL, SC, hooks){
   // depend on which worker answers first; gens, a number of steps to run instead of the time limit (repeatable runs).
   const GA_POP = 20, GA_RESTART = 200;
   async function gaLoop(st, o){
-    const {items, F, plateA, minPlates, ms, t0, angPick, pause} = o;
+    const {items, F, plateA, ms, t0, angPick, pause} = o;
     const batch = o.batch || 1, n = items.length, idx = new Map(items.map((it, i) => [it, i]));
     // each item's candidate angles: only those it fits an empty plate at, so a pinned angle never leaves it out (#359)
     const fitting = new Map(), all = items.map(it => {
@@ -2481,7 +2480,6 @@ function nestCore(CL, SC, hooks){
     };
     st.gens = st.gens || 0;
     while (o.gens != null ? st.gens < o.gens : performance.now() - t0 < ms) {
-      if (st.bestScore[0] <= minPlates && st.bestScore[0] === 1) break;
       const kids = Array.from({length:batch}, breed);
       await evaluate(kids);
       kids.forEach(place);
@@ -2745,6 +2743,9 @@ async function searchParts(st, o){
 
 /* ---------- bounding-box mode: MaxRects packing ---------- */
 const EPS = 1e-7;
+// part sizes come from getBBox() in single precision (10.1 mm measures 10.100000381), so "fits" has a tolerance far above that error and
+// far below anything a cutter resolves: 0.1 µm (#520)
+const FIT_TOL = 1e-4;
 const RECT_HEURISTICS = 4;   // the placement rules RectBin.find knows, numbered from 0
 let rectWork = 0;   // free-rectangle comparisons so far: the deterministic cost of a pack, for computeRectLayout's swap search
 class RectBin {
@@ -2752,7 +2753,7 @@ class RectBin {
   find(w, h, canRot, heur){
     let best = null;
     const tryIt = (f, ww, hh, rot) => {
-      if (ww > f.w + EPS || hh > f.h + EPS) return;
+      if (ww > f.w + FIT_TOL || hh > f.h + FIT_TOL) return;
       let s1, s2;
       const lw = f.w - ww, lh = f.h - hh;
       if (heur === 0) { s1 = Math.min(lw, lh); s2 = Math.max(lw, lh); }        // best short side
@@ -2851,9 +2852,9 @@ function efficiency(plates){
 }
 function rectFits(p){
   const bw = S.plateW - 2*S.margin - 2*kerfC(p), bh = S.plateH - 2*S.margin - 2*kerfC(p);
-  const a = p.wMM <= bw + 1e-9 && p.hMM <= bh + 1e-9;
+  const a = p.wMM <= bw + FIT_TOL && p.hMM <= bh + FIT_TOL;
   // a grain part isn't turned 90° either: 180° gives the same rectangle, so it keeps 0° (#7)
-  const b = !p.lock && !p.grain && S.rotate && p.hMM <= bw + 1e-9 && p.wMM <= bh + 1e-9;
+  const b = !p.lock && !p.grain && S.rotate && p.hMM <= bw + FIT_TOL && p.wMM <= bh + FIT_TOL;
   return a || b;
 }
 
