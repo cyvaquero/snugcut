@@ -48,7 +48,7 @@ last plate (when it's at least 10 mm across). Nesting parts inside holes raises 
 layout that ends the last plate sooner. Bounding box ranks by fewest plates, then fuller plates. Part shapes cap it: round parts can't cover a plate the way
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
 
-![The results bar: 2 plates, area minimum 2, 42% average utilization, 32 parts placed, efficiency 5/10 (53%) and a Download all button; below it the search status and the first two plate previews, each with its own Download SVG button.](images/readme-results.webp)
+![The results bar: 2 plates, area minimum 2, 42% average utilization, 32 parts placed, efficiency 5/10 (53%) and a Download all button; below it the search status and the two plate previews, each with its own Download SVG button.](images/readme-results.webp)
 
 The results above the plate previews, with the Download buttons.
 
