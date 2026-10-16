@@ -4,6 +4,16 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.5-beta
+
+- **Fixed:** a thin spur or hairpin in a part's outline (a line that runs out past the end of a long straight run and
+  back) is no longer dropped when the outline is simplified for nesting, so the part's envelope covers its whole
+  outline and neighbors are no longer placed over it. The simplification measured each point's distance to the
+  infinite line through its neighbors, not to the segment between them. The 131 mm path from the report: outline
+  outside its envelope 3.2 mm² down to 0. In 400 generated spur, hairpin, zigzag and random-walk paths, 17 to 18 had
+  outline outside the envelope (up to 0.08 mm²), now at most 1 (0.001 mm²). Sample parts and fixtures: nests and
+  exports are unchanged, and import and nesting times are the same (#514).
+
 ## 1.6.4-beta
 
 - **Fixed:** a part with many notches (a comb, a sawtooth or a filigree border) no longer freezes the page while it is
