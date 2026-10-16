@@ -18,7 +18,7 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 
 ## Rules
 
-- **No Node app**: no npm, package.json, TypeScript or bundler. The only build step is `tools/build.py` (Python 3,
+- **No Node app**: no npm, package.json, TypeScript or bundler. The only build step is `tools/build.py` (Python 3.7+,
   standard library only), which inlines `app/` and `lib/` into `snugcut.html`. Don't add tooling, dependencies or build
   steps without asking. Libraries come in by `<script>` tag (clipper-lib 6.4.2, jszip 3.10.1) with Subresource
   Integrity.

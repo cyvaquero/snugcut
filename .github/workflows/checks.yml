@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 # The generated files must be committed with their sources (CLAUDE.md): snugcut.html from app/ and lib/, and the QA
 # workbooks from tools/qa_workbooks.py. Each pull request, and each push to main or develop, fails when either is out
-# of date (#393). Python 3 standard library only, as both scripts are.
+# of date (#393). Python 3.7+ standard library only, as both scripts are.
 name: Generated files are current
 
 on:
