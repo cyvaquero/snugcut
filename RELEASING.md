@@ -173,7 +173,7 @@ python3 tools/regression.py OLD.html NEW.html
 
 It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usual place) and network access for the
 two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
-worker can't start from a file, so the nests then run on the page only. `--json FILE` keeps the new build's raw
+worker can't start from a file, so the nests then run on the page only (the page loads below still use the CDN). `--json FILE` keeps the new build's raw
 results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build or an
 option it doesn't know (`--help` lists them).
 `--allow-diff` lists differing entries without failing on them (nest failures, worker-vs-page differences and workbook
@@ -181,8 +181,9 @@ mismatches still fail), and `--no-sandbox` starts Chrome without its sandbox, fo
 
 **In CI**, `.github/workflows/regression.yml` runs it on every pull request (against the base branch) and every push to
 `main` or `develop` (against the previous commit), on `ubuntu-latest`'s Chrome. It downloads the two libraries from the
-URLs in `app/index.html`, fails if their sha384 differs from the page's integrity hashes, and passes them with
-`--libs`. A page script error therefore fails the check, as does any difference from the base. A pull request that is
+URLs in `app/index.html` and fails if their sha384 differs from the page's integrity hashes, then runs the regression
+without `--libs`, so the search worker runs as for a visitor. A page script error therefore fails the check, as does any
+difference from the base, and the page loads below. A pull request that is
 meant to alter exports has a line starting `Export changes:` in its body (the entries that change and why); the job then
 passes `--allow-diff`, and the differences are listed in its log. Editing the pull request's title or body runs the
 check again with the new body; re-running a finished job doesn't, since it reuses the old one. On a push it always does.
@@ -231,6 +232,14 @@ closed or open, subpaths, dashes), the text content and colors, the notices afte
 and the DXF layer names. Text sizes aren't compared, since they depend on installed fonts. A mismatch is reported as
 `workbook test N: expected …, got …` and fails the run. A change that alters what testers see therefore fails its own
 pull request, and that pull request updates the test's text and its check together.
+
+**Page loads** (new build only): the runs above remove the Content-Security-Policy and replace the page's startup, so
+they can't catch a wrong script hash, a `connect-src` or `worker-src` that blocks the search worker, or an app that
+fails to load as modules. The regression therefore also serves a copy of `snugcut.html`, `app/` and `lib/` from a local
+HTTP server and opens `snugcut.html` (with its CSP and the libraries from their CDN URLs, integrity hashes included) and
+`app/index.html` in a fresh Chrome each, driven over the DevTools protocol by a small WebSocket client in `regression.py`.
+Each page must draw its plates with the search worker started and report no console error, uncaught exception or blocked
+request; otherwise the run fails with `page loads: …` and the problem. It needs the CDN, like the runs above.
 
 **Fixture checks** (new build only): two builds that fail alike compare equal, so the new build is also checked on its
 own. A fixture that errors fails the run unless it is one of the listed refusals (the huge-coordinate files and the
