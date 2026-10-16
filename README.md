@@ -171,7 +171,7 @@ What happens to imported files:
   more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (or not
   finite) make the file too large to add. A part's quantity above 1,000, or quantities adding up to more than 20,000
   parts, are refused the same way (see the parts list above).
-- A style sheet in a file that the browser can't read in full (it stops partway) is reported in a notice, since the part's
+- A style sheet in a file that the browser can't read in full (it stops partway, or can't be read at all) is reported in a notice, since the part's
   export may then lack some of its styling.
 - A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
   page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.

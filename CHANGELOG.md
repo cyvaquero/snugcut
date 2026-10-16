@@ -4,6 +4,11 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.9-beta
+
+- **Fixed:** a file whose style sheet the browser can't read at all is added with the "could not be read" notice,
+  instead of being refused with the browser's own error message (#526).
+
 ## 1.6.8-beta
 
 - **Fixed:** the findings of the 1.7.0-beta review that were low or info (#520).
