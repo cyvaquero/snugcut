@@ -4,44 +4,71 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
-## 1.6.3-beta
+## 1.7.0-beta
 
-- **Fixed:** plate previews of parts kept as original markup (parts with ids: gradients, `<use>`, `<style>`) redraw as
-  fast as before 1.6.1-beta again, or faster: each part's ids are rewritten once and reused for every copy, instead of
-  once per copy on every redraw. 60 copies of a part with 34 ids: 37 ms per redraw down to under 1 ms (1.6.0-beta:
-  3.4 ms). Exports are unchanged (#511).
+Release of 1.6.1-beta through 1.6.3-beta, with the fixes from the release review (1.6.4-beta through 1.6.10-beta).
 
-## 1.6.2-beta
+### Changed
 
-- **Changed:** among layouts with the same number of plates, the True shape search now prefers the one that leaves the
-  larger offcut on the last plate, before it prefers fuller plates. The offcut is measured as Efficiency measures it
-  (one straight cut past the parts, across the width or the height, with the plate's real width and height). Before,
-  nothing in the search rewarded a last plate whose parts end early, so a part could be left with an empty hole while
-  other parts were placed beside it, and a longer Genetic search could even rate worse. Sample parts, 300 x 300 mm
-  plate, holes on: Order walk 56.8% to 58.6% efficiency in 4 s and to 59.7% in 34 s; Genetic 55.8% to 57.2% in 4 s and
-  to 59.1% in 34 s. The same number of plates in every run, and about as many layouts tried in the same time. Nested
-  exports can differ; single-part exports don't. Bounding box is unchanged (#509).
+- Among layouts with the same number of plates, the True shape search now prefers the one that leaves the larger offcut
+  on the last plate, before it prefers fuller plates. The offcut is measured as Efficiency measures it (one straight cut
+  past the parts, across the width or the height, with the plate's real width and height). Before, nothing in the search
+  rewarded a last plate whose parts end early, so a part could be left with an empty hole while other parts were placed
+  beside it, and a longer Genetic search could even rate worse. Sample parts, 300 x 300 mm plate, holes on: Order walk
+  56.8% to 58.6% efficiency in 4 s and to 59.7% in 34 s; Genetic 55.8% to 57.2% in 4 s and to 59.1% in 34 s, with the
+  same number of plates. Nested exports can differ; single-part exports don't. Bounding box is unchanged (#509).
+- A job that fits on one plate is searched for its full time, as a longer one is, so Search more does something: the
+  sample parts on 700 × 700 mm at 15° steps ended after 2 layouts at 51.6% efficiency; in 4 s they now try 25 layouts
+  and reach 54.2% (#520).
+- A part's Qty is limited to 1,000, and a job to 20,000 parts in total, with a message under the field like the length
+  fields. Before, 3,000,000 left the page at "Nesting…", 5,000 copies of each sample part took 6.5 s in Bounding box
+  mode, and a huge number could run the tab out of memory; 20,000 parts take about 4 s in Bounding box mode (#520).
 
-## 1.6.1-beta
+### Fixed
 
-Fixes from the release review of 1.6.0-beta (#500).
+- A part with many notches (a comb, a sawtooth or a filigree border) no longer freezes the page while it is prepared for
+  True shape nesting: splitting its outline into convex pieces took time that grew with the cube of its vertices, and
+  now grows about in proportion. A 1,600-tooth sawtooth: 34 s down to 0.12 s. The pieces, and so the exports, are the
+  same (#513).
+- A thin spur or hairpin in a part's outline (a line that runs out past the end of a long straight run and back) is no
+  longer dropped when the outline is simplified for nesting, so neighbors are no longer placed over it: the reported
+  131 mm path had 3.2 mm² of outline outside its envelope, now none. Sample parts and fixtures nest and export as before
+  (#514).
+- A fill or stroke that paints nothing is no longer exported as paint. A shape with `fill-opacity="0"` now exports like
+  a `fill="none"` shape, so it is kerf-compensated and joined like one, and the DXF export no longer adds the "filled
+  areas" note (a 40 mm circle with kerf 1 mm: radius 20, uncompensated, before; 20.5 now). A stroke with
+  `stroke-width="0"` or `stroke-opacity="0"`, which was written as a 0.01 mm stroke in its color (and on that color's
+  DXF layer), now exports with no stroke (#515).
+- Bounding box mode no longer counts a part as too big, or puts it on a second plate, when it fits to within 0.1 µm:
+  three 10.1 mm parts on a 30.3 mm width took 2 plates, now 1, and a part exactly the usable size is no longer left out.
+  The sample parts' Bounding box layouts can differ (#520).
+- In a part kept as original markup (gradients, `<use>`, `<style>`), text that merely contains `id="..."` or `url(#...)`
+  is exported as written; only real ids and the references to them get the per-copy prefix. Its plate previews redraw
+  faster: each part's ids are rewritten once and reused for every copy, so 60 copies of a part with 34 ids take under
+  1 ms per redraw (3.4 ms in 1.6.0-beta) (#500, #511).
+- The "kerf-compensated" comment is no longer written into a plate whose parts were all exported as drawn (text or
+  images only) (#520).
+- A style sheet in an imported file that the browser can't read, in full or at all, gives a notice that some of the
+  part's styling may be missing, instead of a silent loss or a refused file with the browser's own error (#520, #526).
+- Download all, and a plate's Download button, say why nothing happens while the plates are out of date or a search
+  runs ("Out of date: wait for the new layout"), for keyboard and screen reader users too (#500, #520).
+- The confirmation after a download ("Saved ...") spans up to the window's width minus a margin, wraps a long file name
+  instead of pushing its Dismiss button off the screen, and has a border in forced-colors modes such as Windows High
+  Contrast (#500).
+- With WCAG text spacing applied, the Rotation, Outline precision, Unitless SVG scale and file prefix rows are no longer
+  cut off: they take one column, and the legacy scale option reads "90 px/in (legacy)". A line under the parts list
+  explains the holes button and the slashed stand-in on parts without holes (#520).
+- A stalled download of the search library no longer holds the first search: after 10 seconds the search runs on the
+  page, as when the download fails (#500).
 
-- **Fixed:** the confirmation that appears after a download ("Saved ...") now spans up to the window's width minus a
-  margin on each side, and wraps a long file name instead of pushing its Dismiss button off the screen. In Windows
-  High Contrast and other forced-colors modes it has a border.
-- **Fixed:** in a part kept as original markup, text that merely contains `id="..."` or `url(#...)` is exported as
-  written. Only real ids and the references to them (attributes and `<style>`) get the per-copy prefix.
-- **Fixed:** a stalled download of the search library no longer holds the first search: after 10 seconds the search
-  runs on the page, as when the download fails.
-- **Fixed:** clicking Download all while the plates are out of date now says why nothing happens ("Out of date: wait
-  for the new layout"), and the button carries the same tooltip as the plate buttons.
-- Tooling and docs only: the fixture regression (`tools/regression.py`) takes its options through `argparse` (a
-  mistyped option or a missing value is an error), copes with fixtures that contain `</script>`, fails on a fixture that
-  errors unexpectedly and checks the stated values of the new fixtures; its CI job cancels a superseded run for the same
-  pull request; `tools/build.py` strips comments after a regex literal that follows `return` or `typeof`; one shared
-  helper computes the 45-degree arc segments for DXF import, SVG arcs and the DXF export, and one constant counts
-  Bounding box's placement rules (exports unchanged); `CLAUDE.md` and `fixtures/README.md` say fixtures carry no SPDX
-  header.
+### Security
+
+- Four crafted files that froze the page while they were added now import in milliseconds, with the same results: an
+  SVG with a long run of `url(#` and an id (64,000 repeats: 11.7 s, now 3 ms) (#516); an SVG style with `image(`,
+  `image-set(` or `cross-fade(`, an unclosed quote and a run of spaces (100,000 spaces: 7.5 s, now 1 ms) (#517); a
+  style sheet with a long run of `[` and no `]`, which also slowed every export of a part kept as original markup
+  (200,000: 19.6 s to add, now 19 ms) (#518); and a DXF whose block entities carry thousands of junk group codes,
+  inserted as a large array (20,000 codes in a 300 by 300 array: 10.7 s, now 0.07 s) (#519).
 
 ## 1.6.0-beta
 

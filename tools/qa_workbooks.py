@@ -16,12 +16,13 @@ Each test also carries a machine-checkable form of its Expected text (the last e
 regression, tools/regression.py, runs every test on the new build and fails, naming the test, when a result no longer
 matches, so a change that alters what testers see updates the workbook text in the same pull request.
 
-Python 3, standard library only.
+Needs Python 3.7 or newer (checked by reading the code and parsing it for 3.7; the scripts are only run on a current
+Python). Standard library only.
 """
-import io, pathlib, re, sys, zipfile
+import argparse, io, pathlib, re, sys, zipfile
 from xml.sax.saxutils import escape
 
-VERSION = "1.6.0-beta"   # the release under test: the tag whose source zip testers download
+VERSION = "1.7.0-beta"   # the release under test: the tag whose source zip testers download
 REPO = "https://github.com/cyvaquero/snugcut"
 
 APPS = [
@@ -129,9 +130,9 @@ BRACKET_NOTICES = ["left out 3 items on frozen, off, non-plotting or Defpoints l
 TESTS = [
     ("SVG export", None, [
         (1, "Scale", "", [
-            "Tick **Plate outline in export**.",
+            "Check **Plate outline in export**.",
             "Add `geometry/cad-lines.svg`, download the plate and import it.",
-            "Untick **Plate outline in export** afterwards.",
+            "Uncheck **Plate outline in export** afterwards.",
         ], [
             "A red 300 × 300 mm square (the plate), and a red 38 × 28 mm rectangle with a blue 20 mm line inside.",
             "The rectangle is **one closed shape**, not four separate lines.",
@@ -170,7 +171,7 @@ TESTS = [
         (5, "CSS support, via SnugCut", "#38, #42", [
             "Add `makeit/makeit-css-support.svg`, download the plate and import it.",
         ], [
-            "Squares 1–8 are **all red**, and \"ref black\" is black.",
+            "Squares 1, 2, 4, 5, 6, 7 and 8 are **all red**, and \"ref black\" is black.",
         ], [SHOT_CANVAS, SHOT_LAYERS],
         check(["makeit/makeit-css-support.svg"], shapes=[shape(25, 25, R, closed=True, n=7), shape(25, 25, K, closed=True)])),
         (6, "Selector leak", "#38", [
@@ -242,7 +243,7 @@ TESTS = [
     ]),
     ("Kerf compensation", None, [
         (14, "Kerf, SVG", "#36", [
-            "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects**.",
+            "Set **Kerf** to 0.2 mm and check **Compensate kerf on objects**.",
             "Add `test-cuts/kerf-test.svg`.",
             "Download the plate and import it. The download says kerf compensation is built in, and that a hole is "
             "narrower than the kerf and was left as drawn: that's the pin hole.",
@@ -254,7 +255,7 @@ TESTS = [
             shape(20.2, 20.2, R, closed=True, sub=4), shape(14, 0, B), shape(4, 2, None, K, closed=True)],
             export_notes=KERF_NOTES)),
     ]),
-    ("DXF import, SVG export", "Set kerf back to 0.1 mm and untick **Compensate kerf on objects** for tests 15–21.", [
+    ("DXF import, SVG export", "Set kerf back to 0.1 mm and uncheck **Compensate kerf on objects** for tests 15–21.", [
         (15, "mm DXF", "#31", [
             "Add `dxf/dxf-mm-bracket.dxf`. Two notices: 3 items on frozen, off, non-plotting or Defpoints layers were "
             "left out, and 1 text was skipped.",
@@ -292,9 +293,9 @@ TESTS = [
     ]),
     ("DXF export", "Set **Export format** to **DXF (R12, mm)**. The plate button now reads **Download DXF**.", [
         (19, "Scale, DXF", "#32", [
-            "Tick **Plate outline in export**.",
+            "Check **Plate outline in export**.",
             "Add `geometry/cad-lines.svg`, download the plate and import it.",
-            "Untick **Plate outline in export** afterwards.",
+            "Uncheck **Plate outline in export** afterwards.",
         ], [
             "A 300 × 300 mm plate square, and a 38 × 28 mm rectangle (**one closed shape**) with a 20 mm line inside, "
             "in separate colors or layers.",
@@ -322,11 +323,11 @@ TESTS = [
             shape(8, 8, CYAN, closed=True), shape(16, 6.4, B, closed=True), shape(36, 8.07, LIME)],
             layers=["CUT", "ENGRAVE", "SCORE"], notices=BRACKET_NOTICES)),
         (22, "Kerf, DXF", "#36, #32", [
-            "Set **Kerf** to 0.2 mm and tick **Compensate kerf on objects** again.",
+            "Set **Kerf** to 0.2 mm and check **Compensate kerf on objects** again.",
             "Add `test-cuts/kerf-test.svg`, download the plate and import it. The download says kerf compensation is "
             "built in, that filled areas are written as their outlines, and that a hole in `kerf-test.svg` is narrower "
             "than the kerf, so it was left as drawn (the pin hole).",
-            "Afterwards set kerf back to 0.1 mm, untick compensation and set **Export format** back to SVG.",
+            "Afterwards set kerf back to 0.1 mm, uncheck compensation and set **Export format** back to SVG.",
         ], [
             "The same sizes as test 14: a 20.2 × 20.2 mm outline, a 9.8 mm square hole and a 5.8 mm round hole.",
             "The 4 × 2 mm mark comes through as an outline (DXF has no fills).",
@@ -647,18 +648,16 @@ def die(msg):
 
 def main():
     root = pathlib.Path(__file__).resolve().parent.parent
-    args = sys.argv[1:]
-    check, issue = False, None
-    while args:
-        a = args.pop(0)
-        if a in ("-h", "--help"): print(__doc__); return
-        if a == "--check": check = True
-        elif a == "--issue":
-            if not args or not args[0].isdigit(): die("usage: --issue N (an export QA issue number)")
-            issue = int(args.pop(0))
-        else: die(f"unknown option {a}; usage: qa_workbooks.py [--check | --issue N]")
+    def issue_number(v):
+        if not v.isdigit(): raise argparse.ArgumentTypeError("an export QA issue number")
+        return int(v)
+    ap = argparse.ArgumentParser(prog="qa_workbooks.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
+    mode = ap.add_mutually_exclusive_group()   # --check and --issue can't be combined
+    mode.add_argument("--check", action="store_true", help="fail if a workbook is out of date, writing nothing")
+    mode.add_argument("--issue", type=issue_number, metavar="N", help="print QA issue N's body (for gh issue edit N --body-file)")
+    args = ap.parse_args()   # an unknown option or a missing value ends the run with status 2
+    check, issue = args.check, args.issue
     if issue is not None:
-        if check: die("--check and --issue can't be combined")
         for slug, app, number, *_ in APPS:
             if number == issue:
                 sys.stdout.write(issue_body(slug, app))      # no added newline: it is the issue's body as it stands
