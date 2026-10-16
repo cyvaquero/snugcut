@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UyMMWbBGbtWT4I6Ra9tADwnGvqFwPipMvBPS9UM4Abk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2k7YC+4eqWZ32UH2x6h+Tc4KJfO5H5jgDB4kZmSlLO0=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2595,7 +2595,7 @@ function searchWorker(self, nestCore, SC){
     const {items} = unpack(m);
     const st = m.st, post = (type, more) => self.postMessage({type, id:m.id, st, ...more});
     try {
-      await core[m.strategy === "ga" ? "gaLoop" : "searchLoop"](st, {items, F:m.F, plateA:m.plateA, minPlates:m.minPlates, ms:m.ms, t0:performance.now() - m.elapsed,
+      await core[m.strategy === "ga" ? "gaLoop" : "searchLoop"](st, {items, F:m.F, plateA:m.plateA, ms:m.ms, t0:performance.now() - m.elapsed,
         angPick:it => it.part.angs, pause:pause(m.id), onDraw:() => post("draw"), onStep:() => post("step"),
         onBest:(bins, score) => post("best", {score, bins:placements(bins)})});
       post("done");
@@ -2693,7 +2693,7 @@ function inWorker(w, st, o, parts, byUid){
     w.addEventListener("message", on); w.addEventListener("error", poolFailed); live.add(fail);
     // postMessage throws at once when the message can't be cloned: the watch and listeners above go with it, not at the next run
     try {
-      w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA, minPlates:o.minPlates,
+      w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA,
         ms:o.ms, elapsed:performance.now() - o.t0, st, strategy:o.strategy});
     } catch(err) { fail(err); }
   });
@@ -3378,7 +3378,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
     }
     const {items, oversize, minPlates, st} = search;
     // in the search worker when there is one (#4), else here
-    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token, strategy:S.search,
+    await searchParts(st, {items, F:search.F, plateA, ms, t0, token, strategy:S.search,
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
