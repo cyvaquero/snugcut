@@ -495,7 +495,8 @@ function plateFile(pl, notes){
 // a failed export says so, instead of the button seeming to do nothing (#287)
 const exportFailed = e => { console.error(e); notice(t("notice.exportError", {error: e && e.message || e}), true); };
 function exportPlate(i){
-  if (!layout || layout.stale || plateBusy()) return;
+  if (!layout) return;
+  if (layout.stale || plateBusy()) { say(t(layout.stale ? "plate.staleTitle" : "plate.busyTitle")); return; }   // aria-disabled still takes the click: say why nothing happens
   try {
     const notes = new Set();
     download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
