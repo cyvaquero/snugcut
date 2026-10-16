@@ -50,7 +50,9 @@ export const EN = {
   "part.drawnIn": "Drawn in",
   "part.inches": "inches",
   "part.qty": "Qty",
-  "part.qtyErr": "Enter a whole number, 0 or more; still using {qty}.",
+  "part.qtyErr": "Enter a whole number from 0 to {max}; still using {qty}.",
+  "part.qtyMax": "A part can have at most {max} copies; still using {qty}.",
+  "part.qtyTotal": "A job can have at most {max} parts in total; still using {qty}.",
   "part.holesTitle": "Nest other parts inside this part's holes (only if every closed inner outline is cut, not scored)",
   "part.holesLabel": "Nest parts inside the holes of {name}",
   "part.noHoles": "No holes to nest parts in",
@@ -123,5 +125,6 @@ export const EN = {
   "lib.dxfOut.markers": "Not in the DXF: markers (arrowheads and the like) in {name}.",
   "lib.dxfOut.unreadable": "Not in the DXF: unreadable paths in {name}.",
   "lib.dxfOut.fills": "Filled areas are written as their outlines.",
+  "lib.layout.tooManyItems": "The job has more than {limit} parts in total, which is more than SnugCut nests. Lower the quantities.",
   "lib.search.workerFailed": "the search worker stopped",
 };
