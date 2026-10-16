@@ -7,6 +7,13 @@ Safari 16.4+); those versions are known API support, not tested minimums. Colors
 are converted with `color-mix()`, which needs Firefox 113 or Safari 16.2; in an older browser those paints reach the
 exports as written.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/readme-app-dark.webp">
+  <img src="images/readme-app-light.webp" alt="SnugCut with the sample parts nested on two 300 by 300 mm plates: the mode toggle, the Search Options and Plate &amp; cutting boxes and the parts list on the left, and the results, the two plate previews and the download buttons on the right.">
+</picture>
+
+SnugCut with its sample parts nested, in the theme that matches your GitHub theme (the app follows the system setting).
+
 Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
@@ -40,6 +47,10 @@ its parts, across its width or its height, whichever leaves the larger offcut, a
 last plate (when it's at least 10 mm across). Nesting parts inside holes raises it, and True shape's search prefers a
 layout that ends the last plate sooner. Bounding box ranks by fewest plates, then fuller plates. Part shapes cap it: round parts can't cover a plate the way
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
+
+![The results bar: 2 plates, area minimum 2, 42% average utilization, 32 parts placed, efficiency 5/10 (53%) and a Download all button; below it the search status and the first two plate previews, each with its own Download SVG button.](images/readme-results.webp)
+
+The results above the plate previews, with the Download buttons.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
 layout is ready. While a search is running it can replace the layout at any moment, so single plates of a
@@ -101,7 +112,13 @@ screen reader hears with the heading's button. Closing Plate & cutting brings th
 the mm/in switch stays in its heading, and a field error opens the box again.
 
 - **Nesting mode**: True shape or Bounding box (under the page intro).
+
+  ![The Nesting mode toggle with True shape selected and Bounding box next to it.](images/readme-mode.webp)
+
 - **Search Options** (True shape, its own box above Plate & cutting):
+
+  ![The Search Options box open: the Method menu set to Order walk, its description, the Workers menu set to Off and the memory note.](images/readme-search-options.webp)
+
   - **Method**: **Order walk** (the default) keeps changing the order the parts are placed in, 1–3 swaps or moves at
     a time, keeps each change that is no worse, and lets every part take its best angle where it lands. **Genetic**
     keeps 20 layouts, each an order and a fixed angle per part, and breeds new ones from the best of them; with
@@ -118,6 +135,10 @@ the mm/in switch stays in its heading, and a field error opens the box again.
     method: Order walk gains the most, several times as many layouts with 4 workers. Genetic waits at each step for
     the slowest of its layouts, and each worker builds its own cache of part pairs, so it gains less, especially in
     short searches at fine angle steps.
+- **Plate & cutting** holds the settings below, from Units to Export format:
+
+  ![The Plate & cutting box at its defaults: the mm/in switch, plate width and height, the Kerf group with Compensate kerf on objects, extra gap and edge margin, and the Rotation, Outline precision, Unitless SVG scale, Plate outline, Output file prefix and Export format fields.](images/readme-plate-panel.webp)
+
 - **Units**: mm or in, for every length field and the sizes in the parts list. Files are always written in mm.
   Length fields take `.` or `,` as the decimal point, and numbers on screen use your browser's locale (`0,2` in
   German, for example); exported files always use `.`.
@@ -142,6 +163,10 @@ the Rotation step), **grain** (wavy lines: the part only turns end for end, 0° 
 runs the same way on every copy; in Bounding box mode it isn't turned at all, since 180° gives the same rectangle), and
 **locked** (a closed lock: 0° only). A part left out because it fits only turned another way says so, and a
 grain part's outline on the plate preview is labeled "(grain)". A line under the parts list explains the three states, and another (True shape) the holes button and the slashed stand-in. A few sample parts are loaded at first; they go away when you add your own files.
+
+![Three part rows. star-ornament: orientation free (open lock), holes button off. l-bracket: orientation grain (wavy lines), holes button on. crescent-moon: orientation locked (closed lock), with the dimmed red slashed stand-in where the holes button would be.](images/readme-parts-panel.webp)
+
+The orientation button in its three states (free, grain, locked), the holes button off and on, and the slashed stand-in on a part without holes.
 
 **Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
 not on parts kept as original markup);
@@ -305,6 +330,7 @@ SnugCut.
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing, CHANGELOG consolidation, the fixture regression |
 | `.github/workflows/` | CI: the generated-files check (`snugcut.html` and the QA workbooks current), the fixture regression, and issue triage labels |
 | `LICENSE`            | the AGPL-3.0-or-later license text |
+| `images/`            | the README's screenshots of the app (WebP; the whole page in light and dark, and close-ups of its controls); not part of `snugcut.html` |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `nesting/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
