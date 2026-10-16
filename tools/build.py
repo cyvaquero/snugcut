@@ -18,6 +18,9 @@ Both runs check that each library <script> URL is in the CSP's script-src (and c
 integrity and crossorigin (#387), and the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
 message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
 The string-table check ignores comments, so a key named only in one counts as neither used nor missing.
+It also stops the build when a message code the library names, literally or as msg("dxfOut." + word), isn't in MESSAGES, and when
+nestCore or searchWorker, which the search worker is built from by their source text, use a library name that doesn't exist
+there (or a browser-only global): such a reference works on the page and throws only in the worker (#520).
 """
 import argparse, base64, hashlib, pathlib, re, sys
 
