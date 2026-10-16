@@ -125,7 +125,7 @@ the mm/in switch stays in its heading, and a field error opens the box again.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
 - **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
-  72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
+  72 (Illustrator) or 90 (legacy: Inkscape before 0.92). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
   `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).
 - **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
 - **Output file prefix** (up to 60 characters): put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
@@ -267,8 +267,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   change is announced.
   Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
-  (name, then thumbnail, Qty and buttons) and the settings fields stack in one column, so nothing is lost at 320 px,
-  400% zoom or with larger text spacing. With JavaScript turned off, the page says that SnugCut needs it.
+  (name, then thumbnail, Qty and buttons) and the settings fields stack in one column (the Rotation and Outline precision, scale and file prefix rows always do, since
+  their selected text is long), so nothing is cut off at 320 px, 400% zoom or with larger text spacing (checked at 1280 px and 320 px with the
+  WCAG text-spacing values). With JavaScript turned off, the page says that SnugCut needs it.
 - **Known gaps**: where each part sits on a plate preview is shown only in the image and the mouse tooltips. Target size isn't required at WCAG 2.1 AA: the mm / in buttons
   are 24 px tall. Report problems as a GitHub issue.
 
