@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.3-beta
+
+- **Fixed:** plate previews of parts kept as original markup (parts with ids: gradients, `<use>`, `<style>`) redraw as
+  fast as before 1.6.1-beta again, or faster: each part's ids are rewritten once and reused for every copy, instead of
+  once per copy on every redraw. 60 copies of a part with 34 ids: 37 ms per redraw down to under 1 ms (1.6.0-beta:
+  3.4 ms). Exports are unchanged (#511).
+
 ## 1.6.2-beta
 
 - **Changed:** among layouts with the same number of plates, the True shape search now prefers the one that leaves the
