@@ -212,7 +212,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
     }
     const {items, oversize, minPlates, st} = search;
     // in the search worker when there is one (#4), else here
-    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token, strategy:S.search,
+    await searchParts(st, {items, F:search.F, plateA, ms, t0, token, strategy:S.search,
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
