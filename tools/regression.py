@@ -23,7 +23,8 @@ connect-src or worker-src that blocks the worker would otherwise pass, since the
 Exit status: 0 when every entry matches (with --allow-diff: when nothing but entries differ); 1 when an entry differs,
 a nest failed, the worker's nests differ from the page's, a workbook test or a fixture check doesn't match its expected result, or a page load check reports a problem; 2 when
 a build gives no results (Chrome missing, a timeout, or the page failed before finishing).
-Python 3 standard library only.
+Needs Python 3.7 or newer (checked by reading the code and parsing it for 3.7; the scripts are only run on a current
+Python). Standard library only.
 """
 import argparse, base64, functools, glob, http.server, json, math, os, pathlib, re, shutil, socket, struct, subprocess, sys, tempfile, threading, time, urllib.request
 

@@ -296,10 +296,10 @@ SnugCut.
 | `snugcut.html`       | the app in one file (HTML, CSS and inline JavaScript), **generated** by `tools/build.py` |
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
-| `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
+| `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3.7+, no dependencies); `--check` tests it is current |
 | `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
-| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' and the new fixtures' expected results (Python 3, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
-| `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
+| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' and the new fixtures' expected results (Python 3.7+, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
+| `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3.7+, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing, CHANGELOG consolidation, the fixture regression |
@@ -432,7 +432,7 @@ and commit the sources and `snugcut.html` together. `python3 tools/regression.py
 byte-identical to `develop`'s and that the QA workbook tests' expected results still hold. Every pull request and
 every push to `main` or `develop` runs both `--check` commands
 (`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check, and the regression itself
-(`.github/workflows/regression.yml`), so a script error or an unintended export change fails it too. The split app (`app/index.html`) uses ES modules, so it only runs
+(`.github/workflows/regression.yml`), so a script error, a page that doesn't load with its CSP (or `app/` over HTTP), or an unintended export change fails it too. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a

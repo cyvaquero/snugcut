@@ -7,6 +7,9 @@
     python3 tools/build.py --check  exit 1 if snugcut.html is out of date
     (any other argument: usage and exit status 2, nothing written; -h or --help prints this)
 
+Needs Python 3.7 or newer (checked by reading the code and parsing it for 3.7; the scripts are only run on a current
+Python). Standard library only.
+
 app/index.html, app/snugcut.css, app/app.js, app/strings-en.js and lib/snugcut.js are the source of truth. The page's
 stylesheet link and module script are replaced by the CSS and the JavaScript inline: the library first, then the
 string table, then the app, in one strict classic script (export/import lines removed). In the CSP, script-src allows that one inline script by its sha256 hash
@@ -15,9 +18,8 @@ Both runs check that each library <script> URL is in the CSP's script-src (and c
 integrity and crossorigin (#387), and the string table (#128): a key app.js uses that isn't defined, a defined key nothing uses, a library
 message code without its "lib." entry (or the reverse), or a data-t key in the page used twice, stops the build.
 The string-table check ignores comments, so a key named only in one counts as neither used nor missing.
-Python 3 standard library only.
 """
-import base64, hashlib, pathlib, re, sys
+import argparse, base64, hashlib, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "snugcut.html"
@@ -103,6 +105,14 @@ def check_text(html, strings, app, lib):
     if not block: fail("lib/snugcut.js has no MESSAGES table")
     libkeys = {"lib." + c for c in re.findall(r'^\s*"([\w.]+)":', block.group(1), flags=re.M)}
     keys, prefixes = set(defined), {k.split(".")[0] for k in defined}
+    # message codes the library names: literal ones (msg("code"), fail("code")) must be in MESSAGES, and so must each member of
+    # a code built at run time, msg("dxfOut." + s), whose s is one of the words extractFlat adds to its skipped set (#520)
+    codes = {k[4:] for k in libkeys}
+    for c in sorted(set(re.findall(r'\b(?:msg|fail)\(\s*"([\w.]+)"\s*[,)]', lib)) - codes): fail(f"lib/snugcut.js uses the message code {c}, which MESSAGES doesn't have")
+    for prefix in sorted(set(re.findall(r'\bmsg\(\s*"(\w+\.)"\s*\+', lib))):
+        if prefix != "dxfOut.": fail(f"lib/snugcut.js builds message codes from {prefix}...; list their members in tools/build.py check_text")
+        for w in sorted(set(re.findall(r'\bskipped\.add\("(\w+)"\)', lib))):
+            if prefix + w not in codes: fail(f"lib/snugcut.js can raise the message code {prefix + w} (msg(\"{prefix}\" + …)), which MESSAGES doesn't have")
     # keys app.js names: t("key") calls, and any other "prefix.name" literal with a table prefix (picked at run time)
     named = {k for k in re.findall(r'\bt\(\s*"([\w.]+)"', app) if not k.endswith(".")} | {l for l in re.findall(r'"(\w+(?:\.\w+)+)"', app) if l.split(".")[0] in prefixes}
     missing = sorted((named | libkeys) - keys)
@@ -219,12 +229,11 @@ def build():
     return html.replace("<!doctype html>\n", "<!doctype html>\n" + NOTICE + "\n", 1)
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    if args in (["-h"], ["--help"]): print(__doc__); sys.exit(0)
-    if args not in ([], ["--check"]):   # an unknown option must not fall through to writing snugcut.html (#468)
-        print(f"build.py: unknown argument {' '.join(args)}; usage: build.py [--check]", file=sys.stderr); sys.exit(2)
+    ap = argparse.ArgumentParser(prog="build.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
+    ap.add_argument("--check", action="store_true", help="exit 1 if snugcut.html is out of date, writing nothing")
+    args = ap.parse_args()   # an unknown option ends the run with status 2 before anything is written (#468)
     out = build()
-    if args:
+    if args.check:
         # compared as bytes and written with \n on every platform, so a Windows build can't turn every line into \r\n
         # unseen (#292)
         if not OUT.exists() or OUT.read_bytes() != out.encode("utf-8"):

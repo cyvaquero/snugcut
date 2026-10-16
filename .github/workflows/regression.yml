@@ -10,7 +10,7 @@
 # a line starting "Export changes:" (CLAUDE.md); the differences are then listed but don't fail the check. Editing the
 # pull request runs the check again with the new body (re-running a finished job reuses the old one). On a push they
 # never do, since the pull request already vetted them. A newer run for the same pull request cancels the one still
-# running (an edit after a push, or two pushes in a row); pushes to main and develop are never cancelled. Python 3
+# running (an edit after a push, or two pushes in a row); pushes to main and develop are never cancelled. Python 3.7+
 # standard library only.
 name: Fixture regression
 
