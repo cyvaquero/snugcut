@@ -16,9 +16,10 @@ Each test also carries a machine-checkable form of its Expected text (the last e
 regression, tools/regression.py, runs every test on the new build and fails, naming the test, when a result no longer
 matches, so a change that alters what testers see updates the workbook text in the same pull request.
 
-Python 3, standard library only.
+Needs Python 3.7 or newer (checked by reading the code and parsing it for 3.7; the scripts are only run on a current
+Python). Standard library only.
 """
-import io, pathlib, re, sys, zipfile
+import argparse, io, pathlib, re, sys, zipfile
 from xml.sax.saxutils import escape
 
 VERSION = "1.6.0-beta"   # the release under test: the tag whose source zip testers download
@@ -647,18 +648,16 @@ def die(msg):
 
 def main():
     root = pathlib.Path(__file__).resolve().parent.parent
-    args = sys.argv[1:]
-    check, issue = False, None
-    while args:
-        a = args.pop(0)
-        if a in ("-h", "--help"): print(__doc__); return
-        if a == "--check": check = True
-        elif a == "--issue":
-            if not args or not args[0].isdigit(): die("usage: --issue N (an export QA issue number)")
-            issue = int(args.pop(0))
-        else: die(f"unknown option {a}; usage: qa_workbooks.py [--check | --issue N]")
+    def issue_number(v):
+        if not v.isdigit(): raise argparse.ArgumentTypeError("an export QA issue number")
+        return int(v)
+    ap = argparse.ArgumentParser(prog="qa_workbooks.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
+    mode = ap.add_mutually_exclusive_group()   # --check and --issue can't be combined
+    mode.add_argument("--check", action="store_true", help="fail if a workbook is out of date, writing nothing")
+    mode.add_argument("--issue", type=issue_number, metavar="N", help="print QA issue N's body (for gh issue edit N --body-file)")
+    args = ap.parse_args()   # an unknown option or a missing value ends the run with status 2
+    check, issue = args.check, args.issue
     if issue is not None:
-        if check: die("--check and --issue can't be combined")
         for slug, app, number, *_ in APPS:
             if number == issue:
                 sys.stdout.write(issue_body(slug, app))      # no added newline: it is the issue's body as it stands

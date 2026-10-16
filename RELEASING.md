@@ -171,7 +171,7 @@ python3 tools/regression.py main             # against another branch, tag or co
 python3 tools/regression.py OLD.html NEW.html
 ```
 
-It needs Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usual place) and network access for the
+It needs Python 3.7 or newer (the tools are standard library only; checked by reading them and parsing them for 3.7, and run on a current Python) and Chrome or Chromium (`--chrome PATH` or `$CHROME` if it isn't in the usual place) and network access for the
 two libraries from their CDN; `--libs DIR` loads `clipper.js` and `jszip.min.js` from a folder instead, but the search
 worker can't start from a file, so the nests then run on the page only (the page loads below still use the CDN). `--json FILE` keeps the new build's raw
 results. Exit status 0 means byte-identical; 1, a difference or a failure (listed); 2, no results from a build or an
@@ -240,6 +240,12 @@ HTTP server and opens `snugcut.html` (with its CSP and the libraries from their 
 `app/index.html` in a fresh Chrome each, driven over the DevTools protocol by a small WebSocket client in `regression.py`.
 Each page must draw its plates with the search worker started and report no console error, uncaught exception or blocked
 request; otherwise the run fails with `page loads: …` and the problem. It needs the CDN, like the runs above.
+
+**Library messages** (new build only): each library message is written twice, in `lib/snugcut.js` (English) and in
+`app/strings-en.js` (the app's words), and the build checks only that the keys match. The regression makes every message
+from sample values (`MESSAGE_SAMPLES` in `tools/regression.py`, one per plural or select case) both ways and fails, naming
+the code, when the texts differ, when a library message has no sample, or when a sample names a code the library doesn't
+have. A new library message therefore gets a sample there.
 
 **Fixture checks** (new build only): two builds that fail alike compare equal, so the new build is also checked on its
 own. A fixture that errors fails the run unless it is one of the listed refusals (the huge-coordinate files and the
