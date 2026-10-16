@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2k7YC+4eqWZ32UH2x6h+Tc4KJfO5H5jgDB4kZmSlLO0=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rMvgqwCPc1zqQgxuVaBEvBNGngyLy3as9LlqDUyuE5Y=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -302,7 +302,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.8-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.9-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1162,7 +1162,13 @@ function inlineSheets(g, p){
       if (r.cssRules && r.cssRules.length) walk(r.cssRules);       // nested rules
     } else if (r.cssRules && !(r instanceof CSSKeyframesRule)) walk(r.cssRules);   // @media, @supports, @layer, …
   } };
-  for (const s of sheets) { try { if (s.sheet) walk(s.sheet.cssRules); } catch(e) { p.styleSkipped = true; } }
+  // each sheet's rules are read once, inside the try: the @font-face and @keyframes rules it keeps come from the same read
+  const keeps = new Map();
+  for (const s of sheets) { try { if (s.sheet) {
+    const rules = s.sheet.cssRules;
+    keeps.set(s, [...rules].filter(r => r instanceof CSSFontFaceRule || r instanceof CSSKeyframesRule).map(r => r.cssText).join("\n"));
+    walk(rules);
+  } } catch(e) { p.styleSkipped = true; } }
   const px = v => v.replace(/(-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)px\b/gi, "$1");
   const val = (prop, v) => {
     v = v.replace(/url\("(#[^"\\]*)"\)/g, "url($1)");                // url("#id") → url(#id), as uniquifyIds expects
@@ -1178,7 +1184,7 @@ function inlineSheets(g, p){
   // the computed values have var() substituted: check them again, so nothing the sanitizer couldn't see reaches the export (#238)
   const writes = [...want].map(([el, props]) => { const cs = getComputedStyle(el); return [el, [...props].map(q => [q, cs.getPropertyValue(q)]).filter(([q, v]) => v !== "" && !cssExternal(`${q}:${v}`))]; });
   for (const s of sheets) {
-    const keep = s.sheet ? [...s.sheet.cssRules].filter(r => r instanceof CSSFontFaceRule || r instanceof CSSKeyframesRule).map(r => r.cssText).join("\n") : "";
+    const keep = keeps.get(s) || "";
     if (keep) s.textContent = keep; else s.remove();
   }
   for (const [el, kv] of writes) {
@@ -3107,7 +3113,7 @@ const EN = {
   "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
   "files.hiddenItem": "{n} from {name}",
   "files.tangled": "{name} has too many crossing lines, or too many lines meeting at one point, to trace its outline, so it is nested by the shape around all of it.",
-  "files.styleSkipped": "Part of the style sheet in {name} could not be read, so some of its styling may be missing from the downloads.",
+  "files.styleSkipped": "Some or all of the style sheet in {name} could not be read, so some of its styling may be missing from the downloads.",
   "files.hidden": "Left out hidden shapes (not shown, so not cut): {list}.",
   "files.stripped": "Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from {list}; only what's inside the file is used.",
   "stat.eff": "{rating} out of 10",
