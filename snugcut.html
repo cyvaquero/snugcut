@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ojI3kYocRBbm3ImPUY0xYxHEBOpW4y4TTHFjjqthBBI=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wgUkQaI5ily/0PVLOJbEXiRh8HI8+/4k/ciBJpbQ5yA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -298,7 +298,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.2-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.3-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1385,10 +1385,24 @@ function placeMatrix(tx, ty, deg, kx, ky, cx, cy){
 }
 const n3 = v => { const r = Math.round(v * 1000) / 1000; return Object.is(r, -0) ? "0" : String(r); };
 const slug = s => (s.replace(/\.(svg|dxf)$/i, "").replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "part").replace(/^(\d)/, "p$1");
+// each markup's rewrite with the placeholder prefix ID_MARK, or the markup itself when it has no ids: parsed once per
+// part, not once per copy on every redraw (#511). A few parts' worth, the oldest dropped first
+const idTemplates = new Map(), ID_MARK = "\uE000";
 function uniquifyIds(markup, prefix){
   // give every id in original markup a per-instance prefix and rewrite url(#id), href="#id" and #id in <style>. It works on
   // the parsed markup and touches attributes and <style> text only, so a <text> that merely contains id="x" or url(#x) keeps its
-  // words and adds no id (#500). The markup comes from XMLSerializer, so it parses as XML.
+  // words and adds no id (#500). The markup comes from XMLSerializer, so it parses as XML. The prefix is slug() characters,
+  // which serializing never escapes, so swapping it in for the placeholder gives the same text as rewriting with it.
+  if (markup.includes(ID_MARK)) return rewriteIds(markup, prefix);
+  let tpl = idTemplates.get(markup);
+  if (tpl === undefined) {
+    tpl = rewriteIds(markup, ID_MARK);
+    if (idTemplates.size >= 64) idTemplates.delete(idTemplates.keys().next().value);
+    idTemplates.set(markup, tpl);
+  }
+  return tpl === markup ? markup : tpl.split(ID_MARK).join(prefix);
+}
+function rewriteIds(markup, prefix){
   if (!/\sid="[^"]/.test(markup)) return markup;
   const doc = new DOMParser().parseFromString(`<svg xmlns="${SVGNS}">${markup}</svg>`, "image/svg+xml");
   if (doc.querySelector("parsererror")) return markup;
