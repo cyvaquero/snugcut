@@ -168,7 +168,10 @@ What happens to imported files:
   2,000,000 points, or a DXF that draws more than that many, isn't added; a DXF that expands to more than 250,000 items
   (blocks and arrays), or has a spline of degree above 11, isn't added; an SVG that repeats shapes through `<use>`
   more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (or not
-  finite) make the file too large to add.
+  finite) make the file too large to add. A part's quantity above 1,000, or quantities adding up to more than 20,000
+  parts, are refused the same way (see the parts list above).
+- A style sheet in a file that the browser can't read in full (it stops partway) is reported in a notice, since the part's
+  export may then lack some of its styling.
 - A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
   page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.
   `:root` rules still apply to the part; rules that need an HTML page around the drawing, such as `body rect`,
@@ -313,6 +316,11 @@ still be downloaded on its own; without the fonts the page falls back to system 
 A Content-Security-Policy allows only those URLs, so an imported SVG can't make the browser load anything else, and it
 allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both library script
 tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have changed.
+
+Inline styles are the one thing the policy still allows (`style-src 'unsafe-inline'`): an imported SVG's own `<style>`
+blocks have to apply while its shapes are measured, or hidden shapes would count and strokes and fills would be read wrong
+(tested with the policy tightened: a file whose `.hide{display:none}` rule hid one shape measured 54 mm wide instead of
+30 mm). Styles can't run code, and `script-src` stays strict.
 
 The search runs in Web Workers built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
 workers need their own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`

@@ -394,6 +394,7 @@ async function addFiles(list){
     const p = addThumb(parseSVG(text, f.name)); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
     if (p.tangled) notes.push(t("files.tangled", {name: p.name}));
+    if (p.styleSkipped) notes.push(t("files.styleSkipped", {name: p.name}));
     if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
   } catch(e) { errs.push(e.message); } }
   if (hiddenIn.length) notes.push(t("files.hidden", {list: hiddenIn.join(", ")}));
