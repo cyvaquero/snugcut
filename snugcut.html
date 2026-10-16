@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Z1N9HYG+8LOcBdgjyCxCT5by80yDhvphxSTXnEAUnnA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UyMMWbBGbtWT4I6Ra9tADwnGvqFwPipMvBPS9UM4Abk=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2691,8 +2691,11 @@ function inWorker(w, st, o, parts, byUid){
       else if (m.type === "error") { end(); reject(new Error(m.message)); }
     };
     w.addEventListener("message", on); w.addEventListener("error", poolFailed); live.add(fail);
-    w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA, minPlates:o.minPlates,
-      ms:o.ms, elapsed:performance.now() - o.t0, st, strategy:o.strategy});
+    // postMessage throws at once when the message can't be cloned: the watch and listeners above go with it, not at the next run
+    try {
+      w.postMessage({type:"run", id, ver:geoVer, parts, items:o.items.map(it => [it.part.uid, it.envArea]), F:o.F, plateA:o.plateA, minPlates:o.minPlates,
+        ms:o.ms, elapsed:performance.now() - o.t0, st, strategy:o.strategy});
+    } catch(err) { fail(err); }
   });
 }
 // One layout of the genetic search's job (see the worker's "job"), packed in worker w: resolves to {score, chosen,
@@ -2710,7 +2713,7 @@ function packIn(w, msg, o){
       else if (m.type === "error") fail(new Error(m.message));
     };
     w.addEventListener("message", on); w.addEventListener("error", poolFailed); live.add(fail);
-    w.postMessage({type:"pack", id, ...msg});
+    try { w.postMessage({type:"pack", id, ...msg}); } catch(err) { fail(err); }   // as in inWorker()
   });
 }
 // Search the order of items (st and o as in the core's searchLoop, plus o.token: the run, see newRun). Resolves when
