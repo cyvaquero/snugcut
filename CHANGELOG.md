@@ -4,6 +4,17 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.7-beta
+
+- **Fixed:** four crafted files that froze the page while they were added now import in milliseconds, with the same
+  results as before. An SVG with a long run of `url(#` and an id rewrote its references in time that grew with the
+  square of the run: 64,000 repeats took 11.7 s, now 3 ms; 16,000 took 0.8 s, now 4 ms (#516). An SVG style with
+  `image(`, `image-set(` or `cross-fade(` followed by an unclosed quote and a run of spaces: 100,000 spaces took 7.5 s,
+  now 1 ms (#517). A style sheet with a long run of `[` and no `]`, which also slowed every export of a part kept as
+  original markup: 200,000 took 9.8 s (19.6 s to add the file), now 8 ms (19 ms) (#518). A DXF whose block entities
+  carry thousands of junk group codes, inserted as a large array: 20,000 codes in a 300 by 300 array took 10.7 s, now
+  0.07 s, the same as with none (#519). Fixtures, exports and the refusals of the security fixtures are unchanged.
+
 ## 1.6.6-beta
 
 - **Fixed:** a fill or stroke that paints nothing is no longer exported as paint. A shape with `fill-opacity="0"` was
