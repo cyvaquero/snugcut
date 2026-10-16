@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 // SnugCut app: the page's UI (settings, parts list, plate previews, downloads) on top of lib/snugcut.js.
 // snugcut.html is generated from this file, lib/ and the rest of app/ by tools/build.py: edit these, not snugcut.html.
-import {ABORT, CL, IN, S, SVGNS, binFrame, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
+import {ABORT, CL, IN, MAX_ITEMS, MAX_QTY, S, SVGNS, binFrame, checkJobSize, computeRectLayout, dxfToSVG, efficiency, envelope, esc, hasHoles,
   fitsPlate, invalidateGeometry, isCompensated, isCurrent, kerfC, measureScale, n4, newRun, parseSVG, plateDXF,
   plateSVG, rectFits, searchParts, setMessages, setVersion, shape, startWorker, toPlates} from "../lib/snugcut.js";
 import {EN} from "./strings-en.js";
@@ -189,6 +189,7 @@ let search = null;   // {items, oversize, minPlates, F, st: the search state, se
 async function run(ms, fresh, quiet){   // quiet: the run at page load isn't announced (#241)
   const token = newRun(), F = binFrame(), plateA = S.plateW * S.plateH, t0 = performance.now();
   try {     // an error while drawing a layout stops the run with a notice in both modes (#385)
+    checkJobSize(parts);   // a job past the limit stops with a notice before anything is built (a saved or sample set never gets here)
     if (S.mode === "bbox") { search = null; layout = computeRectLayout(parts); renderLayout(); return; }
     $("status").innerHTML = `<span class="dot on"></span>${th("status.nesting")}`;
     setRunning(true);
@@ -211,7 +212,7 @@ async function run(ms, fresh, quiet){   // quiet: the run at page load isn't ann
     }
     const {items, oversize, minPlates, st} = search;
     // in the search worker when there is one (#4), else here
-    await searchParts(st, {items, F:search.F, plateA, minPlates, ms, t0, token, strategy:S.search,
+    await searchParts(st, {items, F:search.F, plateA, ms, t0, token, strategy:S.search,
       onBest:bins => { layout = {plates:toPlates(bins), oversize, minPlates}; renderLayout(); },
       onStep:() => status(t0, ms, token)});
   } catch(e) {
@@ -279,6 +280,13 @@ const ICON_HOLE = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"
 const ICON_HOLE_ON = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><rect x="6" y="6" width="4" height="4" rx=".5" fill="currentColor"/></svg>`;
 const ICON_NOHOLE = ICON_HOLE.replace("</svg>", `<path d="M2.5 13.5l11-11"/></svg>`);   // stand-in on parts without holes (#141)
 const ICON_X = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+// the message for a typed quantity that can't be used, or "" (#97, #520): a whole number, at most MAX_QTY, and MAX_ITEMS in total
+function qtyBad(p, s){
+  if (!/^\s*\d+\s*$/.test(s)) return t("part.qtyErr", {qty: p.qty, max: MAX_QTY});
+  const v = Number(s);
+  if (v > MAX_QTY) return t("part.qtyMax", {qty: p.qty, max: MAX_QTY});
+  return parts.reduce((a, x) => a + (x === p ? v : x.qty), 0) > MAX_ITEMS ? t("part.qtyTotal", {qty: p.qty, max: MAX_ITEMS}) : "";
+}
 function renderParts(){
   // the list is rebuilt: put focus back on the same control of the same part (#95)
   const box = $("parts"), fa = document.activeElement, fr = fa && box.contains(fa) ? fa.closest(".part") : null;
@@ -289,12 +297,12 @@ function renderParts(){
     const row = document.createElement("div"); row.className = "part"; row.dataset.uid = p.uid;
     const ok = S.mode === "bbox" ? rectFits(p) : fitsPlate(p, F);
     row.innerHTML = `<img alt="" src="${p.thumb}"><div class="info"><div class="nm" id="nm-${p.uid}" title="${esc(p.name)}">${esc(p.name)}</div><div class="sz${ok?"":" bad"}">${th(ok ? "part.size" : "part.sizeTooBig", {w: fmt(p.wMM), h: fmt(p.hMM), unit: S.unit})}</div>${p.dxf ? `<div class="du"><span id="dl-${p.uid}">${th("part.drawnIn")}</span><select id="du-${p.uid}" aria-labelledby="dl-${p.uid} nm-${p.uid}"><option value="mm"${p.dxf.units === "mm" ? " selected" : ""}>mm</option><option value="in"${p.dxf.units === "in" ? " selected" : ""}>${th("part.inches")}</option></select></div>` : ""}</div>
-      <div class="qw"><span class="ql" id="ql-${p.uid}">${th("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
+      <div class="qw"><span class="ql" id="ql-${p.uid}">${th("part.qty")}</span><input type="number" id="q-${p.uid}" min="0" max="${MAX_QTY}" step="1" value="${p.qty}" aria-labelledby="ql-${p.uid} nm-${p.uid}"></div>
       <div class="acts">${S.mode === "bbox" ? "" : hasHoles(p) ? `<button type="button" class="icon hl" aria-pressed="${!!p.useHoles}" title="${th("part.holesTitle")}" aria-label="${th("part.holesLabel", {name: p.name})}">${p.useHoles ? ICON_HOLE_ON : ICON_HOLE}</button>` : `<span class="icon nohole" title="${th("part.noHoles")}" aria-hidden="true">${ICON_NOHOLE}</span>`}<button type="button" class="icon lk"></button><button type="button" class="icon rm" title="${th("part.removeTitle")}" aria-label="${th("part.removeLabel", {name: p.name})}">${ICON_X}</button></div>`;
     const q = row.querySelector("input");
     q.oninput = () => {
-      const ok = /^\s*\d+\s*$/.test(q.value);   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
-      fieldErr(q, ok ? "" : t("part.qtyErr", {qty: p.qty}));
+      const bad = qtyBad(p, q.value), ok = !bad;   // whole numbers only: 2.5 or -3 are refused with a message, not truncated (#97)
+      fieldErr(q, bad);
       if (ok) delete p.qtyDraft; else p.qtyDraft = q.value;   // kept, with its error, when the list is rebuilt (#240)
       if (ok) { p.qty = parseInt(q.value, 10); updateCount(); restartSoon(350); }
     };
@@ -314,7 +322,7 @@ function renderParts(){
     };
     box.appendChild(row);
     // an invalid entry the user hasn't fixed yet survives the rebuild, error included; it was announced when typed (#240)
-    if (p.qtyDraft != null) { q.value = p.qtyDraft; fieldErr(q, t("part.qtyErr", {qty: p.qty}), true); }
+    if (p.qtyDraft != null) { q.value = p.qtyDraft; fieldErr(q, qtyBad(p, p.qtyDraft), true); }
   }
   if (!parts.length) box.innerHTML = `<p class="note" style="margin:0">${th("parts.none")}</p>`;
   $("sampleBadge").hidden = !parts.some(p => p.sample);
@@ -386,6 +394,7 @@ async function addFiles(list){
     const p = addThumb(parseSVG(text, f.name)); p.fromDXF = isDXF(f); p.dxf = dxf; parts.push(p); if (p.stripped) stripped.push(p.name);
     if (p.hidden) hiddenIn.push(t("files.hiddenItem", {n: p.hidden, name: p.name}));
     if (p.tangled) notes.push(t("files.tangled", {name: p.name}));
+    if (p.styleSkipped) notes.push(t("files.styleSkipped", {name: p.name}));
     if (pre) { p.precomp = true; notes.push(t("files.precomp", {name: f.name})); }
   } catch(e) { errs.push(e.message); } }
   if (hiddenIn.length) notes.push(t("files.hidden", {list: hiddenIn.join(", ")}));
@@ -487,7 +496,8 @@ function plateFile(pl, notes){
 // a failed export says so, instead of the button seeming to do nothing (#287)
 const exportFailed = e => { console.error(e); notice(t("notice.exportError", {error: e && e.message || e}), true); };
 function exportPlate(i){
-  if (!layout || layout.stale || plateBusy()) return;
+  if (!layout) return;
+  if (layout.stale || plateBusy()) { say(t(layout.stale ? "plate.staleTitle" : "plate.busyTitle")); return; }   // aria-disabled still takes the click: say why nothing happens
   try {
     const notes = new Set();
     download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");

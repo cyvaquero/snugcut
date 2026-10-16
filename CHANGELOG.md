@@ -4,6 +4,38 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.8-beta
+
+- **Fixed:** the findings of the 1.7.0-beta review that were low or info (#520).
+  - A job that fits on one plate is now searched for its full time, as a longer one is, so Search more does something:
+    the sample parts on 700 × 700 mm at 15° steps ended after 2 layouts at 51.6% efficiency before; after 4 s they tried
+    25 layouts and reached 54.2%.
+  - Bounding box mode no longer counts a part as too big, or puts it on a second plate, when it fits to within 0.1 µm:
+    three 10.1 mm parts on a 30.3 mm width took 2 plates, now 1, and a part exactly the usable size (93.8 mm on 93.8 mm)
+    is no longer left out.
+  - A part's Qty is limited to 1,000, and a job to 20,000 parts in total, with a message under the field like the length
+    fields; before, 3,000,000 left the page at "Nesting…", 5,000 copies of each sample part took 6.5 s in Bounding box
+    mode and a huge number could run the tab out of memory. 20,000 parts take about 4 s in Bounding box mode.
+  - A plate's Download button now says why it does nothing while the plates are out of date or a search runs, instead of
+    saying nothing; the holes buttons are explained in the line under the parts list.
+  - With WCAG text spacing applied, the Rotation, Outline precision, Unitless SVG scale and file prefix rows are no
+    longer cut off ("Standard (0.25 …"): they take one column. The legacy scale option reads "90 px/in (legacy)".
+  - A style sheet in an imported file that the browser can't read in full now produces a notice, not a silent loss of
+    some of the part's styling.
+  - The "kerf-compensated" comment is no longer written into a plate whose parts were all exported as drawn (text or
+    images only).
+  - Without the page's script, the Search more button reads "Search more" instead of naming seconds that can differ.
+- **Changed:** the regression check in CI now runs with the real library files and the search worker, and loads
+  `snugcut.html` with its Content-Security-Policy and `app/index.html` over HTTP, failing on a console error. The build
+  checks that the search worker's code uses no library name that doesn't exist there, and that every message code
+  `lib/snugcut.js` can raise is defined; the regression compares the library's English messages with the app's words.
+  The tools use `argparse` and state Python 3.7 as their minimum. The README says that `oklch()`, `lab()` and `color()`
+  colors need Firefox 113 or Safari 16.2 to be converted, and why the policy keeps inline styles. Limits, shared rules
+  and the `-0` guards in `lib/snugcut.js` are stated once. Exports: the only changes are the omitted comment above
+  (17 fixtures with kerf compensation on) and the sample parts' Bounding box layouts, which now use the 0.1 µm fit
+  tolerance; the other fixture exports and the True shape nests are byte for byte unchanged.
+- **Fixed:** a worker message that can't be sent no longer leaves the search's 50 ms watch and listeners running.
+
 ## 1.6.7-beta
 
 - **Fixed:** four crafted files that froze the page while they were added now import in milliseconds, with the same

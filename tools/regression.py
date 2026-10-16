@@ -15,13 +15,18 @@ expected results stored beside each test. A mismatch is reported as "workbook te
 On NEW it also fails a fixture that errors without being a listed refusal (the huge-coordinate and item-cap files must
 be refused), and checks the stated values of the large circle, the opposite-direction overlap, the rotated circle and
 ellipse, the CDATA sections and the many ids, because two builds that fail alike would otherwise compare equal.
+Last it loads NEW's snugcut.html (with its Content-Security-Policy and the libraries from their CDN URLs, integrity hashes
+included) and app/index.html (as ES modules), each over HTTP from a local server, and fails on a console error, an uncaught
+exception, a blocked request, plates that are not drawn, or a search worker that did not start (a wrong script hash or a
+connect-src or worker-src that blocks the worker would otherwise pass, since the runs above remove the CSP).
 
 Exit status: 0 when every entry matches (with --allow-diff: when nothing but entries differ); 1 when an entry differs,
-a nest failed, the worker's nests differ from the page's, a workbook test or a fixture check doesn't match its expected result; 2 when
+a nest failed, the worker's nests differ from the page's, a workbook test or a fixture check doesn't match its expected result, or a page load check reports a problem; 2 when
 a build gives no results (Chrome missing, a timeout, or the page failed before finishing).
-Python 3 standard library only.
+Needs Python 3.7 or newer (checked by reading the code and parsing it for 3.7; the scripts are only run on a current
+Python). Standard library only.
 """
-import argparse, base64, glob, json, math, os, pathlib, re, shutil, subprocess, sys, tempfile, threading, time
+import argparse, base64, functools, glob, http.server, json, math, os, pathlib, re, shutil, socket, struct, subprocess, sys, tempfile, threading, time, urllib.request
 
 sys.dont_write_bytecode = True   # importing qa_workbooks would otherwise leave tools/__pycache__ in the tree
 import qa_workbooks   # the export QA workbooks' tests and their machine-checkable expected results (same folder)
@@ -118,6 +123,12 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
     }
     Object.assign(S, saved); __bump();
   }
+  // 4. the library's English messages against the app's words for them (check_messages): each is written twice, so every
+  // message is made from sample values both ways, and null where the library has no message the sample covers
+  out.messages = typeof MESSAGES === "object" ? {codes:Object.keys(MESSAGES), pairs:__MSG__.flatMap(([code, vars]) => {
+    try { const en = MESSAGES[code](vars), app = wording ? wording(code, vars, en) : en; return [[code, en, typeof app === "string" ? app : en]]; }
+    catch(e) { return [[code, String(e && e.message || e), null]]; }
+  })} : null;
   // UTF-8 to base64: TextEncoder, then the bytes as a binary string in chunks (one big apply would overflow the stack)
   const bytes = new TextEncoder().encode(JSON.stringify(out));
   let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -125,6 +136,20 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
 })();
 })();
 """
+# [library message code, the values it is made from]: the library's English text and the app's words (app/strings-en.js) for
+# each must be the same string. The plural and select cases get a value each; check_messages fails on a code with no sample
+N = "a.svg"
+MESSAGE_SAMPLES = [["dxf.binary", {"name": N}], ["dxf.unreadable", {"name": N}], ["dxf.noUnits", {"name": N, "units": "in"}], ["dxf.noUnits", {"name": N, "units": "mm"}],
+    ["dxf.tooManyItems", {"name": N, "limit": 250000}], ["dxf.tooManyPoints", {"name": N, "limit": 2000000}], ["dxf.tooLarge", {"name": N, "limit": 1000000000}],
+    ["dxf.splineDegree", {"name": N, "degree": 12, "max": 11}], ["dxf.hiddenLeftOut", {"name": N, "count": 1}], ["dxf.hiddenLeftOut", {"name": N, "count": 3}],
+    ["dxf.skipped", {"name": N, "skipped": [["LINE", 2], ["HATCH", 1]]}], ["dxf.nothingToCut", {"name": N, "hidden": 0}], ["dxf.nothingToCut", {"name": N, "hidden": 1}],
+    ["dxf.nothingToCut", {"name": N, "hidden": 4}], ["svg.unreadable", {"name": N}], ["svg.tooManyPoints", {"name": N, "limit": 2000000}],
+    ["svg.tooLarge", {"name": N, "limit": 1000000000}], ["svg.tooManyCopies", {"name": N, "limit": 10000}], ["svg.nothingVisible", {"name": N}],
+    ["svg.nothingToCut", {"name": N}], ["svg.noClosedOutline", {"name": N}], ["kerf.holeTooNarrow", {"name": N}], ["kerf.markup", {"name": N}],
+    ["dxfOut.nothing", {"name": N}], ["dxfOut.clipping", {"name": N}], ["dxfOut.text", {"name": N}], ["dxfOut.images", {"name": N}], ["dxfOut.use", {"name": N}],
+    ["dxfOut.element", {"name": N, "tag": "foreignObject"}], ["dxfOut.paint", {"name": N}], ["dxfOut.markers", {"name": N}], ["dxfOut.unreadable", {"name": N}],
+    ["dxfOut.fills", {}], ["search.workerFailed", {}], ["layout.tooManyItems", {"limit": 20000}]]
+
 CDN = {"clipper.js": "https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js",
        "jszip.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"}
 
@@ -168,8 +193,9 @@ def prepare(html, label, libs, qa=None):
     if len(tail) != 1: fail(2, f"{label}: can't find the page's startup run() to replace")
     # "<" as \u003c, so a fixture holding </script> or <!-- can't end the script or swallow the page; both placeholders
     # are filled in one pass, so fixture text that contains the other placeholder isn't substituted again
-    blobs = {"__CASES__": json.dumps(cases()).replace("<", "\\u003c"), "__QA__": json.dumps(qa).replace("<", "\\u003c")}
-    test = re.sub("__CASES__|__QA__", lambda m: blobs[m.group()], TEST)
+    blobs = {"__CASES__": json.dumps(cases()).replace("<", "\\u003c"), "__QA__": json.dumps(qa).replace("<", "\\u003c"),
+             "__MSG__": json.dumps(MESSAGE_SAMPLES).replace("<", "\\u003c")}
+    test = re.sub("__CASES__|__QA__|__MSG__", lambda m: blobs[m.group()], TEST)
     html = html.replace(tail[0], "renderParts();\n" + test, 1)
     html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>', "", html)
     html = re.sub(r'<link[^>]*fonts\.googleapis[^>]*>', "", html)
@@ -201,6 +227,112 @@ def run_build(chrome, html, label, tag, scratch, libs, qa=None, sandbox=True):
     text = log.read_text(encoding="utf-8", errors="replace")
     errors = [l for l in text.splitlines() if "CONSOLE" in l and ("Uncaught" in l or "rror" in l)][:5]
     fail(2, f"{label}: no results within {TIMEOUT} s, or Chrome exited first" + "".join("\n  " + e[:300] for e in errors))
+
+# The page as a visitor gets it (#520): snugcut.html with its own Content-Security-Policy and the libraries from their CDN
+# URLs with their integrity hashes, and app/index.html with its modules, both over HTTP. The test run above removes the CSP
+# and replaces the startup, so a wrong script hash, a connect-src or worker-src that blocks the search worker, or an app
+# that fails to load as modules would pass it. Each page must draw its plates with the search worker running and report no
+# console error, uncaught exception or blocked request. Chrome is driven over its DevTools protocol, with a small
+# WebSocket client (the standard library has none).
+class Cdp:
+    def __init__(self, url):
+        m = re.match(r"ws://([^:/]+):(\d+)(/.*)", url)
+        self.s = socket.create_connection((m.group(1), int(m.group(2))), timeout=30)
+        self.s.sendall((f"GET {m.group(3)} HTTP/1.1\r\nHost: {m.group(1)}:{m.group(2)}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                        f"Sec-WebSocket-Key: {base64.b64encode(os.urandom(16)).decode()}\r\nSec-WebSocket-Version: 13\r\n\r\n").encode())
+        self.buf = b""
+        while b"\r\n\r\n" not in self.buf: self.buf += self.s.recv(4096)
+        self.buf = self.buf.split(b"\r\n\r\n", 1)[1]
+        self.n = 0
+
+    def _read(self, n):
+        while len(self.buf) < n: self.buf += self.s.recv(65536)
+        out, self.buf = self.buf[:n], self.buf[n:]
+        return out
+
+    def recv(self):
+        # the next message (continuation frames joined); raises socket.timeout when none arrives in time
+        data = b""
+        while True:
+            b0, b1 = self._read(2); n = b1 & 127
+            if n == 126: n = struct.unpack(">H", self._read(2))[0]
+            elif n == 127: n = struct.unpack(">Q", self._read(8))[0]
+            data += self._read(n)
+            if b0 & 0x80: return json.loads(data.decode("utf-8"))
+
+    def send(self, method, **params):
+        self.n += 1
+        raw = json.dumps({"id": self.n, "method": method, "params": params}).encode()
+        size = bytes([0x80 | len(raw)]) if len(raw) < 126 else bytes([0x80 | 126]) + struct.pack(">H", len(raw)) if len(raw) < 65536 else bytes([0x80 | 127]) + struct.pack(">Q", len(raw))
+        mask = os.urandom(4)
+        self.s.sendall(bytes([0x81]) + size + mask + bytes(c ^ mask[i % 4] for i, c in enumerate(raw)))
+        return self.n
+
+def problem_of(msg):
+    # a console error, uncaught exception or blocked/failed request in a DevTools event, as text; None for anything else
+    p, kind = msg.get("params", {}), msg.get("method")
+    if kind == "Runtime.exceptionThrown":
+        d = p["exceptionDetails"]; return "exception: " + (d.get("exception", {}).get("description") or d["text"])[:200]
+    if kind == "Runtime.consoleAPICalled" and p["type"] in ("error", "assert"):
+        return "console." + p["type"] + ": " + " ".join(str(a.get("value", a.get("description", ""))) for a in p["args"])[:200]
+    if kind == "Log.entryAdded" and p["entry"]["level"] == "error" and not p["entry"].get("url", "").endswith("/favicon.ico"):
+        return "browser: " + p["entry"]["text"][:200] + (" " + p["entry"]["url"] if p["entry"].get("url") else "")
+    return None
+
+def visit(chrome, base_url, page, scratch, sandbox):
+    # open base_url/page in a fresh Chrome; returns the problems found (an empty list when the page drew its plates, the
+    # search worker started, and nothing was reported)
+    prof = scratch / ("load-" + re.sub(r"\W", "_", page))
+    p = subprocess.Popen([chrome, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check"] + ([] if sandbox else ["--no-sandbox"])
+                         + [f"--user-data-dir={prof}", "--remote-debugging-port=0", "about:blank"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    problems = []
+    try:
+        port_file, end = prof / "DevToolsActivePort", time.time() + 30
+        while time.time() < end and not (port_file.exists() and port_file.read_text().count("\n") >= 1): time.sleep(0.1)
+        if not port_file.exists(): return ["Chrome did not start"]
+        port = int(port_file.read_text().split()[0])
+        tabs = json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=10))
+        c = Cdp(next(t for t in tabs if t["type"] == "page")["webSocketDebuggerUrl"])
+        for method in ("Runtime.enable", "Log.enable", "Page.enable"): c.send(method)
+        c.send("Page.navigate", url=f"{base_url}/{page}")
+        # drawn: plates on the page and the first search finished (the pulsing dot is off); a fatal notice is a failure
+        probe = "[document.querySelectorAll('.plate').length, !!document.querySelector('.dot.on'), !!document.querySelector('.fatal')]"
+        asked, state, end = None, None, time.time() + 60
+        c.s.settimeout(0.5)
+        while time.time() < end:
+            if asked is None: asked = c.send("Runtime.evaluate", expression=probe, returnByValue=True)
+            try: msg = c.recv()
+            except socket.timeout: asked = None; continue
+            problems.extend(filter(None, [problem_of(msg)]))
+            if msg.get("id") == asked:
+                state = msg["result"].get("result", {}).get("value")
+                if state and state[0] and not state[1] or state and state[2]: break
+                time.sleep(0.5); asked = None
+        c.s.settimeout(0.5)
+        try:   # what the page reported while it settled
+            while True: problems.extend(filter(None, [problem_of(c.recv())]))
+        except socket.timeout: pass
+        if not state or not state[0] or state[1] or state[2]:
+            problems.append("did not draw its plates (state " + json.dumps(state) + ")")
+        workers = [t for t in json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=10)) if t["type"] == "worker"]
+        if not workers: problems.append("the search worker did not start")
+    finally:
+        p.kill(); p.wait()
+    return list(dict.fromkeys(problems))
+
+def load_check(chrome, html, scratch, sandbox):
+    # serves a copy of NEW's snugcut.html, app/ and lib/ over HTTP from a folder of its own, and visits snugcut.html and app/index.html
+    site = scratch / "site"
+    shutil.copytree(ROOT / "app", site / "app"); shutil.copytree(ROOT / "lib", site / "lib")
+    (site / "snugcut.html").write_text(html, encoding="utf-8")
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(site)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        return [f"{page}: {x}" for page in ("snugcut.html", "app/index.html") for x in visit(chrome, f"http://127.0.0.1:{srv.server_address[1]}", page, scratch, sandbox)]
+    finally:
+        srv.shutdown(); srv.server_close()
 
 TOL = 0.02   # mm, for a measured shape's size
 
@@ -294,6 +426,18 @@ def check_fixtures(got):
     need("geometry/many-ids.svg", "expected 300 or more ids, each prefixed, and every reference to one of them", ids)
     return bad
 
+def check_messages(got):
+    # the library's English messages and the app's words for them must be the same text (they are written in lib/snugcut.js
+    # and app/strings-en.js); returns the mismatches
+    m = got.get("messages")
+    if m is None: return ["the build has no MESSAGES table"]
+    bad = [f"message {c}: no sample in MESSAGE_SAMPLES" for c in m["codes"] if c not in {x[0] for x in MESSAGE_SAMPLES}]
+    bad += [f"message {c}: the sample names a code the library doesn't have" for c in {x[0] for x in MESSAGE_SAMPLES} - set(m["codes"])]
+    for code, lib, app in m["pairs"]:
+        if app is None: bad.append(f"message {code}: the library threw: {lib}")
+        elif lib != app: bad.append(f"message {code}: the library says \"{lib}\", the app \"{app}\"")
+    return bad
+
 NORM = [(re.compile(r"SnugCut v[0-9][0-9.]*(?:-[a-z]+)?"), "SnugCut v"),   # the version in the export comment
         (re.compile(r"\bp\d+_"), "p_")]                                    # parseSVG's per-import id prefix
 def norm(v):
@@ -306,7 +450,7 @@ def options():
     ap.add_argument("builds", nargs="*", metavar="BASE [NEW]", help="each a file or a git ref (its snugcut.html); BASE defaults to develop, NEW to the working tree's")
     ap.add_argument("--chrome", metavar="PATH", help="the Chrome or Chromium binary (default: $CHROME, then the usual install locations)")
     ap.add_argument("--libs", metavar="DIR", help="load clipper.js and jszip.min.js from DIR instead of the CDN, to run offline; the search worker "
-                    "can't load from a file, so the nests then run on the page only")
+                    "can't load from a file, so the nests then run on the page only; the page loads need the CDN and run regardless")
     ap.add_argument("--json", metavar="FILE", help="also write NEW's raw results to FILE")
     ap.add_argument("--allow-diff", action="store_true", help="entries that differ between the builds are listed but don't fail the run (a change meant "
                     "to alter exports); errors, nest failures, worker-vs-page differences and workbook mismatches still do")
@@ -355,6 +499,14 @@ def main():
     fx = check_fixtures(b)
     print(f"fixture checks: {len(REFUSED)} refusals and 5 values checked, {len(fx)} mismatches" + "".join("\n  " + m for m in fx))
     bad |= bool(fx)
+    ms = check_messages(b)
+    print(f"library messages: {len(MESSAGE_SAMPLES)} compared with the app's words, {len(ms)} mismatches" + "".join("\n  " + x for x in ms))
+    bad |= bool(ms)
+    tmp = tempfile.mkdtemp(prefix="snugcut-load-")
+    try: loads = load_check(chrome, builds[1][0], pathlib.Path(tmp), "--no-sandbox" not in flags)
+    finally: shutil.rmtree(tmp, ignore_errors=True)
+    print(f"page loads: snugcut.html with its CSP and app/index.html over HTTP, {len(loads)} problems" + "".join("\n  " + m for m in loads))
+    bad |= bool(loads)
     print("FAIL" if bad else "OK: " + ("exports differ as allowed" if differs else "byte-identical") + ", workbook tests and fixture checks match")
     sys.exit(1 if bad else 0)
 
