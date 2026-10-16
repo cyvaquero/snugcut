@@ -74,7 +74,8 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
-  is recognized and not compensated a second time. Parts kept as original markup and holes narrower than the kerf
+  is recognized and not compensated a second time. A plate with nothing compensated on it (only parts kept as original markup)
+  isn't marked. Parts kept as original markup and holes narrower than the kerf
   are exported as drawn (in SVG and DXF), with a notice.
 
 **Parts kept as original markup**: a part with text, images, `<use>` copies, gradient or pattern fills, clip paths,
