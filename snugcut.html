@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tm3Jovx+RbP10mfX81tLdwPbIqelU4nVMdUhtrZ59CM=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6eFYxXhPrY47rwgpEsjHcxzYqFi30C371WeU/8P21Yc=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,6 +273,7 @@ footer a,header p a{color:var(--accent)}
           <button type="button" class="btn small" id="clear" data-t="page.removeAll">Remove all</button>
         </div>
         <p class="hint" style="margin-top:8px" data-t="page.orientHint">The padlock button on each part sets how it may turn; each click moves to the next setting. <b>Free</b> (open padlock): turns at the Rotation step. <b>Grain</b> (wavy lines): only 0° or 180°, so the grain of wood or brushed metal runs the same way on every copy; in Bounding box it doesn't turn. <b>Locked</b> (closed padlock): never turns.</p>
+        <p class="hint" style="margin-top:8px" data-only="shape" data-t="page.holesHint">The frame button on a part with holes lets other parts nest inside them; turn it on only if every closed inner outline is cut, not scored. A frame crossed by a diagonal line marks a part with no holes to nest in.</p>
       </section>
     </div>
 
@@ -3631,7 +3632,8 @@ function plateFile(pl, notes){
 // a failed export says so, instead of the button seeming to do nothing (#287)
 const exportFailed = e => { console.error(e); notice(t("notice.exportError", {error: e && e.message || e}), true); };
 function exportPlate(i){
-  if (!layout || layout.stale || plateBusy()) return;
+  if (!layout) return;
+  if (layout.stale || plateBusy()) { say(t(layout.stale ? "plate.staleTitle" : "plate.busyTitle")); return; }   // aria-disabled still takes the click: say why nothing happens
   try {
     const notes = new Set();
     download(plateFile(layout.plates[i], notes), fname(i), ext() === "dxf" ? "application/dxf" : "image/svg+xml");
