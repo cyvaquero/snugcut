@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-oCn7g57dE3+zhuoDoJiQGWFdEiTB+q529/iDKDzIo0c=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2C4SstMWkY2x8zXRU3AC4U90Wx383ol6Iv6Iy8b6njA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -668,10 +668,11 @@ function renameSelectors(css, f){
   // at-rule); declarations, strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are
   // left as they are. f(kind, name) returns the new name, or null to keep it; kind is "#", "." or ":".
   // a "[" after the last "]" can't open an attribute selector, but each one would scan to the end looking for it: a run of
-  // them backtracked quadratically (#518). They are swapped for a character the text doesn't use while matching, then back.
+  // them backtracked quadratically (#518). They are swapped for a character the text doesn't use while matching, then back:
+  // from U+E001 up, since f's names can carry uniquifyIds' placeholder prefix U+E000 (ID_MARK), which must stay as it is.
   const sel = s => {
     const c = s.lastIndexOf("]") + 1; let z = "";
-    if (s.indexOf("[", c) >= 0) { const used = new Set(s); let k = 0xE000; while (used.has(String.fromCharCode(k))) k++; z = String.fromCharCode(k); s = s.slice(0, c) + s.slice(c).replaceAll("[", z); }
+    if (s.indexOf("[", c) >= 0) { const used = new Set(s); let k = 0xE001; while (used.has(String.fromCharCode(k))) k++; z = String.fromCharCode(k); s = s.slice(0, c) + s.slice(c).replaceAll("[", z); }
     const r = sel1(s); return z ? r.replaceAll(z, "[") : r;
   };
   const sel1 = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)|(:)(root)(?![\w-])/gi,
