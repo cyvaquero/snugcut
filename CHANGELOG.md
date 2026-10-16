@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.6-beta
+
+- **Fixed:** a fill or stroke that paints nothing is no longer exported as paint. A shape with `fill-opacity="0"` was
+  treated as filled, so its kerf compensation, hole detection and open-piece joining were skipped, and the DXF export
+  added the "filled areas" note; it now exports like a `fill="none"` shape (a 40 mm circle with kerf 1 mm: radius 20,
+  uncompensated, before; radius 20.5, compensated, now). A stroke with `stroke-width="0"` or `stroke-opacity="0"` was
+  exported as a 0.01 mm stroke in its color (or at its opacity of 0), which a cutter that maps by color cuts, and in a
+  DXF landed on that color's layer; it now exports with no stroke. Shapes that paint something are unchanged (#515).
+
 ## 1.6.3-beta
 
 - **Fixed:** plate previews of parts kept as original markup (parts with ids: gradients, `<use>`, `<style>`) redraw as
