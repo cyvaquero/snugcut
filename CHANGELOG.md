@@ -4,6 +4,13 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.4-beta
+
+- **Fixed:** a part with many notches (a comb, a sawtooth or a filigree border) no longer freezes the page while it is
+  prepared for True shape nesting. The time to split its outline into convex pieces grew with the cube of its vertices;
+  it now grows about in proportion. A 1,600-tooth sawtooth (30 KB): 34 s down to 0.12 s; 800 teeth: 4.3 s down to
+  0.04 s; 3,200 teeth: 0.6 s. The pieces are the same as before, so exports are unchanged (#513).
+
 ## 1.6.3-beta
 
 - **Fixed:** plate previews of parts kept as original markup (parts with ids: gradients, `<use>`, `<style>`) redraw as
