@@ -74,21 +74,21 @@
             <div class="field"><label for="gap" data-t="page.gap">Extra gap (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="gap"></div>
             <div class="field"><label for="margin" data-t="page.margin">Edge margin (<span class="u">mm</span>)</label><input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="margin"></div>
           </div>
-          <div class="row" data-only="shape">
+          <div class="row one" data-only="shape">
             <div class="field"><label for="rotStep" data-t="page.rotation">Rotation</label>
               <select id="rotStep"><option value="0" data-t="page.rot0">None</option><option value="180" data-t="page.rot180">180° flips</option><option value="90" data-t="page.rot90">90° steps</option><option value="45" data-t="page.rot45">45° steps</option><option value="30" data-t="page.rot30">30° steps</option><option value="15" data-t="page.rot15">15° steps</option></select></div>
             <div class="field"><label for="prec" data-t="page.precision">Outline precision</label>
               <select id="prec"><option value="0.25" data-t="page.precStandard">Standard (0.25 mm)</option><option value="0.1" data-t="page.precFine">Fine (0.1 mm)</option></select></div>
           </div>
-          <div class="row">
+          <div class="row one">
             <div class="field"><label for="dpi" data-t="page.dpi">Unitless SVG scale</label>
-              <select id="dpi"><option value="96" data-t="page.dpi96">96 px/in (Inkscape)</option><option value="72" data-t="page.dpi72">72 px/in (Illustrator)</option><option value="90" data-t="page.dpi90">90 px/in (old Inkscape)</option></select></div>
+              <select id="dpi"><option value="96" data-t="page.dpi96">96 px/in (Inkscape)</option><option value="72" data-t="page.dpi72">72 px/in (Illustrator)</option><option value="90" data-t="page.dpi90">90 px/in (legacy)</option></select></div>
             <div class="field" style="justify-content:flex-end;gap:8px">
               <label class="check" data-only="bbox"><input type="checkbox" id="rotate"> <span data-t="page.rotate">Allow 90° rotation</span></label>
               <label class="check"><input type="checkbox" id="outline"> <span data-t="page.outline">Plate outline in export</span></label>
             </div>
           </div>
-          <div class="row">
+          <div class="row one">
             <div class="field"><label for="prefix" data-t="page.prefix">Output file prefix</label>
               <input type="text" id="prefix" placeholder="e.g. bracket-3mm" data-t-placeholder="page.prefixExample" spellcheck="false" autocomplete="off"></div>
             <div class="field"><label for="format" data-t="page.format">Export format</label>
@@ -108,6 +108,7 @@
           <button type="button" class="btn small" id="clear" data-t="page.removeAll">Remove all</button>
         </div>
         <p class="hint" style="margin-top:8px" data-t="page.orientHint">The padlock button on each part sets how it may turn; each click moves to the next setting. <b>Free</b> (open padlock): turns at the Rotation step. <b>Grain</b> (wavy lines): only 0° or 180°, so the grain of wood or brushed metal runs the same way on every copy; in Bounding box it doesn't turn. <b>Locked</b> (closed padlock): never turns.</p>
+        <p class="hint" style="margin-top:8px" data-only="shape" data-t="page.holesHint">The frame button on a part with holes lets other parts nest inside them; turn it on only if every closed inner outline is cut, not scored. A frame crossed by a diagonal line marks a part with no holes to nest in.</p>
       </section>
     </div>
 
@@ -124,7 +125,7 @@
       </div>
       <div class="search" data-only="shape">
         <span class="st" id="status"><span class="dot on"></span></span>
-        <button type="button" class="btn small" id="more">Search 30 s more</button>
+        <button type="button" class="btn small" id="more">Search more</button>
         <button type="button" class="btn small" id="stop" hidden data-t="page.stop">Stop</button>
       </div>
       <div class="msgs" id="notices"></div>
@@ -133,7 +134,7 @@
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.7.0-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>

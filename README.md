@@ -3,14 +3,17 @@
 Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`snugcut.html`](snugcut.html) in a browser (double-click is fine): no install, no build, no server.
 Everything runs in the page; your files are never uploaded (see [Files](#files) for the library and font requests). It needs a current desktop browser (Chrome or Edge, Firefox 101+,
-Safari 16.4+); those versions are known API support, not tested minimums.
+Safari 16.4+); those versions are known API support, not tested minimums. Colors written as `oklch()`, `lab()` or `color()`
+are converted with `color-mix()`, which needs Firefox 113 or Safari 16.2; in an older browser those paints reach the
+exports as written.
 
 Two modes:
 
 - **True shape** (default): parts interlock by their real outlines and can rotate (none / 180 / 90 / 45 / 30 / 15°).
   Spacing envelopes → no-fit polygons → first-fit on multiple plates, improved by a seeded search: an order walk by
   default, or a genetic search ("Search 30 s more", Stop). The search runs in a background worker, so the page stays
-  responsive; the **Workers** setting adds up to 3 more.
+  responsive; the **Workers** setting adds up to 3 more. It ranks layouts by fewest plates first, then by the smallest
+  share of the last plate the parts use (the larger offcut, measured as Efficiency does), then by fuller plates.
 - **Bounding box**: MaxRects packing (4 heuristics × 5 sort orders) with optional 90° rotation, then a swap search on the
   best order: seeded tries that swap two parts or change the heuristic, run until a fixed amount of packing work is
   spent (counted in free-rectangle comparisons, not time) or 30,000 tries have run (about 350 ms for the sample parts,
@@ -34,7 +37,8 @@ material).
 **Efficiency** rates the whole job from 1 to 10: the parts' real material divided by the material the job uses up,
 with the percentage next to it. Full plates count whole; the last plate counts only up to one straight cut just past
 its parts, across its width or its height, whichever leaves the larger offcut, and that offcut's size is shown on the
-last plate (when it's at least 10 mm across). Nesting parts inside holes raises it. Part shapes cap it: round parts can't cover a plate the way
+last plate (when it's at least 10 mm across). Nesting parts inside holes raises it, and True shape's search prefers a
+layout that ends the last plate sooner. Bounding box ranks by fewest plates, then fuller plates. Part shapes cap it: round parts can't cover a plate the way
 rectangles can, so a well-nested job of discs still rates lower than one of rectangles.
 
 After any change to the parts or settings, the plates on screen are dimmed and can't be downloaded until the new
@@ -70,7 +74,8 @@ stay as drawn, and nesting spacing and margins grow to match (except around part
 - **Every closed, unfilled path is treated as a cut.** A closed score or engrave outline moves too.
 - **Curves become fine straight segments** (within 0.002 mm), so compensated circles aren't true arcs in a DXF.
 - **Compensated files are marked** (an SVG comment, a DXF `999` comment). If one is added to SnugCut again, it
-  is recognized and not compensated a second time. Parts kept as original markup and holes narrower than the kerf
+  is recognized and not compensated a second time. A plate with nothing compensated on it (only parts kept as original markup)
+  isn't marked. Parts kept as original markup and holes narrower than the kerf
   are exported as drawn (in SVG and DXF), with a notice.
 
 **Parts kept as original markup**: a part with text, images, `<use>` copies, gradient or pattern fills, clip paths,
@@ -123,7 +128,7 @@ the mm/in switch stays in its heading, and a field error opens the box again.
 - **Rotation** (True shape): none, 180° flips, or 90°, 45°, 30° or 15° steps. **Allow 90° rotation** (Bounding box).
 - **Outline precision** (True shape): see above.
 - **Unitless SVG scale**: how many px make an inch in SVGs sized in px or without units: 96 (Inkscape, browsers),
-  72 (Illustrator) or 90 (old Inkscape). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
+  72 (Illustrator) or 90 (legacy: Inkscape before 0.92). SVG sizes in mm, cm, in, pt and pc are read as they are (and without a
   `viewBox` such a file's drawing is in CSS px, 96 per inch, as in every viewer).
 - **Plate outline in export**: adds the sheet's outline as a red rectangle (SVG) or on a `PLATE` layer (DXF).
 - **Output file prefix** (up to 60 characters): put in front of the file names, which are `plate-01-of-03.svg` (or `.dxf`), and
@@ -131,12 +136,12 @@ the mm/in switch stays in its heading, and a field error opens the box again.
   more than one plate.
 - **Export format**: SVG, or DXF (R12, mm).
 
-In the parts list, each file has a **quantity** (0 leaves it out), an **orientation** button, and a remove button.
+In the parts list, each file has a **quantity** (0 leaves it out; at most 1,000 copies of a part and 20,000 parts in a job, past which the field says so), an **orientation** button, and a remove button.
 The orientation button cycles through three states, each with its own icon: **free** (an open lock: the part turns at
 the Rotation step), **grain** (wavy lines: the part only turns end for end, 0° or 180°, so wood grain or brushed metal
 runs the same way on every copy; in Bounding box mode it isn't turned at all, since 180° gives the same rectangle), and
 **locked** (a closed lock: 0° only). A part left out because it fits only turned another way says so, and a
-grain part's outline on the plate preview is labeled "(grain)". A line under the parts list explains the three states. A few sample parts are loaded at first; they go away when you add your own files.
+grain part's outline on the plate preview is labeled "(grain)". A line under the parts list explains the three states, and another (True shape) the holes button and the slashed stand-in. A few sample parts are loaded at first; they go away when you add your own files.
 
 **Parts inside holes** (True shape): a part with holes gets a **Nest parts inside the holes** button (off by default;
 not on parts kept as original markup);
@@ -163,8 +168,11 @@ What happens to imported files:
   (the field is marked and the last good value stays in use); a file whose curves would be sampled into more than
   2,000,000 points, or a DXF that draws more than that many, isn't added; a DXF that expands to more than 250,000 items
   (blocks and arrays), or has a spline of degree above 11, isn't added; an SVG that repeats shapes through `<use>`
-  more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (or not
-  finite) make the file too large to add.
+  more than 100,000 times isn't added; and coordinates more than 1,000,000,000 mm from the part's center (SVG) or the drawing's origin (DXF), or not
+  finite, make the file too large to add. A part's quantity above 1,000, or quantities adding up to more than 20,000
+  parts, are refused the same way (see the parts list above).
+- A style sheet in a file that the browser can't read in full (it stops partway, or can't be read at all) is reported in a notice, since the part's
+  export may then lack some of its styling.
 - A file's CSS applies only to that file, as in an SVG viewer: parts are measured apart from the page, so the
   page's styles (or those of a site that embeds SnugCut) don't change them, and their rules can't reach the page.
   `:root` rules still apply to the part; rules that need an HTML page around the drawing, such as `body rect`,
@@ -175,7 +183,7 @@ What happens to imported files:
 `fixtures/test-cuts/` has small pieces for dialing in the kerf and the fit before cutting a real job. Red `#ff0000`
 is cut and blue `#0000ff` is score; set any black filled marks to engrave or turn them off. Cut each test from the
 material and with the speed and power you will use, because the kerf changes with all three. Set "Edge margin" and
-"Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), untick **Allow
+"Extra gap" as usual, and keep the pieces the way they are drawn: set **Rotation: None** (True shape), uncheck **Allow
 90° rotation** (Bounding box), or set each piece's orientation button to locked in the parts list.
 
 | File | Size | What it tells you |
@@ -265,8 +273,9 @@ compensation on and the right kerf, a sheet that measures 3.0 mm fits the 3.0 sl
   change is announced.
   Icons inside buttons are hidden from screen readers.
 - **Zoom and narrow screens**: part names wrap instead of being cut off, and below 480 px each part gets two rows
-  (name, then thumbnail, Qty and buttons) and the settings fields stack in one column, so nothing is lost at 320 px,
-  400% zoom or with larger text spacing. With JavaScript turned off, the page says that SnugCut needs it.
+  (name, then thumbnail, Qty and buttons) and the settings fields stack in one column (the Rotation and Outline precision, scale and file prefix rows always do, since
+  their selected text is long), so nothing is cut off at 320 px, 400% zoom or with larger text spacing (checked at 1280 px and 320 px with the
+  WCAG text-spacing values). With JavaScript turned off, the page says that SnugCut needs it.
 - **Known gaps**: where each part sits on a plate preview is shown only in the image and the mouse tooltips. Target size isn't required at WCAG 2.1 AA: the mm / in buttons
   are 24 px tall. Report problems as a GitHub issue.
 
@@ -287,10 +296,10 @@ SnugCut.
 | `snugcut.html`       | the app in one file (HTML, CSS and inline JavaScript), **generated** by `tools/build.py` |
 | `lib/snugcut.js`     | the library: import, outlines, nesting, kerf compensation, SVG/DXF export (ES module, no UI) |
 | `app/`               | the app split up: `index.html`, `snugcut.css`, `app.js` (ES module using the library), `strings-en.js` (the English text of the app's messages, by key) |
-| `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3, no dependencies); `--check` tests it is current |
+| `tools/build.py`     | builds `snugcut.html` from `app/` and `lib/` (Python 3.7+, no dependencies); `--check` tests it is current |
 | `qa/`                | export QA workbooks, one Word file per cutter app (LightBurn, Bambu Suite, xTool Studio, Silhouette Studio, Creality Print, Cricut Design Space): setup, every test, a results table and boxes for screenshots. Testers fill one in and attach it to that app's QA issue |
-| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' expected results (Python 3, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
-| `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
+| `tools/regression.py` | the fixture regression: compares the exports of two builds of `snugcut.html` in headless Chrome and checks the QA workbook tests' and the new fixtures' expected results (Python 3.7+, no dependencies; needs Chrome; also run by CI), see [RELEASING.md](RELEASING.md#fixture-regression) |
+| `tools/qa_workbooks.py` | generates `qa/*.docx`; the tests, their machine-checkable expected results and the release under test are defined in it (Python 3.7+, no dependencies); `--check` tests they are current; `--issue N` prints a QA issue's body |
 | `CHANGELOG.md`       | what changed in each version                                                  |
 | `CLAUDE.md`          | rules for AI-assisted work in this repo (Claude Code)                         |
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing, CHANGELOG consolidation, the fixture regression |
@@ -308,6 +317,11 @@ still be downloaded on its own; without the fonts the page falls back to system 
 A Content-Security-Policy allows only those URLs, so an imported SVG can't make the browser load anything else, and it
 allows the page's own script only by its hash, so injected inline scripts and handlers don't run. Both library script
 tags carry a Subresource Integrity hash, so the browser refuses a library file whose contents have changed.
+
+Inline styles are the one thing the policy still allows (`style-src 'unsafe-inline'`): an imported SVG's own `<style>`
+blocks have to apply while its shapes are measured, or hidden shapes would count and strokes and fills would be read wrong
+(tested with the policy tightened: a file whose `.hide{display:none}` rule hid one shape measured 54 mm wide instead of
+30 mm). Styles can't run code, and `script-src` stays strict.
 
 The search runs in Web Workers built in the page (a `blob:` URL, the only kind the CSP's `worker-src` allows). The
 workers need their own copy of clipper-lib: the page fetches the same URL with the same integrity hash (`connect-src`
@@ -384,7 +398,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxf.tooManyItems` | `limit` | blocks and arrays expand past the item limit |
 | `dxf.tooManyPoints` | `limit` | blocks and arrays draw past the point limit |
 | `dxf.tooLarge` | `limit` (mm) | a coordinate is not finite or lies beyond the size limit |
-| `dxf.splineDegree` | `degree` | a spline's degree is outside 1 to 11 |
+| `dxf.splineDegree` | `degree`, `max` | a spline's degree is outside 1 to 11 |
 | `dxf.hiddenLeftOut` | `count` | items on hidden layers were left out (note) |
 | `dxf.skipped` | `skipped` (`[entity type, count]` pairs) | unsupported entities were skipped (note) |
 | `dxf.nothingToCut` | `hidden` (count on hidden layers) | a DXF has nothing to cut |
@@ -401,6 +415,7 @@ error the library throws keeps the worded text as `.message` and also carries `.
 | `dxfOut.clipping`, `dxfOut.text`, `dxfOut.images`, `dxfOut.use`, `dxfOut.paint`, `dxfOut.markers`, `dxfOut.unreadable` | | that part of a part isn't in the DXF (export note) |
 | `dxfOut.element` | `tag` | `<tag>` elements of a part aren't in the DXF (export note) |
 | `dxfOut.fills` | none | filled areas are written as outlines (export note) |
+| `layout.tooManyItems` | `limit` (no `name`) | the quantities add up to more than the job limit |
 | `search.workerFailed` | none | a search worker failed without a message of its own (ends "Nesting stopped after an error: …") |
 
 Exported files themselves (`.` decimals, the `SnugCut v…` and kerf-compensation markers) never change with the wording.
@@ -418,7 +433,7 @@ and commit the sources and `snugcut.html` together. `python3 tools/regression.py
 byte-identical to `develop`'s and that the QA workbook tests' expected results still hold. Every pull request and
 every push to `main` or `develop` runs both `--check` commands
 (`.github/workflows/checks.yml`), so a stale `snugcut.html` or QA workbook fails the check, and the regression itself
-(`.github/workflows/regression.yml`), so a script error or an unintended export change fails it too. The split app (`app/index.html`) uses ES modules, so it only runs
+(`.github/workflows/regression.yml`), so a script error, a page that doesn't load with its CSP (or `app/` over HTTP), or an unintended export change fails it too. The split app (`app/index.html`) uses ES modules, so it only runs
 when served over HTTP (for example `python3 -m http.server`, then open `/app/`), not from `file://`.
 
 git-flow: `main` + `develop`; `feature/` and `bugfix/` branches off `develop` with PRs into `develop`; fixes during a
