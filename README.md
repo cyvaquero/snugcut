@@ -3,7 +3,9 @@
 Nest SVG and DXF parts onto sheets for laser, vinyl, CNC and plasma cutters, in one HTML file. Open
 [`snugcut.html`](snugcut.html) in a browser (double-click is fine): no install, no build, no server.
 Everything runs in the page; your files are never uploaded (see [Files](#files) for the library and font requests). It needs a current desktop browser (Chrome or Edge, Firefox 101+,
-Safari 16.4+); those versions are known API support, not tested minimums.
+Safari 16.4+); those versions are known API support, not tested minimums. Colors written as `oklch()`, `lab()` or `color()`
+are converted with `color-mix()`, which needs Firefox 113 or Safari 16.2; in an older browser those paints reach the
+exports as written.
 
 Two modes:
 

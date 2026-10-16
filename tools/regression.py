@@ -122,6 +122,12 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
     }
     Object.assign(S, saved); __bump();
   }
+  // 4. the library's English messages against the app's words for them (check_messages): each is written twice, so every
+  // message is made from sample values both ways, and null where the library has no message the sample covers
+  out.messages = typeof MESSAGES === "object" ? {codes:Object.keys(MESSAGES), pairs:__MSG__.flatMap(([code, vars]) => {
+    try { const en = MESSAGES[code](vars), app = wording ? wording(code, vars, en) : en; return [[code, en, typeof app === "string" ? app : en]]; }
+    catch(e) { return [[code, String(e && e.message || e), null]]; }
+  })} : null;
   // UTF-8 to base64: TextEncoder, then the bytes as a binary string in chunks (one big apply would overflow the stack)
   const bytes = new TextEncoder().encode(JSON.stringify(out));
   let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -129,6 +135,20 @@ const __bump = () => { if (typeof invalidateGeometry === "function") invalidateG
 })();
 })();
 """
+# [library message code, the values it is made from]: the library's English text and the app's words (app/strings-en.js) for
+# each must be the same string. The plural and select cases get a value each; check_messages fails on a code with no sample
+N = "a.svg"
+MESSAGE_SAMPLES = [["dxf.binary", {"name": N}], ["dxf.unreadable", {"name": N}], ["dxf.noUnits", {"name": N, "units": "in"}], ["dxf.noUnits", {"name": N, "units": "mm"}],
+    ["dxf.tooManyItems", {"name": N, "limit": 250000}], ["dxf.tooManyPoints", {"name": N, "limit": 2000000}], ["dxf.tooLarge", {"name": N, "limit": 1000000000}],
+    ["dxf.splineDegree", {"name": N, "degree": 12, "max": 11}], ["dxf.hiddenLeftOut", {"name": N, "count": 1}], ["dxf.hiddenLeftOut", {"name": N, "count": 3}],
+    ["dxf.skipped", {"name": N, "skipped": [["LINE", 2], ["HATCH", 1]]}], ["dxf.nothingToCut", {"name": N, "hidden": 0}], ["dxf.nothingToCut", {"name": N, "hidden": 1}],
+    ["dxf.nothingToCut", {"name": N, "hidden": 4}], ["svg.unreadable", {"name": N}], ["svg.tooManyPoints", {"name": N, "limit": 2000000}],
+    ["svg.tooLarge", {"name": N, "limit": 1000000000}], ["svg.tooManyCopies", {"name": N, "limit": 10000}], ["svg.nothingVisible", {"name": N}],
+    ["svg.nothingToCut", {"name": N}], ["svg.noClosedOutline", {"name": N}], ["kerf.holeTooNarrow", {"name": N}], ["kerf.markup", {"name": N}],
+    ["dxfOut.nothing", {"name": N}], ["dxfOut.clipping", {"name": N}], ["dxfOut.text", {"name": N}], ["dxfOut.images", {"name": N}], ["dxfOut.use", {"name": N}],
+    ["dxfOut.element", {"name": N, "tag": "foreignObject"}], ["dxfOut.paint", {"name": N}], ["dxfOut.markers", {"name": N}], ["dxfOut.unreadable", {"name": N}],
+    ["dxfOut.fills", {}], ["search.workerFailed", {}], ["layout.tooManyItems", {"limit": 20000}]]
+
 CDN = {"clipper.js": "https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js",
        "jszip.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"}
 
@@ -172,8 +192,9 @@ def prepare(html, label, libs, qa=None):
     if len(tail) != 1: fail(2, f"{label}: can't find the page's startup run() to replace")
     # "<" as \u003c, so a fixture holding </script> or <!-- can't end the script or swallow the page; both placeholders
     # are filled in one pass, so fixture text that contains the other placeholder isn't substituted again
-    blobs = {"__CASES__": json.dumps(cases()).replace("<", "\\u003c"), "__QA__": json.dumps(qa).replace("<", "\\u003c")}
-    test = re.sub("__CASES__|__QA__", lambda m: blobs[m.group()], TEST)
+    blobs = {"__CASES__": json.dumps(cases()).replace("<", "\\u003c"), "__QA__": json.dumps(qa).replace("<", "\\u003c"),
+             "__MSG__": json.dumps(MESSAGE_SAMPLES).replace("<", "\\u003c")}
+    test = re.sub("__CASES__|__QA__|__MSG__", lambda m: blobs[m.group()], TEST)
     html = html.replace(tail[0], "renderParts();\n" + test, 1)
     html = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>', "", html)
     html = re.sub(r'<link[^>]*fonts\.googleapis[^>]*>', "", html)
@@ -404,6 +425,18 @@ def check_fixtures(got):
     need("geometry/many-ids.svg", "expected 300 or more ids, each prefixed, and every reference to one of them", ids)
     return bad
 
+def check_messages(got):
+    # the library's English messages and the app's words for them must be the same text (they are written in lib/snugcut.js
+    # and app/strings-en.js); returns the mismatches
+    m = got.get("messages")
+    if m is None: return ["the build has no MESSAGES table"]
+    bad = [f"message {c}: no sample in MESSAGE_SAMPLES" for c in m["codes"] if c not in {x[0] for x in MESSAGE_SAMPLES}]
+    bad += [f"message {c}: the sample names a code the library doesn't have" for c in {x[0] for x in MESSAGE_SAMPLES} - set(m["codes"])]
+    for code, lib, app in m["pairs"]:
+        if app is None: bad.append(f"message {code}: the library threw: {lib}")
+        elif lib != app: bad.append(f"message {code}: the library says \"{lib}\", the app \"{app}\"")
+    return bad
+
 NORM = [(re.compile(r"SnugCut v[0-9][0-9.]*(?:-[a-z]+)?"), "SnugCut v"),   # the version in the export comment
         (re.compile(r"\bp\d+_"), "p_")]                                    # parseSVG's per-import id prefix
 def norm(v):
@@ -465,6 +498,9 @@ def main():
     fx = check_fixtures(b)
     print(f"fixture checks: {len(REFUSED)} refusals and 5 values checked, {len(fx)} mismatches" + "".join("\n  " + m for m in fx))
     bad |= bool(fx)
+    ms = check_messages(b)
+    print(f"library messages: {len(MESSAGE_SAMPLES)} compared with the app's words, {len(ms)} mismatches" + "".join("\n  " + x for x in ms))
+    bad |= bool(ms)
     tmp = tempfile.mkdtemp(prefix="snugcut-load-")
     try: loads = load_check(chrome, builds[1][0], pathlib.Path(tmp), "--no-sandbox" not in flags)
     finally: shutil.rmtree(tmp, ignore_errors=True)
