@@ -3,7 +3,7 @@
 <html lang="en">
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later. Copyright (C) 2026 Guy Heckman. Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE). Source: https://github.com/cyvaquero/snugcut -->
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ptnihE3R3HiMEI1wW1qzSXmO2Un1BT6R51TcfdKs0Go=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2C4SstMWkY2x8zXRU3AC4U90Wx383ol6Iv6Iy8b6njA=' https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src blob: data:; connect-src https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnugCut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -298,7 +298,7 @@ footer a,header p a{color:var(--accent)}
     </main>
   </div>
   <span id="newTab" hidden data-t="page.newTab">Opens in a new tab.</span>
-  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.6-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
+  <footer><span data-t="page.footer">All processing stays in your browser.</span><span><span id="appver">v1.6.7-beta</span> <a id="changelog" href="https://github.com/cyvaquero/snugcut/blob/develop/CHANGELOG.md" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.changelog">(changelog)</a> · <a href="https://github.com/cyvaquero/snugcut/blob/main/LICENSE" target="_blank" rel="noopener" aria-describedby="newTab" data-t="page.license">AGPL-3.0-or-later license</a></span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="sr-only" id="sayPolite" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -577,7 +577,8 @@ function cssExternal(v){
   if (v.includes("@import")) return true;
   for (const m of v.matchAll(/(?:url|src)\(\s*(['"]?)\s*([^'")\s]*)/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
   if (/(?:image-set|image|cross-fade)\(/.test(v)) {
-    for (const m of v.matchAll(/(['"])\s*([^'"]*)\1/g)) if (!(m[2][0] === "#" || safeData(m[2]))) return true;
+    // the quoted value is trimmed after matching: a \s* before [^'"]* made an unclosed quote and a run of spaces backtrack quadratically (#517)
+    for (const m of v.matchAll(/(['"])([^'"]*)\1/g)) { const u = m[2].trimStart(); if (!(u[0] === "#" || safeData(u))) return true; }
     // a URL kept as a string in a custom property and used as image-set(var(--u)): its value is only known after var()
     // is substituted, so any var() in these functions counts as outside (#238)
     if (v.includes("var(")) return true;
@@ -666,7 +667,15 @@ function renameSelectors(css, f){
   // rewrite #id and .class names, and the :root pseudo-class, in selectors only (the text before each "{" that isn't an
   // at-rule); declarations, strings, comments, attribute selectors and XML entities (&gt; in serialized markup) are
   // left as they are. f(kind, name) returns the new name, or null to keep it; kind is "#", "." or ":".
-  const sel = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)|(:)(root)(?![\w-])/gi,
+  // a "[" after the last "]" can't open an attribute selector, but each one would scan to the end looking for it: a run of
+  // them backtracked quadratically (#518). They are swapped for a character the text doesn't use while matching, then back:
+  // from U+E001 up, since f's names can carry uniquifyIds' placeholder prefix U+E000 (ID_MARK), which must stay as it is.
+  const sel = s => {
+    const c = s.lastIndexOf("]") + 1; let z = "";
+    if (s.indexOf("[", c) >= 0) { const used = new Set(s); let k = 0xE001; while (used.has(String.fromCharCode(k))) k++; z = String.fromCharCode(k); s = s.slice(0, c) + s.slice(c).replaceAll("[", z); }
+    const r = sel1(s); return z ? r.replaceAll(z, "[") : r;
+  };
+  const sel1 = s => s.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\[[^\]]*\]|&(?:[a-z]+|#\d+|#x[0-9a-f]+);)|([#.])(-?[A-Za-z_][\w-]*)|(:)(root)(?![\w-])/gi,
     (m, keep, k, name, k2, name2) => { if (keep) return keep; if (k2) { k = k2; name = name2; } const r = f(k, name); return r == null ? m : k + r; });
   let out = "", seg = "", q = "", depth = 0;
   for (let i = 0; i < css.length; i++) {
@@ -706,7 +715,10 @@ function dxfToSVG(text, name, opts = {}){
     if (c === 0) recs.push({type:v.toUpperCase(), g:[]}); else if (recs.length) recs[recs.length - 1].g.push([c, v]);
   }
   if (!recs.some(r => r.type === "SECTION")) throw fail("dxf.unreadable", {name});
-  const str = (r, c, d) => { const p = r.g.find(q => q[0] === c); return p ? p[1] : d; };
+  // the first value of a code; a long record (a padded entity drawn once per array cell) is indexed on first use, not scanned each time (#519)
+  const str = (r, c, d) => {
+    if (r.g.length > 16) { if (!r.m) { r.m = new Map(); for (const q of r.g) if (!r.m.has(q[0])) r.m.set(q[0], q[1]); } return r.m.has(c) ? r.m.get(c) : d; }
+    const p = r.g.find(q => q[0] === c); return p ? p[1] : d; };
   const trueColor = r => str(r, 420) != null ? "#" + (+str(r, 420) & 0xffffff).toString(16).padStart(6, "0") : null;   // group 420
   const num = (r, c, d = 0) => { const v = parseFloat(str(r, c)); return isFinite(v) ? v : d; };
   const nums = (r, c) => r.g.filter(q => q[0] === c).map(q => parseFloat(q[1]) || 0);
@@ -958,7 +970,7 @@ function parseSVG(text, name){
   const pfx = `p${++uid}_`, ids = new Map();
   root.querySelectorAll("[id]").forEach(el => { ids.set(el.id, pfx + el.id); el.id = pfx + el.id; });
   if (ids.size) {
-    const re = /url\(\s*['"]?#([^'")\s]+)['"]?\s*\)/g;
+    const re = /url\(\s*['"]?#((?:(?!url\()[^'")\s])+)['"]?\s*\)/g;   // the id stops at the next "url(": a run of url(# can't rescan to the end (#516)
     const fix = v => v.replace(re, (m, id) => ids.has(id) ? `url(#${ids.get(id)})` : m);
     for (const el of all) {
       for (const a of [...el.attributes]) {
