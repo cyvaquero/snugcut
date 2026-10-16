@@ -68,7 +68,7 @@ export const EN = {
   "files.precomp": "{name} was downloaded from SnugCut with kerf compensation built in, so it won't be compensated again.",
   "files.hiddenItem": "{n} from {name}",
   "files.tangled": "{name} has too many crossing lines, or too many lines meeting at one point, to trace its outline, so it is nested by the shape around all of it.",
-  "files.styleSkipped": "Part of the style sheet in {name} could not be read, so some of its styling may be missing from the downloads.",
+  "files.styleSkipped": "Some or all of the style sheet in {name} could not be read, so some of its styling may be missing from the downloads.",
   "files.hidden": "Left out hidden shapes (not shown, so not cut): {list}.",
   "files.stripped": "Removed links to outside files (web images, fonts or styles) and markup that isn't SVG from {list}; only what's inside the file is used.",
   "stat.eff": "{rating} out of 10",
