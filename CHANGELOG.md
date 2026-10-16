@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.6.10-beta
+
+- **Changed:** the export QA workbooks test release 1.7.0-beta (#520).
+- **Fixed:** documentation from the release prep review (#520): QA test 5 lists the squares the CSS support fixture
+  actually has (1, 2, 4–8), the README's library message table lists `layout.tooManyItems` and the spline message's
+  `max`, the size limit is measured from a DXF's origin (from an SVG part's center), and checkboxes are "checked", not
+  "ticked", in the README and the workbooks.
+
 ## 1.6.9-beta
 
 - **Fixed:** a file whose style sheet the browser can't read at all is added with the "could not be read" notice,
