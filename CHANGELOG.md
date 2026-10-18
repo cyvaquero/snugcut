@@ -4,6 +4,15 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.7.1-beta
+
+### Changed
+
+- The README now opens with a screenshot of the app with its sample parts nested (a light and a dark version, chosen by
+  your theme), and shows close-ups next to the text that describes each control: the Nesting mode toggle, Search
+  Options, Plate & cutting, the parts list with the orientation and holes buttons in each state, and the results with
+  the Download buttons. The images are WebP files in `images/` and are not part of `snugcut.html` (#531).
+
 ## 1.7.0-beta
 
 Release of 1.6.1-beta through 1.6.3-beta, with the fixes from the release review (1.6.4-beta through 1.6.10-beta).
