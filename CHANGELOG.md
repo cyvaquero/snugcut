@@ -10,7 +10,7 @@ a major rewrite of what the app does or how it works.
 
 - Small thumbnails of the app, `images/thumb-app-light.webp` and `images/thumb-app-dark.webp` (320 × 240, about 14 KB
   each), cut from the top of the README's whole-page screenshots, for pages that list SnugCut with a preview. The
-  README still links the full-size screenshots (#535).
+  README's Files table lists them; its pictures still show the full-size screenshots (#535).
 
 ## 1.7.1-beta
 
