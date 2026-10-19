@@ -330,7 +330,7 @@ SnugCut.
 | `RELEASING.md`       | release procedure: efficiency review, release branch, blind review, finishing, CHANGELOG consolidation, the fixture regression |
 | `.github/workflows/` | CI: the generated-files check (`snugcut.html` and the QA workbooks current), the fixture regression, and issue triage labels |
 | `LICENSE`            | the AGPL-3.0-or-later license text |
-| `images/`            | the README's screenshots of the app (WebP; the whole page in light and dark, and close-ups of its controls); not part of `snugcut.html` |
+| `images/`            | the README's screenshots of the app (WebP; the whole page in light and dark, and close-ups of its controls), and two 320 × 240 thumbnails cut from the top of the whole-page pair (`thumb-app-light.webp`, `thumb-app-dark.webp`) for pages that list SnugCut; not part of `snugcut.html` |
 | `fixtures/`          | Files for manual testing, by topic: `geometry/`, `css/`, `makeit/`, `security/`, `dxf/`, `nesting/`, `test-cuts/` (see `fixtures/README.md`) |
 
 Like the original reference apps, the page loads two libraries by script tag, `clipper-lib@6.4.2` (polygon clipping) and
