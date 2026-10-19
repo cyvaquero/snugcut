@@ -12,8 +12,9 @@ The SVG export format is verified in WeCreat MakeIT and must stay exactly as is.
 - `app/strings-en.js`: the text of every message `app.js` shows, by key (`t("key", {values})`), in whole sentences with
   `{name}` and `{n, plural, …}` placeholders; the page's own text stays in `index.html`, marked with `data-t` keys.
   New UI text goes there, never inline. The build fails on a key that is used but missing, or defined but unused.
-- `images/`: the README's screenshots (WebP), retaken when the UI they show changes (RELEASING.md section 4). Not built
-  into `snugcut.html`.
+- `images/`: the README's screenshots (WebP), retaken when the UI they show changes (RELEASING.md section 4), and two
+  320 × 240 thumbnails (`thumb-app-light.webp`, `thumb-app-dark.webp`) cut from the top of the whole-page pair and
+  regenerated with it. Not built into `snugcut.html`.
 - `snugcut.html`: **generated** from `app/` and `lib/` by `python3 tools/build.py`. Never edit it by hand. Edit the
   sources, run the script, and commit the sources and the regenerated `snugcut.html` together;
   `python3 tools/build.py --check` fails when it is out of date.

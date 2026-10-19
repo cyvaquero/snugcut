@@ -101,7 +101,10 @@ Summarize by severity with a `#NN:Exact title` link to every new issue, call out
 - When the UI the README's screenshots show has changed, retake them (at release prep, or in the change itself). Open the
   release's `snugcut.html` over the sample parts at default settings in a current Chrome, wait for the search to
   finish, and capture each control and the whole page (light and dark for the whole-page pair) as WebP into `images/`,
-  under the same names. The images aren't part of `snugcut.html`; `tools/build.py` and the regression don't read them.
+  under the same names. Then regenerate the two thumbnails, `images/thumb-app-light.webp` and `images/thumb-app-dark.webp`:
+  crop the top 1280 × 960 px (full width, from the top edge) of each whole-page image, scale it to 320 × 240 px and
+  save it as WebP, well under 30 KB. The images aren't part of `snugcut.html`; `tools/build.py` and the regression
+  don't read them.
 - If export QA issues are still open (#49–#52, #132, #133), move them to the new release:
   - at release prep (the maintainer says to prep it), on the prep `bugfix/` branch into `release/<version>`, set
     `VERSION` in `tools/qa_workbooks.py` to `<version>` and run `python3 tools/qa_workbooks.py`. The workbooks link the
