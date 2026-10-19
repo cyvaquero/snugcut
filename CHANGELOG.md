@@ -4,6 +4,14 @@ Format `major.minor.iterative`, with an optional pre-release suffix such as `-be
 only on request; the iterative number increments with every change. Once the suffix is dropped, it comes back only for
 a major rewrite of what the app does or how it works.
 
+## 1.7.2-beta
+
+### Added
+
+- Small thumbnails of the app, `images/thumb-app-light.webp` and `images/thumb-app-dark.webp` (320 × 240, about 14 KB
+  each), cut from the top of the README's whole-page screenshots, for pages that list SnugCut with a preview. The
+  README's Files table lists them; its pictures still show the full-size screenshots (#535).
+
 ## 1.7.1-beta
 
 ### Changed
